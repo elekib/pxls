@@ -187,7 +187,7 @@ async fn first_run_setup_needs_the_code_and_works_once() {
     let body: Value = r.json().await.unwrap();
     assert_eq!(body["user"]["role"], "admin");
     assert!(
-        body.to_string().find("argon2").is_none(),
+        !body.to_string().contains("argon2"),
         "hash must never be returned"
     );
 

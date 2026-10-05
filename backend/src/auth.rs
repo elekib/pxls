@@ -342,7 +342,7 @@ mod tests {
     #[test]
     fn secrets_are_redacted_in_debug() {
         let (state, _dir) = crate::accounts::test_support::state();
-        assert!(!format!("{:?}", state).contains("0123456789abcdef"));
+        assert!(!format!("{state:?}").contains("0123456789abcdef"));
         assert!(!format!("{:?}", Secret("hunter2-hunter2-xx".into())).contains("hunter2"));
     }
 
