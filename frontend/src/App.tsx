@@ -11,7 +11,7 @@ import { WebhooksPage } from './pages/WebhooksPage';
 import { WebhookEventsPage } from './pages/WebhookEventsPage';
 import type { Config, Notification } from './types';
 import { API_URL } from './types';
-import horizontalLogo from './assets/logo/pxls_horizontal_icon.png';
+import horizontalLogo from './assets/logo/pxls_logo.svg';
 
 function App() {
   const [config, setConfig] = useState<Config | null>(null);

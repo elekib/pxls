@@ -1,0 +1,28 @@
+# Short-lived test builds. Push a branch named exp/<anything> to build and
+# publish images tagged exp-<anything> and sha-<short>. Delete the branch when
+# you are done; remove the image tags in the GitHub Packages UI.
+#
+# Anyone with write access to the repository can trigger this by pushing an
+# exp/** branch. Consider a ruleset restricting who can create those branches
+# before adding collaborators or making the repository public.
+
+name: Publish experimental images
+
+on:
+  push:
+    branches: ["exp/**"]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: exp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  images:
+    uses: ./.github/workflows/build-images.yml
+    with:
+      release: false
+      experimental: true

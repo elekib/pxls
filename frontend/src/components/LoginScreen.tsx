@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { setToken, verifyToken } from '../auth';
-import logo from '../assets/logo/pxls_horizontal_icon.png';
+import logo from '../assets/logo/pxls_logo.svg';
 
 export function LoginScreen({ onSuccess, expired }: { onSuccess: () => void; expired?: boolean }) {
   const [token, setTokenValue] = useState('');

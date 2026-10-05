@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Config } from '../types';
-import logoHorizontal from '../assets/logo/pxls_horizontal_icon.png';
+import logoHorizontal from '../assets/logo/pxls_logo.svg';
 
 interface SidebarProps {
   config: Config | null;

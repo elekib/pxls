@@ -9,6 +9,10 @@ on:
         description: Tag as a release (semver and latest) instead of dev
         type: boolean
         default: false
+      experimental:
+        description: Tag as an experimental build (exp-<branch> and sha-<short>), never dev or latest
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -52,8 +56,11 @@ jobs:
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          EXPERIMENTAL: ${{ inputs.experimental }}
         run: |
-          if [ "$REF_TYPE" = "tag" ]; then v="${REF_NAME#v}"; else v="dev"; fi
+          if [ "$REF_TYPE" = "tag" ]; then v="${REF_NAME#v}";
+          elif [ "$EXPERIMENTAL" = "true" ]; then v="exp-$(echo "$REF_NAME" | tr '/' '-')";
+          else v="dev"; fi
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
@@ -122,7 +129,8 @@ jobs:
         with:
           images: ${{ steps.name.outputs.image }}
           tags: |
-            type=raw,value=dev,enable=${{ !inputs.release }}
+            type=raw,value=dev,enable=${{ !inputs.release && !inputs.experimental }}
+            type=ref,event=branch,enable=${{ inputs.experimental }}
             type=sha,prefix=sha-,format=short,enable=${{ !inputs.release }}
             type=semver,pattern={{version}},enable=${{ inputs.release }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ inputs.release }}
@@ -140,3 +148,14 @@ jobs:
           IMAGE: ${{ steps.name.outputs.image }}
           VERSION: ${{ steps.meta.outputs.version }}
         run: docker buildx imagetools inspect "$IMAGE:$VERSION"
+      - name: Summary
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          {
+            echo "### ${IMAGE##*/}"
+            echo '```'
+            echo "$TAGS" | sed 's/^/docker pull /'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="branding/pxls-logo.svg" alt="pxls" width="320">
+</p>
+
 # pxls
 
 Open-source dashboard for custom messaging and integrations on legacy Divoom Pixoo Bluetooth devices (16x16).

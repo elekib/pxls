@@ -50,6 +50,27 @@ npm run dev        # Vite dev server on :3000, proxies /api to http://127.0.0.1:
 npm run build      # type-check and production build
 ```
 
+## Testing a change on a server (experimental builds)
+
+For one-off tests, push a branch named `exp/<name>` (this needs write access to the repository; everyone else can test with `make dev` or in their own fork). The **Publish experimental images** workflow builds both images and pushes them to GHCR as `exp-<name>` and `sha-<short>`. They never touch `dev` or `latest`.
+
+```bash
+git switch -c exp/my-test
+git push -u origin exp/my-test
+```
+
+When the run finishes, its summary lists the `docker pull` commands. To try it on the server, set the tag in `.env` and pull:
+
+```
+PXLS_TAG=exp-my-test
+```
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Then delete the branch (`git push origin --delete exp/my-test`) and remove the `exp-my-test` tags from the GitHub Packages page. Experimental builds skip the full CI suite, so open a pull request when the change is ready to merge.
+
 ## Pull requests
 
 1. Fork the repository and branch from `main`.
