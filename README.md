@@ -93,15 +93,6 @@ curl -s -c jar -H 'X-Requested-With: pxls' -H 'Content-Type: application/json' \
 
 Mutating `/api/auth` calls need the `X-Requested-With: pxls` header (CSRF protection).
 
-### Upgrading from `PXLS_AUTH_TOKEN`
-
-Earlier builds used one shared `PXLS_AUTH_TOKEN`. It is gone. Existing data is untouched; the new tables arrive through an automatic database migration.
-
-1. Pull and restart (`docker compose pull && docker compose up -d`). pxls logs a warning if `PXLS_AUTH_TOKEN` is still set; it is ignored. Remove it from `.env`.
-2. Read the setup code from the log (above), open the UI and create your admin account.
-3. Create any other users on the **Users** page, and replace scripts that used the token with the login flow above.
-4. Webhook senders (Radarr, Sonarr and so on) are unaffected: they keep using their per-webhook secret.
-
 If you are behind another reverse proxy that rewrites the `Host` header, add your public origin to `PXLS_ALLOWED_ORIGINS`, otherwise sign-in is rejected by the CSRF check. Serve pxls over HTTPS and forward `X-Forwarded-Proto: https` so the refresh cookie gets the `Secure` flag (or set `PXLS_COOKIE_SECURE=true`).
 
 ### Lost the admin password
@@ -130,8 +121,6 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 Device settings, pages and the rest of the app configuration are edited in the web UI. Everything except uploads is stored in one SQLite database, `./data/pxls.db` (with `pxls.db-wal` and `pxls.db-shm` next to it while running), created on first run. Uploaded images live in `./data/uploads`. The `data/` directory and `.env` are git-ignored so they never get committed.
 
 **`pxls.db` holds secrets** (webhook secrets, Beszel credentials, the full config). Keep `./data` private, and back it up. Stop the container and copy `pxls.db` together with its `-wal` and `-shm` files, or take a consistent copy while running with `sqlite3 data/pxls.db ".backup 'pxls-backup.db'"`.
-
-Upgrading from an older version that kept `config.json`, `webhooks.json` and `webhook_events.json` in `./data`: on first start pxls imports them into `pxls.db` and logs that it did. The JSON files are never modified or deleted and are no longer read afterwards, so they are a backup of the pre-upgrade state. Once you are happy, move them out of `./data` (they contain secrets too). If you downgrade, the older version reads those JSON files and will not see changes made after the upgrade.
 
 ## Webhooks
 
@@ -164,7 +153,7 @@ Define rules on the **Webhooks** page. Use the **Event Logs** page to inspect in
 
 ## Status and security
 
-Early development. The API requires a token, but the Bluetooth device is controlled by the host, so keep pxls on a trusted network and put TLS in front of it before exposing ports 3030 or 3400 beyond your LAN. See [SECURITY.md](SECURITY.md).
+Early development. The API requires a signed-in user, but the Bluetooth device is controlled by the host, so keep pxls on a trusted network and put TLS in front of it before exposing ports 3030 or 3400 beyond your LAN. See [SECURITY.md](SECURITY.md).
 
 ## Documentation
 

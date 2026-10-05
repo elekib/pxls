@@ -63,12 +63,6 @@ async fn main() {
 
     info!("Starting pxls backend");
 
-    if std::env::var("PXLS_AUTH_TOKEN").is_ok_and(|v| !v.trim().is_empty()) {
-        tracing::warn!(
-            "PXLS_AUTH_TOKEN is set but no longer used: pxls now has user accounts. Remove it from .env."
-        );
-    }
-
     // Fail closed: the API only works with a user account behind it.
     let auth_state = match database::accounts::AccountsDb::open(std::path::Path::new("/app/data"))
         .map_err(|e| e.to_string())

@@ -5,8 +5,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ## [Unreleased]
 
 ### Added
-- Required API authentication: a shared token (`PXLS_AUTH_TOKEN`) for the UI and API, and a per-webhook secret for incoming webhooks.
-- Token login screen in the web UI.
+- Required API authentication: user accounts for the UI and API (see below), and a per-webhook secret for incoming webhooks.
 - `PXLS_ALLOWED_ORIGINS` CORS allowlist and `PXLS_ALLOW_PRIVATE_URLS` switch for webhook image downloads.
 - Version and git revision reported by `/api/health` and shown in the UI.
 - Versioned SQL migrations for the database: add a numbered file under `backend/src/database/migrations/`.
@@ -22,7 +21,6 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - The UI calls the API on its own origin; nginx proxies `/api` to the backend, so no API address is baked into the frontend image.
 - The backend image is built in stages and runs on `debian:bookworm-slim`.
 - `command_tester` and `library_tool_test` moved to `backend/examples/`.
-- Config, webhooks and the webhook event log are stored in a SQLite database, `data/pxls.db`, instead of `config.json`, `webhooks.json` and `webhook_events.json`. Existing JSON files are imported automatically on first start and left in place as a backup. API behavior is unchanged. `pxls.db` contains secrets: back it up and keep `data/` private.
 - Every `/api` route except `/api/health` and `/api/webhook/:name` now requires a user access token, and viewers are limited to read-only routes. The webhook receiver still uses its per-webhook secret.
 - Replaced the third-party `pixoo` crate (GPL-3.0) with pxls's own clean-room Bluetooth driver in `backend/src/device/`, built behind a small transport trait and covered by golden-byte tests. No command has been verified on a real Pixoo yet; see the device test checklist in `docs/protocol.md`.
 - Packets now use little-endian length and checksum and brightness command `0x74` (0-100), as in public Timebox protocol write-ups. `docs/protocol.md` was corrected accordingly.
@@ -35,6 +33,3 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Uploads are validated by content, size and dimensions, stored under sanitized names and served only from the uploads directory.
 - Webhook image downloads block private, loopback and link-local addresses by default and re-check every redirect.
 - CORS no longer allows every origin.
-
-### Removed
-- The shared `PXLS_AUTH_TOKEN` and the token login screen. If it is still set, the backend logs a warning and ignores it. To upgrade, restart, read the setup code from the log, and create the admin account in the UI; see the README's Authentication section.
