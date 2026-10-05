@@ -9,12 +9,14 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Token login screen in the web UI.
 - `PXLS_ALLOWED_ORIGINS` CORS allowlist and `PXLS_ALLOW_PRIVATE_URLS` switch for webhook image downloads.
 - Version and git revision reported by `/api/health` and shown in the UI.
+- Versioned SQL migrations for the database: add a numbered file under `backend/src/database/migrations/`.
 
 ### Changed
 - The project is now called pxls.
 - The UI calls the API on its own origin; nginx proxies `/api` to the backend, so no API address is baked into the frontend image.
 - The backend image is built in stages and runs on `debian:bookworm-slim`.
 - `command_tester` and `library_tool_test` moved to `backend/examples/`.
+- Config, webhooks and the webhook event log are stored in a SQLite database, `data/pxls.db`, instead of `config.json`, `webhooks.json` and `webhook_events.json`. Existing JSON files are imported automatically on first start and left in place as a backup. API behavior is unchanged. `pxls.db` contains secrets: back it up and keep `data/` private.
 
 ### Security
 - Uploads are validated by content, size and dimensions, stored under sanitized names and served only from the uploads directory.

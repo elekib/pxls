@@ -1,10 +1,28 @@
-use anyhow::{Context, Result};
+//! Persistence in a single SQLite file, `<data dir>/pxls.db`.
+//!
+//! Holds the app config, webhook definitions and the webhook event log (this
+//! replaces config.json, webhooks.json and webhook_events.json). Uploaded
+//! images stay on disk. The file contains secrets: keep it private and back it
+//! up (use `sqlite3 pxls.db ".backup ..."`, or copy the -wal file with it).
+//!
+//! The API is synchronous. Each call opens its own connection and runs off the
+//! async executor (see [`db::off_executor`]).
+
+use anyhow::Result;
+use rusqlite::{Connection, TransactionBehavior};
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::path::Path;
 use tracing::info;
 
+use crate::config::Config;
 use crate::webhook_enhanced::{EnhancedWebhookConfig, WebhookEvent};
+
+mod db;
+mod import;
+mod migrations;
+mod store;
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebhooksDatabase {
@@ -14,6 +32,30 @@ pub struct WebhooksDatabase {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventsDatabase {
     pub events: Vec<WebhookEvent>,
+}
+
+/// Run `f` in a write transaction on a fresh connection, off the executor.
+fn write<T>(data_dir: &str, f: impl FnOnce(&Connection) -> Result<T>) -> Result<T> {
+    db::off_executor(|| {
+        let mut conn = db::open(Path::new(data_dir))?;
+        let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        let out = f(&tx)?;
+        tx.commit()?;
+        Ok(out)
+    })
+}
+
+fn read<T>(data_dir: &str, f: impl FnOnce(&Connection) -> Result<T>) -> Result<T> {
+    db::off_executor(|| f(&db::open(Path::new(data_dir))?))
+}
+
+/// Load the saved config, or `None` if none has been saved yet.
+pub fn load_config(data_dir: &str) -> Result<Option<Config>> {
+    read(data_dir, store::load_config)
+}
+
+pub fn save_config(data_dir: &str, config: &Config) -> Result<()> {
+    write(data_dir, |c| store::save_config(c, config))
 }
 
 pub struct WebhookDatabase {
@@ -27,144 +69,56 @@ impl WebhookDatabase {
         }
     }
 
-    fn ensure_data_dir(&self) -> Result<()> {
-        if !Path::new(&self.data_dir).exists() {
-            fs::create_dir_all(&self.data_dir).context("Failed to create data directory")?;
-        }
-        Ok(())
-    }
-
-    fn write_atomic<T: Serialize>(&self, path: &str, data: &T) -> Result<()> {
-        let temp_path = format!("{path}.tmp");
-        let content = serde_json::to_string_pretty(data).context("Failed to serialize data")?;
-
-        fs::write(&temp_path, content).context("Failed to write temp file")?;
-
-        fs::rename(&temp_path, path).context("Failed to rename temp file to final path")?;
-
-        Ok(())
-    }
-
     pub fn load_webhooks(&self) -> Result<WebhooksDatabase> {
-        self.ensure_data_dir()?;
-        let path = format!("{}/webhooks.json", self.data_dir);
-
-        if Path::new(&path).exists() {
-            let content = fs::read_to_string(&path).context("Failed to read webhooks.json")?;
-            let db: WebhooksDatabase =
-                serde_json::from_str(&content).context("Failed to parse webhooks.json")?;
-            Ok(db)
-        } else {
-            let db = WebhooksDatabase {
-                webhooks: Vec::new(),
-            };
-            self.write_atomic(&path, &db)?;
-            Ok(db)
-        }
+        read(&self.data_dir, |c| {
+            Ok(WebhooksDatabase {
+                webhooks: store::load_webhooks(c)?,
+            })
+        })
     }
 
     pub fn save_webhooks(&self, db: &WebhooksDatabase) -> Result<()> {
-        self.ensure_data_dir()?;
-        let path = format!("{}/webhooks.json", self.data_dir);
-        self.write_atomic(&path, db)?;
+        write(&self.data_dir, |c| store::replace_webhooks(c, &db.webhooks))?;
         info!("Saved webhooks database");
         Ok(())
     }
 
     pub fn load_events(&self) -> Result<EventsDatabase> {
-        self.ensure_data_dir()?;
-        let path = format!("{}/webhook_events.json", self.data_dir);
-
-        if Path::new(&path).exists() {
-            let content =
-                fs::read_to_string(&path).context("Failed to read webhook_events.json")?;
-            let db: EventsDatabase =
-                serde_json::from_str(&content).context("Failed to parse webhook_events.json")?;
-            Ok(db)
-        } else {
-            let db = EventsDatabase { events: Vec::new() };
-            self.write_atomic(&path, &db)?;
-            Ok(db)
-        }
+        read(&self.data_dir, |c| {
+            Ok(EventsDatabase {
+                events: store::load_events(c, None)?,
+            })
+        })
     }
 
     pub fn save_events(&self, db: &EventsDatabase) -> Result<()> {
-        self.ensure_data_dir()?;
-        let path = format!("{}/webhook_events.json", self.data_dir);
-        self.write_atomic(&path, db)?;
-        Ok(())
+        write(&self.data_dir, |c| store::replace_events(c, &db.events))
     }
 
     /// Append an event, trimming the log to `max_per_webhook` entries for that
     /// webhook and 1000 events overall.
     pub fn log_event(&self, event: WebhookEvent, max_per_webhook: usize) -> Result<()> {
-        let mut db = self.load_events()?;
-        let webhook_name = event.webhook_name.clone();
-        db.events.push(event);
-
-        // Trim oldest events for this webhook beyond its cap
-        let matching: Vec<usize> = db
-            .events
-            .iter()
-            .enumerate()
-            .filter(|(_, e)| e.webhook_name == webhook_name)
-            .map(|(i, _)| i)
-            .collect();
-
-        if matching.len() > max_per_webhook {
-            let to_remove: std::collections::HashSet<usize> = matching
-                [..matching.len() - max_per_webhook]
-                .iter()
-                .copied()
-                .collect();
-            let mut i = 0;
-            db.events.retain(|_| {
-                let keep = !to_remove.contains(&i);
-                i += 1;
-                keep
-            });
-        }
-
-        // Global cap
-        while db.events.len() > 1000 {
-            db.events.remove(0);
-        }
-
-        self.save_events(&db)?;
-        Ok(())
+        write(&self.data_dir, |c| {
+            store::insert_event(c, &event)?;
+            store::trim_events(c, &event.webhook_name, max_per_webhook)
+        })
     }
 
+    /// Events newest first, optionally for one webhook and limited.
     pub fn get_events(
         &self,
         webhook_name: Option<String>,
         limit: Option<usize>,
     ) -> Result<Vec<WebhookEvent>> {
-        let db = self.load_events()?;
-        let filtered: Vec<WebhookEvent> = if let Some(name) = webhook_name {
-            db.events
-                .iter()
-                .filter(|e| e.webhook_name == name)
-                .cloned()
-                .collect()
-        } else {
-            db.events.clone()
-        };
-
-        if let Some(limit) = limit {
-            Ok(filtered.into_iter().rev().take(limit).collect())
-        } else {
-            Ok(filtered.into_iter().rev().collect())
-        }
+        read(&self.data_dir, |c| {
+            store::recent_events(c, webhook_name.as_deref(), limit)
+        })
     }
 
     pub fn clear_events(&self, webhook_name: Option<String>) -> Result<()> {
-        let mut db = self.load_events()?;
-        if let Some(ref name) = webhook_name {
-            db.events.retain(|e| e.webhook_name != *name);
-        } else {
-            db.events.clear();
-        }
-        self.save_events(&db)?;
+        write(&self.data_dir, |c| {
+            store::clear_events(c, webhook_name.as_deref())
+        })?;
         info!("Cleared events for webhook: {:?}", webhook_name);
         Ok(())
     }
@@ -172,71 +126,74 @@ impl WebhookDatabase {
     /// Give every webhook that has no secret a random one, so existing webhooks
     /// keep working once they are configured in the sender. Returns how many were set.
     pub fn ensure_secrets(&self) -> Result<usize> {
-        let mut db = self.load_webhooks()?;
-        let mut changed = 0;
-        for webhook in db.webhooks.iter_mut() {
-            if webhook.secret.0.is_empty() {
-                webhook.secret = crate::auth::Secret(crate::auth::generate_secret());
-                changed += 1;
+        write(&self.data_dir, |c| {
+            let mut webhooks = store::load_webhooks(c)?;
+            let mut changed = 0;
+            for webhook in webhooks.iter_mut() {
+                if webhook.secret.0.is_empty() {
+                    webhook.secret = crate::auth::Secret(crate::auth::generate_secret());
+                    changed += 1;
+                }
             }
-        }
-        if changed > 0 {
-            self.save_webhooks(&db)?;
-        }
-        Ok(changed)
+            if changed > 0 {
+                store::replace_webhooks(c, &webhooks)?;
+            }
+            Ok(changed)
+        })
     }
 
     pub fn migrate_from_config(
         &self,
         old_webhooks: Vec<crate::config::WebhookConfig>,
     ) -> Result<()> {
-        let mut db = self.load_webhooks()?;
+        write(&self.data_dir, |c| {
+            let mut webhooks = store::load_webhooks(c)?;
 
-        for old_webhook in old_webhooks {
-            // Check if webhook already exists
-            if db
-                .webhooks
-                .iter()
-                .any(|w| w.name == old_webhook.name || w.path == old_webhook.path)
-            {
-                info!(
-                    "Webhook {} already exists, skipping migration",
-                    old_webhook.name
-                );
-                continue;
+            for old_webhook in old_webhooks {
+                // Check if webhook already exists
+                if webhooks
+                    .iter()
+                    .any(|w| w.name == old_webhook.name || w.path == old_webhook.path)
+                {
+                    info!(
+                        "Webhook {} already exists, skipping migration",
+                        old_webhook.name
+                    );
+                    continue;
+                }
+
+                // Convert to enhanced config
+                let enhanced = EnhancedWebhookConfig {
+                    name: old_webhook.name.clone(),
+                    enabled: old_webhook.enabled,
+                    path: old_webhook.path.clone(),
+                    secret: crate::auth::Secret(crate::auth::generate_secret()),
+                    log_events: true,
+                    max_events: 100,
+                    rules: Vec::new(),
+                    default_actions: Vec::new(),
+                    display_on_no_match: true,
+                    // Preserve old display settings
+                    duration_secs: old_webhook.duration_secs as u32,
+                    display_mode: old_webhook.display_mode,
+                    background_color: old_webhook.background_color,
+                    text_color: old_webhook.text_color,
+                    title_field: old_webhook.title_field,
+                    subtitle_field: old_webhook.subtitle_field,
+                    flash: old_webhook.flash,
+                    flash_speed_ms: old_webhook.flash_speed_ms as u32,
+                    icon: old_webhook.icon,
+                    icon_image_url: old_webhook.icon_image_url,
+                    image_url_field: old_webhook.image_url_field,
+                };
+
+                webhooks.push(enhanced);
+                info!("Migrated webhook: {}", old_webhook.name);
             }
 
-            // Convert to enhanced config
-            let enhanced = EnhancedWebhookConfig {
-                name: old_webhook.name.clone(),
-                enabled: old_webhook.enabled,
-                path: old_webhook.path.clone(),
-                secret: crate::auth::Secret(crate::auth::generate_secret()),
-                log_events: true,
-                max_events: 100,
-                rules: Vec::new(),
-                default_actions: Vec::new(),
-                display_on_no_match: true,
-                // Preserve old display settings
-                duration_secs: old_webhook.duration_secs as u32,
-                display_mode: old_webhook.display_mode,
-                background_color: old_webhook.background_color,
-                text_color: old_webhook.text_color,
-                title_field: old_webhook.title_field,
-                subtitle_field: old_webhook.subtitle_field,
-                flash: old_webhook.flash,
-                flash_speed_ms: old_webhook.flash_speed_ms as u32,
-                icon: old_webhook.icon,
-                icon_image_url: old_webhook.icon_image_url,
-                image_url_field: old_webhook.image_url_field,
-            };
-
-            db.webhooks.push(enhanced);
-            info!("Migrated webhook: {}", old_webhook.name);
-        }
-
-        self.save_webhooks(&db)?;
-        info!("Migration completed");
-        Ok(())
+            store::replace_webhooks(c, &webhooks)?;
+            info!("Migration completed");
+            Ok(())
+        })
     }
 }

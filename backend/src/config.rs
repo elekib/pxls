@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -411,53 +409,45 @@ impl Default for Config {
     }
 }
 
+/// Directory holding `pxls.db` and the uploads.
+const DATA_DIR: &str = "/app/data";
+
 impl Config {
     pub fn load() -> anyhow::Result<Self> {
-        // Ensure data directory exists
-        if !Path::new("/app/data").exists() {
-            fs::create_dir_all("/app/data")?;
-        }
-
-        let config_path = "/app/data/config.json";
-        if Path::new(config_path).exists() {
-            let content = fs::read_to_string(config_path)?;
-            let config: Config = serde_json::from_str(&content)?;
-
-            // Migration: If enhanced_webhooks is empty but webhooks exists, migrate to database
-            if config.enhanced_webhooks.is_empty() && !config.webhooks.is_empty() {
-                use crate::database::WebhookDatabase;
-                let db = WebhookDatabase::new("/app/data");
-                if let Err(e) = db.migrate_from_config(config.webhooks.clone()) {
-                    eprintln!("Failed to migrate webhooks to database: {e}");
-                }
-            }
-
-            Ok(config)
-        } else {
-            let config = Config::default();
-            config.save()?;
-            Ok(config)
-        }
+        Self::load_from(DATA_DIR)
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
-        use std::io::Write;
-        use std::os::unix::fs::OpenOptionsExt;
+        self.save_to(DATA_DIR)
+    }
 
-        let content = serde_json::to_string_pretty(self)?;
-        // The file holds credentials: write to a temp file with owner-only
-        // permissions, then rename so a crash can't leave a truncated config.
-        let tmp_path = "/app/data/config.json.tmp";
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(tmp_path)?;
-        file.write_all(content.as_bytes())?;
-        file.sync_all()?;
-        fs::rename(tmp_path, "/app/data/config.json")?;
-        Ok(())
+    /// Load the config from `<data_dir>/pxls.db`, writing the defaults on first run.
+    /// Legacy JSON files are imported by the database on first open.
+    pub(crate) fn load_from(data_dir: &str) -> anyhow::Result<Self> {
+        match crate::database::load_config(data_dir)? {
+            Some(config) => {
+                // Migration: If enhanced_webhooks is empty but webhooks exists, migrate to database
+                if config.enhanced_webhooks.is_empty() && !config.webhooks.is_empty() {
+                    use crate::database::WebhookDatabase;
+                    let db = WebhookDatabase::new(data_dir);
+                    if let Err(e) = db.migrate_from_config(config.webhooks.clone()) {
+                        eprintln!("Failed to migrate webhooks to database: {e}");
+                    }
+                }
+                Ok(config)
+            }
+            None => {
+                let config = Config::default();
+                config.save_to(data_dir)?;
+                Ok(config)
+            }
+        }
+    }
+
+    /// The row holds credentials; the database file is created owner-only.
+    /// The write is a single transaction, so a crash can't leave a partial config.
+    pub(crate) fn save_to(&self, data_dir: &str) -> anyhow::Result<()> {
+        crate::database::save_config(data_dir, self)
     }
 
     pub fn hex_to_rgb(&self, hex: &str) -> [u8; 3] {
