@@ -1,8 +1,9 @@
-//! Authentication for the HTTP API.
+//! Authentication and authorisation for the HTTP API.
 //!
 //! Two independent mechanisms:
-//! - A shared API token (`PXLS_AUTH_TOKEN`) checked as `Authorization: Bearer <token>`
-//!   on every route except the health check and the webhook receiver.
+//! - User accounts: `Authorization: Bearer <access token>` on every route except the
+//!   public ones below (see `accounts.rs` for tokens and sessions, `routes/auth.rs`
+//!   for login). Roles gate what a signed-in user may do.
 //! - A per-webhook secret for the webhook receiver, because senders such as
 //!   Radarr and Sonarr cannot do a login flow.
 
@@ -15,12 +16,12 @@ use axum::{
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-pub const TOKEN_ENV: &str = "PXLS_AUTH_TOKEN";
+use crate::accounts::AuthState;
+use crate::database::accounts::Role;
+
 pub const ORIGINS_ENV: &str = "PXLS_ALLOWED_ORIGINS";
-pub const MIN_TOKEN_LEN: usize = 16;
 pub const MIN_WEBHOOK_SECRET_LEN: usize = 16;
 
 /// A secret string that never prints its value in `Debug` output.
@@ -31,44 +32,6 @@ pub struct Secret(pub String);
 impl fmt::Debug for Secret {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("Secret([redacted])")
-    }
-}
-
-/// The configured API token. Cheap to clone; `Debug` is redacted.
-#[derive(Clone)]
-pub struct AuthConfig {
-    token: Arc<str>,
-}
-
-impl fmt::Debug for AuthConfig {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("AuthConfig { token: [redacted] }")
-    }
-}
-
-impl AuthConfig {
-    pub fn new(token: &str) -> Result<Self, String> {
-        let token = token.trim();
-        if token.is_empty() {
-            return Err(format!("{TOKEN_ENV} is not set"));
-        }
-        if token.len() < MIN_TOKEN_LEN {
-            return Err(format!(
-                "{TOKEN_ENV} must be at least {MIN_TOKEN_LEN} characters long"
-            ));
-        }
-        Ok(Self {
-            token: Arc::from(token),
-        })
-    }
-
-    /// Fails closed: the server must not start without a usable token.
-    pub fn from_env() -> Result<Self, String> {
-        Self::new(&std::env::var(TOKEN_ENV).unwrap_or_default())
-    }
-
-    fn matches(&self, provided: &str) -> bool {
-        constant_time_eq(provided.as_bytes(), self.token.as_bytes())
     }
 }
 
@@ -90,10 +53,42 @@ pub fn generate_secret() -> String {
     )
 }
 
-/// Routes that do not require the API token.
-/// The webhook receiver authenticates with its own per-webhook secret.
-fn is_public_path(path: &str) -> bool {
-    path == "/api/health" || path.starts_with("/api/webhook/")
+/// Routes that need no access token. The webhook receiver authenticates with its
+/// own per-webhook secret; the login-flow routes authenticate with credentials, a
+/// one-time setup code or the refresh cookie.
+pub fn is_public_path(path: &str) -> bool {
+    matches!(
+        path,
+        "/api/health"
+            | "/api/auth/status"
+            | "/api/auth/setup"
+            | "/api/auth/login"
+            | "/api/auth/refresh"
+            | "/api/auth/logout"
+    ) || path.starts_with("/api/webhook/")
+}
+
+/// The least-privileged role allowed to call a (non-public) route.
+///
+/// Viewers get read-only access to status and logs. Anything that changes state,
+/// manages users, or exposes webhook secrets (the webhook definitions) is admin only.
+pub fn required_role(method: &Method, path: &str) -> Role {
+    if path == "/api/users" || path.starts_with("/api/users/") {
+        return Role::Admin;
+    }
+    if path.starts_with("/api/auth/") {
+        return Role::Viewer; // self-service: me, password, own sessions
+    }
+    if method != Method::GET && method != Method::HEAD {
+        return Role::Admin;
+    }
+    if path == "/api/enhanced-webhooks"
+        || path.starts_with("/api/enhanced-webhooks/")
+        || path.starts_with("/api/webhooks/")
+    {
+        return Role::Admin;
+    }
+    Role::Viewer
 }
 
 fn bearer_token(headers: &HeaderMap) -> Option<&str> {
@@ -106,25 +101,31 @@ fn bearer_token(headers: &HeaderMap) -> Option<&str> {
     }
 }
 
-fn unauthorized() -> Response {
-    Response::builder()
-        .status(StatusCode::UNAUTHORIZED)
-        .header(header::CONTENT_TYPE, "application/json")
-        .header(header::WWW_AUTHENTICATE, "Bearer")
-        .body(r#"{"success":false,"error":"Unauthorized"}"#.into())
+fn json_error(status: StatusCode, message: &str) -> Response {
+    let mut b = Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "application/json");
+    if status == StatusCode::UNAUTHORIZED {
+        b = b.header(header::WWW_AUTHENTICATE, "Bearer");
+    }
+    b.body(format!(r#"{{"success":false,"error":"{message}"}}"#).into())
         .unwrap()
 }
 
-/// Axum middleware: require `Authorization: Bearer <PXLS_AUTH_TOKEN>`.
-pub async fn require_token(State(auth): State<AuthConfig>, req: Request, next: Next) -> Response {
+/// Axum middleware: require a valid access token for a live session, then check the role.
+pub async fn require_auth(State(auth): State<AuthState>, mut req: Request, next: Next) -> Response {
     // CORS preflights carry no credentials; the CORS layer answers them.
     if req.method() == Method::OPTIONS || is_public_path(req.uri().path()) {
         return next.run(req).await;
     }
-    match bearer_token(req.headers()) {
-        Some(token) if auth.matches(token) => next.run(req).await,
-        _ => unauthorized(),
+    let Some(user) = bearer_token(req.headers()).and_then(|t| auth.authenticate(t)) else {
+        return json_error(StatusCode::UNAUTHORIZED, "Unauthorized");
+    };
+    if user.user.role < required_role(req.method(), req.uri().path()) {
+        return json_error(StatusCode::FORBIDDEN, "Forbidden");
     }
+    req.extensions_mut().insert(user);
+    next.run(req).await
 }
 
 /// Find the webhook secret a sender supplied. Accepts, in order:
@@ -187,8 +188,19 @@ pub fn cors_for_origins(list: &str) -> CorsLayer {
     }
     CorsLayer::new()
         .allow_origin(AllowOrigin::list(origins))
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+        ])
+        .allow_credentials(true)
+        .allow_headers([
+            header::AUTHORIZATION,
+            header::CONTENT_TYPE,
+            header::HeaderName::from_static("x-requested-with"),
+        ])
 }
 
 #[cfg(test)]
@@ -196,23 +208,32 @@ mod tests {
     use super::*;
     use axum::{middleware, routing::get, routing::post, Router};
 
-    const TOKEN: &str = "0123456789abcdef-test-token";
+    /// Serve the app on a random local port and send one real request.
+    async fn status(method: &str, uri: &str, auth: Option<&str>) -> StatusCode {
+        let (state, _dir) = crate::accounts::test_support::state();
+        status_with(state, method, uri, auth).await
+    }
 
-    fn app() -> Router {
-        let auth = AuthConfig::new(TOKEN).unwrap();
+    fn app(state: AuthState) -> Router {
         Router::new()
             .route("/api/config", get(|| async { "secret data" }))
             .route("/api/health", get(|| async { "ok" }))
             .route("/api/webhook/:name", post(|| async { "hook" }))
             .route("/api/webhook-events", get(|| async { "events" }))
-            .layer(middleware::from_fn_with_state(auth, require_token))
+            .route("/api/enhanced-webhooks", get(|| async { "secrets" }))
+            .route("/api/users", get(|| async { "users" }))
+            .layer(middleware::from_fn_with_state(state, require_auth))
     }
 
-    /// Serve the app on a random local port and send one real request.
-    async fn status(method: &str, uri: &str, auth: Option<&str>) -> StatusCode {
+    async fn status_with(
+        state: AuthState,
+        method: &str,
+        uri: &str,
+        auth: Option<&str>,
+    ) -> StatusCode {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
-        tokio::spawn(async move { axum::serve(listener, app()).await.unwrap() });
+        tokio::spawn(async move { axum::serve(listener, app(state)).await.unwrap() });
 
         let mut req =
             reqwest::Client::new().request(method.parse().unwrap(), format!("http://{addr}{uri}"));
@@ -224,41 +245,52 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn missing_token_is_rejected() {
+    async fn missing_or_malformed_token_is_rejected() {
         assert_eq!(
             status("GET", "/api/config", None).await,
             StatusCode::UNAUTHORIZED
         );
+        for bad in [
+            "Bearer ",
+            "Bearer nonsense",
+            "nonsense",
+            "Basic abc",
+            "Bearer a.b.c",
+        ] {
+            assert_eq!(
+                status("GET", "/api/config", Some(bad)).await,
+                StatusCode::UNAUTHORIZED,
+                "{bad}"
+            );
+        }
     }
 
     #[tokio::test]
-    async fn wrong_token_is_rejected() {
-        let wrong = "Bearer 0123456789abcdef-wrong-token";
+    async fn valid_token_is_accepted_and_roles_are_enforced() {
+        let (state, _dir) = crate::accounts::test_support::state();
+        let admin = crate::accounts::test_support::login_as(&state, "admin1", Role::Admin).await;
+        let viewer = crate::accounts::test_support::login_as(&state, "viewer1", Role::Viewer).await;
+        let ab = format!("Bearer {admin}");
+        let vb = format!("bearer {viewer}");
+        for (who, uri, want) in [
+            (&ab, "/api/config", StatusCode::OK),
+            (&ab, "/api/enhanced-webhooks", StatusCode::OK),
+            (&ab, "/api/users", StatusCode::OK),
+            (&vb, "/api/config", StatusCode::OK),
+            (&vb, "/api/webhook-events", StatusCode::OK),
+            (&vb, "/api/enhanced-webhooks", StatusCode::FORBIDDEN),
+            (&vb, "/api/users", StatusCode::FORBIDDEN),
+        ] {
+            assert_eq!(
+                status_with(state.clone(), "GET", uri, Some(who)).await,
+                want,
+                "{uri}"
+            );
+        }
+        // Viewers cannot change state.
         assert_eq!(
-            status("GET", "/api/config", Some(wrong)).await,
-            StatusCode::UNAUTHORIZED
-        );
-        assert_eq!(
-            status("GET", "/api/config", Some("Bearer ")).await,
-            StatusCode::UNAUTHORIZED
-        );
-        assert_eq!(
-            status("GET", "/api/config", Some(TOKEN)).await,
-            StatusCode::UNAUTHORIZED
-        );
-    }
-
-    #[tokio::test]
-    async fn correct_token_is_accepted() {
-        let ok = format!("Bearer {TOKEN}");
-        assert_eq!(
-            status("GET", "/api/config", Some(&ok)).await,
-            StatusCode::OK
-        );
-        let lower = format!("bearer {TOKEN}");
-        assert_eq!(
-            status("GET", "/api/config", Some(&lower)).await,
-            StatusCode::OK
+            status_with(state, "POST", "/api/config", Some(&vb)).await,
+            StatusCode::FORBIDDEN
         );
     }
 
@@ -281,16 +313,36 @@ mod tests {
     }
 
     #[test]
-    fn token_must_be_set_and_long_enough() {
-        assert!(AuthConfig::new("").is_err());
-        assert!(AuthConfig::new("   ").is_err());
-        assert!(AuthConfig::new("short").is_err());
-        assert!(AuthConfig::new(TOKEN).is_ok());
+    fn role_policy() {
+        assert_eq!(required_role(&Method::GET, "/api/config"), Role::Viewer);
+        assert_eq!(required_role(&Method::POST, "/api/config"), Role::Admin);
+        assert_eq!(
+            required_role(&Method::GET, "/api/uploads/a.png"),
+            Role::Viewer
+        );
+        assert_eq!(
+            required_role(&Method::GET, "/api/enhanced-webhooks"),
+            Role::Admin
+        );
+        assert_eq!(
+            required_role(&Method::GET, "/api/webhooks/x/rules"),
+            Role::Admin
+        );
+        assert_eq!(required_role(&Method::GET, "/api/users"), Role::Admin);
+        assert_eq!(
+            required_role(&Method::POST, "/api/auth/password"),
+            Role::Viewer
+        );
+        assert_eq!(
+            required_role(&Method::POST, "/api/webhook-events/clear-all"),
+            Role::Admin
+        );
     }
 
     #[test]
     fn secrets_are_redacted_in_debug() {
-        assert!(!format!("{:?}", AuthConfig::new(TOKEN).unwrap()).contains(TOKEN));
+        let (state, _dir) = crate::accounts::test_support::state();
+        assert!(!format!("{:?}", state).contains("0123456789abcdef"));
         assert!(!format!("{:?}", Secret("hunter2-hunter2-xx".into())).contains("hunter2"));
     }
 

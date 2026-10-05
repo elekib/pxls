@@ -1,5 +1,18 @@
-import { apiFetch, AUTH_REQUIRED_EVENT, clearToken, getToken } from './auth';
+import {
+  apiFetch,
+  AUTH_REQUIRED_EVENT,
+  FORBIDDEN_EVENT,
+  endLocalSession,
+  fetchAuthStatus,
+  logout,
+  onUserChange,
+  refreshSession,
+  type User,
+} from './auth';
 import { LoginScreen } from './components/LoginScreen';
+import { SetupScreen } from './components/SetupScreen';
+import { AccountPage } from './pages/AccountPage';
+import { UsersPage } from './pages/UsersPage';
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { Sidebar } from './components/Sidebar';
@@ -9,16 +22,18 @@ import { PagesPage } from './pages/PagesPage';
 import { ToolsPage } from './pages/ToolsPage';
 import { WebhooksPage } from './pages/WebhooksPage';
 import { WebhookEventsPage } from './pages/WebhookEventsPage';
-import type { Config, Notification } from './types';
+import type { Config, Notification, Tab } from './types';
 import { API_URL } from './types';
 import horizontalLogo from './assets/logo/pxls_logo.svg';
 
 function App() {
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authed, setAuthed] = useState(() => getToken() !== null);
-  const [expired, setExpired] = useState(false);
-  const [activeTab, setActiveTab] = useState<'device' | 'pages' | 'tools' | 'webhooks' | 'webhook_events'>('device');
+  const [user, setUser] = useState<User | null>(null);
+  // 'checking' until we know whether a session exists and whether first-run setup is needed.
+  const [boot, setBoot] = useState<'checking' | 'setup' | 'login' | 'error'>('checking');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('device');
   const [notification, setNotification] = useState<Notification | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -41,36 +56,68 @@ function App() {
   }, [showNotification]);
 
   useEffect(() => {
-    const onAuthRequired = () => {
-      setExpired(true);
-      setAuthed(false);
-    };
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await fetchAuthStatus();
+        if (cancelled) return;
+        if (status.setup_required) {
+          setBoot('setup');
+          return;
+        }
+        await refreshSession();
+        if (!cancelled) setBoot('login');
+      } catch {
+        if (!cancelled) setBoot('error');
+      }
+    })();
+    const off = onUserChange((u) => {
+      setUser(u);
+      if (u) {
+        setNotice(null);
+        setLoading(true);
+      } else {
+        setConfig(null);
+      }
+    });
+    const onAuthRequired = () => setNotice('Your session expired. Please sign in again.');
+    const onForbidden = () => showNotification('Your account is read-only. Ask an admin for changes.', 'error');
     window.addEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
-    return () => window.removeEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
-  }, []);
+    window.addEventListener(FORBIDDEN_EVENT, onForbidden);
+    return () => {
+      cancelled = true;
+      off();
+      window.removeEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
+      window.removeEventListener(FORBIDDEN_EVENT, onForbidden);
+    };
+  }, [showNotification]);
 
   useEffect(() => {
-    if (authed) loadConfig();
-  }, [authed, loadConfig]);
+    if (user) loadConfig();
+  }, [user, loadConfig]);
+
+  // Land on a tab this role can use (viewers have no Webhooks or Users pages).
+  useEffect(() => {
+    if (user?.role !== 'admin' && (activeTab === 'users' || activeTab === 'webhooks')) setActiveTab('device');
+  }, [user, activeTab]);
 
   const signOut = () => {
-    clearToken();
-    setConfig(null);
-    setExpired(false);
-    setAuthed(false);
+    void logout();
   };
 
-  if (!authed) {
-    return (
-      <LoginScreen
-        expired={expired}
-        onSuccess={() => {
-          setExpired(false);
-          setLoading(true);
-          setAuthed(true);
-        }}
-      />
-    );
+  if (!user) {
+    if (boot === 'checking') {
+      return <div className="flex items-center justify-center min-h-screen bg-gray-900 text-gray-400 text-lg">Loading...</div>;
+    }
+    if (boot === 'error') {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-gray-300 gap-3 p-4 text-center">
+          <p>Could not reach the pxls server.</p>
+          <button className="px-4 py-2 bg-cyan-600 rounded-lg" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      );
+    }
+    return boot === 'setup' ? <SetupScreen /> : <LoginScreen notice={notice} />;
   }
 
   if (loading) {
@@ -88,7 +135,7 @@ function App() {
       )}
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
-        <Sidebar config={config} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={signOut} />
+        <Sidebar config={config} activeTab={activeTab} onTabChange={setActiveTab} user={user} onSignOut={signOut} />
       </div>
       
       {/* Mobile Sidebar Overlay */}
@@ -111,6 +158,7 @@ function App() {
             setSidebarOpen(false);
           }}
           onClose={() => setSidebarOpen(false)}
+          user={user}
           onSignOut={signOut}
         />
       </div>
@@ -145,10 +193,21 @@ function App() {
         {activeTab === 'webhook_events' && (
           <WebhookEventsPage onNotify={showNotification} />
         )}
+        {activeTab === 'account' && (
+          <AccountPage
+            user={user}
+            onNotify={showNotification}
+            onPasswordChanged={() => {
+              endLocalSession();
+              setNotice('Password changed. Sign in again with the new password.');
+            }}
+          />
+        )}
+        {activeTab === 'users' && user.role === 'admin' && <UsersPage me={user} onNotify={showNotification} />}
       </main>
       
       {/* Mobile Bottom Navigation */}
-      <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <MobileNav activeTab={activeTab} onTabChange={setActiveTab} isAdmin={user.role === 'admin'} />
     </div>
   );
 }

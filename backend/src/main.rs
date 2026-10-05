@@ -1,15 +1,10 @@
-use axum::{
-    extract::DefaultBodyLimit,
-    middleware,
-    routing::{delete, get, post, put},
-    Router,
-};
 use std::net::SocketAddr;
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 use tracing::info;
 
+mod accounts;
 mod actions;
 mod auth;
 mod config;
@@ -67,16 +62,21 @@ async fn main() {
 
     info!("Starting pxls backend");
 
-    // Fail closed: never serve an unauthenticated API.
-    let auth_config = match auth::AuthConfig::from_env() {
-        Ok(auth) => auth,
+    if std::env::var("PXLS_AUTH_TOKEN").is_ok_and(|v| !v.trim().is_empty()) {
+        tracing::warn!(
+            "PXLS_AUTH_TOKEN is set but no longer used: pxls now has user accounts. Remove it from .env."
+        );
+    }
+
+    // Fail closed: the API only works with a user account behind it.
+    let auth_state = match database::accounts::AccountsDb::open(std::path::Path::new("/app/data"))
+        .map_err(|e| e.to_string())
+        .and_then(|db| {
+            accounts::AuthState::init(db, &std::env::var(auth::ORIGINS_ENV).unwrap_or_default())
+        }) {
+        Ok(a) => a,
         Err(e) => {
-            tracing::error!(
-                "Refusing to start: {}. Set {} to a random value of at least {} characters.",
-                e,
-                auth::TOKEN_ENV,
-                auth::MIN_TOKEN_LEN
-            );
+            tracing::error!("Refusing to start: could not set up authentication: {}", e);
             std::process::exit(1);
         }
     };
@@ -143,117 +143,17 @@ async fn main() {
         );
     });
 
-    let cors = auth::cors_from_env();
-
-    let app = Router::new()
-        .route(
-            "/api/config",
-            get(routes::config::get_config).post(routes::config::update_config),
-        )
-        .route("/api/beszel/status", get(routes::beszel::auth_status))
-        .route("/api/beszel/test-login", post(routes::beszel::test_login))
-        .route("/api/connect", post(routes::device::connect_device))
-        .route("/api/disconnect", post(routes::device::disconnect_device))
-        .route(
-            "/api/connection-status",
-            get(routes::device::connection_status),
-        )
-        .route(
-            "/api/device-config",
-            post(routes::device::update_device_config),
-        )
-        .route(
-            "/api/upload",
-            post(routes::upload::upload_file).layer(DefaultBodyLimit::max(
-                image_guard::MAX_UPLOAD_BYTES + 64 * 1024,
-            )),
-        )
-        .route("/api/uploads/:filename", get(routes::upload::serve_file))
-        .route("/api/health", get(routes::health::health_check))
-        .route("/api/buzzer", post(routes::tools::play_buzzer))
-        .route("/api/countdown", post(routes::tools::start_countdown))
-        .route(
-            "/api/sound-detector",
-            post(routes::tools::start_sound_detector),
-        )
-        .route("/api/scoreboard", post(routes::tools::set_scoreboard))
-        .route("/api/stop-tool", post(routes::tools::stop_tool))
-        .route("/api/webhook/:name", post(routes::webhooks::handle_webhook))
-        .route(
-            "/api/webhook-events",
-            get(routes::webhook_events::get_webhook_events),
-        )
-        .route(
-            "/api/webhook-events/clear/:webhook_name",
-            post(routes::webhook_events::clear_webhook_events),
-        )
-        .route(
-            "/api/webhook-events/clear-all",
-            post(routes::webhook_events::clear_all_webhook_events),
-        )
-        .route(
-            "/api/webhook-events/summary",
-            get(routes::webhook_events::get_webhook_events_summary),
-        )
-        .route(
-            "/api/webhook-events/:event_id/replay",
-            post(routes::webhook_events::replay_webhook_event),
-        )
-        .route(
-            "/api/enhanced-webhooks",
-            get(routes::enhanced_webhooks::get_enhanced_webhooks),
-        )
-        .route(
-            "/api/enhanced-webhooks",
-            post(routes::enhanced_webhooks::create_enhanced_webhook),
-        )
-        .route(
-            "/api/enhanced-webhooks/:name",
-            get(routes::enhanced_webhooks::get_enhanced_webhook),
-        )
-        .route(
-            "/api/enhanced-webhooks/:name",
-            put(routes::enhanced_webhooks::update_enhanced_webhook),
-        )
-        .route(
-            "/api/enhanced-webhooks/:name",
-            delete(routes::enhanced_webhooks::delete_enhanced_webhook),
-        )
-        .route(
-            "/api/webhooks/:name/rules",
-            get(routes::webhook_rules::get_webhook_rules),
-        )
-        .route(
-            "/api/webhooks/:name/rules",
-            post(routes::webhook_rules::create_webhook_rule),
-        )
-        .route(
-            "/api/webhooks/:name/rules/test",
-            post(routes::webhook_rules::test_webhook_rules),
-        )
-        .route(
-            "/api/webhooks/:name/rules-order",
-            put(routes::webhook_rules::reorder_webhook_rules),
-        )
-        .route(
-            "/api/webhooks/:name/rules/:rule_id",
-            put(routes::webhook_rules::update_webhook_rule),
-        )
-        .route(
-            "/api/webhooks/:name/rules/:rule_id",
-            delete(routes::webhook_rules::delete_webhook_rule),
-        )
-        .layer(middleware::from_fn_with_state(
-            auth_config,
-            auth::require_token,
-        ))
-        .layer(cors)
-        .with_state(state);
+    let app = routes::build_app(state, auth_state, auth::cors_from_env());
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3400));
     info!("Backend API server running on http://{}", addr);
     info!("Display engine running in background...");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }

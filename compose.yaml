@@ -1,5 +1,5 @@
 # Run pxls from the published images:
-#   cp .env.example .env   # set PXLS_AUTH_TOKEN and TZ
+#   cp .env.example .env   # set TZ
 #   docker compose up -d
 # To build from source instead, add the build overlay (see compose.build.yaml).
 services:

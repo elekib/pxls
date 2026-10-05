@@ -1,3 +1,12 @@
+export type Tab =
+  | 'device'
+  | 'pages'
+  | 'tools'
+  | 'webhooks'
+  | 'webhook_events'
+  | 'account'
+  | 'users';
+
 export interface Config {
   pixoo_mac: string;
   weather_location: string;
