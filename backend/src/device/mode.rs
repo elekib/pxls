@@ -5,6 +5,9 @@
 //! `45 06` (scoreboard) with their arguments. Needs device test on Pixoo:
 //! the mapping of the app's "special" mode to `45 03`, "music" to `45 04`,
 //! and the layout of `45 05` ("user") are inferred, not documented.
+//!
+//! Music mode indexes were corrected from device observation (not from a
+//! document): the order below is what the display actually shows.
 
 pub const CMD_MODE: u8 = 0x45;
 
@@ -14,6 +17,9 @@ const CH_EFFECTS: u8 = 0x03;
 const CH_MUSIC: u8 = 0x04;
 const CH_USER: u8 = 0x05;
 const CH_SCORE: u8 = 0x06;
+
+/// The scoreboard shows 0-999.
+pub const MAX_SCORE: u16 = 999;
 
 /// Brightness, 0-100 percent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,16 +67,16 @@ pub enum LightEffectMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MusicMode {
     BottomBars = 0,
-    CenterBars = 1,
-    SideBars = 2,
+    Face3 = 1,
+    CenterBars = 2,
     Face1 = 3,
-    Face2 = 4,
-    Face3 = 5,
-    FrogFace = 6,
-    Matrix = 7,
+    Matrix = 4,
+    FrogFace = 5,
+    SideBars = 6,
+    Face2 = 7,
     FallingBlocks = 8,
-    Fireworks = 9,
-    DancingBoy = 10,
+    DancingBoy = 9,
+    Fireworks = 10,
     DancingGirl = 11,
 }
 
@@ -103,8 +109,8 @@ pub enum LightMode {
         mode: MusicMode,
     },
     Score {
-        red_score: u8,
-        blue_score: u8,
+        red_score: u16,
+        blue_score: u16,
     },
 }
 
@@ -159,8 +165,8 @@ impl LightMode {
                 red_score,
                 blue_score,
             } => {
-                let r = (red_score as u16).to_le_bytes();
-                let b = (blue_score as u16).to_le_bytes();
+                let r = red_score.min(MAX_SCORE).to_le_bytes();
+                let b = blue_score.min(MAX_SCORE).to_le_bytes();
                 vec![CH_SCORE, 0x00, r[0], r[1], b[0], b[1]]
             }
         }

@@ -15,6 +15,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Login throttling with temporary lockout per username and per IP, identical error messages for unknown users and wrong passwords, and `pxls::security` log events that never contain credentials or tokens.
 - Web UI: username/password login, silent token refresh, session-expiry handling, an Account page (change password, manage sessions) and an admin Users page (create, disable, delete, reset passwords, change roles).
 - Database migration `0002_users_sessions` (users, sessions, login attempts). Optional `PXLS_JWT_SECRET` and `PXLS_COOKIE_SECURE`.
+- Admin-only Diagnostics page (`PXLS_ENABLE_DEBUG=1`) that sends raw commands to the connected device and sweeps values, for testing hardware. Backed by `POST /api/debug/send` (admin only, off by default; the display loop is paused while probing).
 
 ### Changed
 - The project is now called pxls.
@@ -28,6 +29,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - The Bluetooth link is now closed on drop and by an explicit `disconnect()`. Before, the `drop(pixoo)` calls after countdown, sound detector and scoreboard did nothing.
 - The 12/24 hour setting is not sent to the device until its command is confirmed. The buzzer no longer also switches to the scoreboard channel. The timer tool supports start and stop only.
 - `command_tester` and `library_tool_test` use the new driver.
+- Scoreboard scores accept 0-999 (were 0-99) in the config, `/api/tools/scoreboard` and the web UI.
 
 ### Security
 - Uploads are validated by content, size and dimensions, stored under sanitized names and served only from the uploads directory.

@@ -241,9 +241,32 @@ mod tests {
         );
         assert_eq!(
             m(MusicMode::Fireworks),
-            [0x01, 0x05, 0x00, 0x45, 0x04, 0x09, 0x57, 0x00, 0x02]
+            [0x01, 0x05, 0x00, 0x45, 0x04, 0x0A, 0x58, 0x00, 0x02]
         );
         assert_eq!(MusicMode::DancingGirl as u8, 11);
+    }
+
+    #[test]
+    fn music_modes_match_observed_device_order() {
+        use MusicMode::*;
+        // Observed on a real Pixoo: index -> mode the display shows.
+        let order = [
+            BottomBars,
+            Face3,
+            CenterBars,
+            Face1,
+            Matrix,
+            FrogFace,
+            SideBars,
+            Face2,
+            FallingBlocks,
+            DancingBoy,
+            Fireworks,
+            DancingGirl,
+        ];
+        for (i, m) in order.into_iter().enumerate() {
+            assert_eq!(m as usize, i);
+        }
     }
 
     #[test]
@@ -265,6 +288,36 @@ mod tests {
             pkt,
             [0x01, 0x09, 0x00, 0x45, 0x06, 0x00, 0x0C, 0x00, 0x22, 0x00, 0x82, 0x00, 0x02]
         );
+    }
+
+    #[test]
+    fn score_mode_supports_999_and_clamps() {
+        let s = |r, b| {
+            one(|p| {
+                p.set_mode(LightMode::Score {
+                    red_score: r,
+                    blue_score: b,
+                })
+                .unwrap()
+            })
+        };
+        // 999 = 0x03E7, little-endian E7 03
+        let p = s(999, 999);
+        assert_eq!(&p[5..10], [0x00, 0xE7, 0x03, 0xE7, 0x03]);
+        assert_eq!(s(5000, 5000), p);
+    }
+
+    #[test]
+    fn score_tool_clamps_to_999() {
+        let pkt = one(|p| {
+            p.set_tool_info(ToolInfo::Score {
+                on: true,
+                red_score: 1000,
+                blue_score: 999,
+            })
+            .unwrap()
+        });
+        assert_eq!(&pkt[5..9], [0xE7, 0x03, 0xE7, 0x03]);
     }
 
     #[test]

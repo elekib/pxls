@@ -157,8 +157,8 @@ impl PixooWrapper {
     /// loop's reconnect would race this connection and override the display.
     pub fn set_scoreboard(
         &mut self,
-        red_score: u8,
-        blue_score: u8,
+        red_score: u16,
+        blue_score: u16,
     ) -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!(
             "Setting scoreboard via tool API: Red={}, Blue={}",
@@ -177,12 +177,11 @@ impl PixooWrapper {
         tracing::info!("Connected, sending scoreboard tool command");
 
         // Use the tool API (0x50) with on=true so the device runs the scoreboard
-        // tool independently. Scores are u8 (0-99) promoted to u16 as the tool API
-        // expects.
+        // tool independently. Scores are 0-999 (clamped by the driver).
         pixoo.set_tool_info(ToolInfo::Score {
             on: true,
-            red_score: red_score as u16,
-            blue_score: blue_score as u16,
+            red_score,
+            blue_score,
         })?;
 
         tracing::info!(

@@ -60,11 +60,13 @@ Notes:
 
 - **Clock `TT`:** 0 digital, 1 rainbow, 2 box, 3 analog 1, 4 inverted, 5 analog 2. Byte 3 of the clock args (`01`) is "fixed" in the write-up; it might be a 24h flag. The app's `show_divoom` flag has no known byte and is ignored.
 - **Light effect:** 0 normal, 1 rainbow ("love" in the write-up), 2 plants, 3 fly ("no mosquito"), 4 sleep.
-- **Music `TT`:** 0 bottom bars, 1 center bars, 2 side bars, 3 face 1, 4 face 2, 5 face 3, 6 frog face, 7 matrix, 8 falling blocks, 9 fireworks, 10 dancing boy, 11 dancing girl. The order is our own; the write-up only says "see image".
+- **Music `TT`** (observed on a real Pixoo, not documented): 0 bottom bars, 1 face 3, 2 center bars, 3 face 1, 4 matrix, 5 frog face, 6 side bars, 7 face 2, 8 falling blocks, 9 dancing boy, 10 fireworks, 11 dancing girl.
 - **Time format:** no command is documented anywhere we looked. `Pixoo::set_time_format` sends nothing until `CMD_TIME_FORMAT` in `backend/src/device/mod.rs` is set after a device test. The 12/24h setting therefore has no effect for now.
 - **Buzzer:** an earlier implementation also sent `0x45 06 00` after the buzzer. The scoreboard channel is `06`, so that was removed. Other buzzer layouts (4 and 6 byte, big-endian) were tried historically; the 2-byte little-endian form is what pxls sent before and is kept.
 - **Stopwatch pause/reset** are not documented and not implemented.
 - **Tool layouts:** the old notes' example packets for tools had lengths that did not match their arguments; the argument lists above are used, framed as in the table above.
+- **Score range:** 0-999 (the driver clamps larger values), confirmed by the public write-up and a device observation that 99 was too low.
+- **Special mode:** observed on a real Pixoo: `45 03 TT` is ignored (the display stays on the previous screen) for all four app values, so channel `03` with these values is wrong for this device. Probe with the admin Diagnostics page (below) or `command_tester` option 9: sweep `45 <channel> <value>` starting from solid red so an ignored command is obvious, try channels `02` and `03`, and record results here.
 - **Scoreboard:** mode `0x45 06` and tool `0x50` are different things. The app uses the tool for `/api/tools/scoreboard`, because the device keeps running it on its own.
 
 ### Image upload (`0x44`)
@@ -96,6 +98,10 @@ Quick raw test (documented brightness, 50%):
 ```bash
 echo -ne '\x01\x04\x00\x74\x32\xAA\x00\x02' > /dev/rfcomm0
 ```
+
+## Diagnostics page (admin only)
+
+Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart the backend; admins then get a **Diagnostics** tab. It sends a raw command (framing and checksum added) through the connected device, can show solid red first so ignored commands are obvious, steps through a value range, and keeps a log with notes you can copy. After each send the display loop is paused for two minutes. The endpoint (`POST /api/debug/send`) is admin only and returns 403 while the flag is off. Turn the flag off again when you are done.
 
 ## Device test checklist
 

@@ -195,10 +195,10 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
       setRedScore(0);
       setBlueScore(0);
     } else if (team === 'red') {
-      newRed = Math.max(0, Math.min(99, newRed + delta));
+      newRed = Math.max(0, Math.min(999, newRed + delta));
       setRedScore(newRed);
     } else if (team === 'blue') {
-      newBlue = Math.max(0, Math.min(99, newBlue + delta));
+      newBlue = Math.max(0, Math.min(999, newBlue + delta));
       setBlueScore(newBlue);
     }
 

@@ -44,6 +44,7 @@ fn main() {
             "6" => test_tool_commands(&bt_addr),
             "7" => scan_commands(&bt_addr),
             "8" => raw_send(&bt_addr),
+            "9" => probe_modes(&bt_addr),
             "0" => {
                 println!("Exiting...");
                 break;
@@ -65,6 +66,7 @@ fn print_menu() {
     println!("│  6. Tool Commands            - Test tools (timer, etc)      │");
     println!("│  7. Command Scan             - Auto-scan command range      │");
     println!("│  8. Raw Send (No Encode)     - Send exact bytes, no framing │");
+    println!("│  9. Mode Probe               - Sweep 0x45 channel/value     │");
     println!("│  0. Exit                                                   │");
     println!("└─────────────────────────────────────────────────────────────┘");
 }
@@ -283,6 +285,59 @@ fn test_mode_commands(bt_addr: &BtAddr) {
     let payload = encode_pixoo_cmd(0x45, &[mode_val, 0x00]);
 
     send_and_receive(bt_addr, &payload, Duration::from_millis(1000));
+}
+
+/// Sweep `45 <channel> <value>` and record what the display shows. Before each
+/// probe the display is set to solid red (light mode) so a command that is
+/// ignored is obvious: the screen stays red.
+fn probe_modes(bt_addr: &BtAddr) {
+    println!("\n--- Mode Probe ---");
+    let ch = prompt_input("Channel byte (hex) [03]: ");
+    let channel = u8::from_str_radix(ch.trim().trim_start_matches("0x"), 16).unwrap_or(0x03);
+    let lo = prompt_input("First value [0]: ")
+        .trim()
+        .parse::<u8>()
+        .unwrap_or(0);
+    let hi = prompt_input("Last value [15]: ")
+        .trim()
+        .parse::<u8>()
+        .unwrap_or(15);
+    let with_value = prompt_input("Send a value byte? (n = channel only) [y]: ");
+    let with_value = with_value.trim().to_lowercase() != "n";
+
+    let red = encode_pixoo_cmd(
+        0x45,
+        &[0x01, 0xFF, 0x00, 0x00, 0x32, 0x00, 0x01, 0x00, 0x00, 0x00],
+    );
+    let mut log: Vec<(u8, String)> = Vec::new();
+
+    for v in lo..=hi {
+        send_and_receive(bt_addr, &red, Duration::from_millis(300));
+        thread::sleep(Duration::from_millis(800));
+
+        let args: Vec<u8> = if with_value {
+            vec![channel, v]
+        } else {
+            vec![channel]
+        };
+        let payload = encode_pixoo_cmd(0x45, &args);
+        println!("\n45 {channel:02X} {v:02X}: {}", bytes_to_hex(&payload));
+        send_and_receive(bt_addr, &payload, Duration::from_millis(300));
+
+        let seen = prompt_input("What does the display show? (text, 'q' to stop): ");
+        if seen.trim() == "q" {
+            break;
+        }
+        log.push((v, seen.trim().to_string()));
+        if !with_value {
+            break;
+        }
+    }
+
+    println!("\n--- Results for channel 0x{channel:02X} ---");
+    for (v, seen) in log {
+        println!("  value {v:>3} (0x{v:02X}): {seen}");
+    }
 }
 
 fn test_tool_commands(bt_addr: &BtAddr) {

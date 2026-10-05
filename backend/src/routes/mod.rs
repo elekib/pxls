@@ -1,6 +1,7 @@
 pub mod account;
 pub mod beszel;
 pub mod config;
+pub mod debug;
 pub mod device;
 pub mod enhanced_webhooks;
 pub mod health;
@@ -60,6 +61,8 @@ fn api_routes() -> Router<AppState> {
         )
         .route("/api/scoreboard", post(self::tools::set_scoreboard))
         .route("/api/stop-tool", post(self::tools::stop_tool))
+        .route("/api/debug/status", get(self::debug::status))
+        .route("/api/debug/send", post(self::debug::send))
         .route("/api/webhook/:name", post(self::webhooks::handle_webhook))
         .route(
             "/api/webhook-events",

@@ -13,6 +13,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { SetupScreen } from './components/SetupScreen';
 import { AccountPage } from './pages/AccountPage';
 import { UsersPage } from './pages/UsersPage';
+import { DiagnosticsPage } from './pages/DiagnosticsPage';
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { Sidebar } from './components/Sidebar';
@@ -98,7 +99,7 @@ function App() {
 
   // Land on a tab this role can use (viewers have no Webhooks or Users pages).
   useEffect(() => {
-    if (user?.role !== 'admin' && (activeTab === 'users' || activeTab === 'webhooks')) setActiveTab('device');
+    if (user?.role !== 'admin' && (activeTab === 'users' || activeTab === 'webhooks' || activeTab === 'diagnostics')) setActiveTab('device');
   }, [user, activeTab]);
 
   const signOut = () => {
@@ -204,6 +205,7 @@ function App() {
           />
         )}
         {activeTab === 'users' && user.role === 'admin' && <UsersPage me={user} onNotify={showNotification} />}
+        {activeTab === 'diagnostics' && user.role === 'admin' && <DiagnosticsPage onNotify={showNotification} />}
       </main>
       
       {/* Mobile Bottom Navigation */}

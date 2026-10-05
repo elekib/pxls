@@ -552,7 +552,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Red Score (0-99)</label>
+                <label className="block text-gray-400 text-sm mb-2">Red Score (0-999)</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -565,13 +565,13 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
                       const num = parseInt(val) || 0;
                       setDeviceConfig(prev => ({
                         ...prev,
-                        score_config: { ...prev.score_config, red_score: Math.min(99, Math.max(0, num)) }
+                        score_config: { ...prev.score_config, red_score: Math.min(999, Math.max(0, num)) }
                       }));
                     }
                   }}
                   onBlur={(e: FocusEvent<HTMLInputElement>) => {
                     const num = parseInt(e.target.value) || 0;
-                    const clamped = Math.min(99, Math.max(0, num));
+                    const clamped = Math.min(999, Math.max(0, num));
                     setDeviceConfig(prev => ({
                       ...prev,
                       score_config: { ...prev.score_config, red_score: clamped }
@@ -582,7 +582,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Blue Score (0-99)</label>
+                <label className="block text-gray-400 text-sm mb-2">Blue Score (0-999)</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -595,13 +595,13 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
                       const num = parseInt(val) || 0;
                       setDeviceConfig(prev => ({
                         ...prev,
-                        score_config: { ...prev.score_config, blue_score: Math.min(99, Math.max(0, num)) }
+                        score_config: { ...prev.score_config, blue_score: Math.min(999, Math.max(0, num)) }
                       }));
                     }
                   }}
                   onBlur={(e: FocusEvent<HTMLInputElement>) => {
                     const num = parseInt(e.target.value) || 0;
-                    const clamped = Math.min(99, Math.max(0, num));
+                    const clamped = Math.min(999, Math.max(0, num));
                     setDeviceConfig(prev => ({
                       ...prev,
                       score_config: { ...prev.score_config, blue_score: clamped }

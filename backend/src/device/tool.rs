@@ -87,8 +87,8 @@ impl ToolInfo {
                 red_score,
                 blue_score,
             } => {
-                let r = red_score.to_le_bytes();
-                let b = blue_score.to_le_bytes();
+                let r = red_score.min(super::mode::MAX_SCORE).to_le_bytes();
+                let b = blue_score.min(super::mode::MAX_SCORE).to_le_bytes();
                 (CMD_SCORE_TOOL, vec![u8::from(on), r[0], r[1], b[0], b[1]])
             }
         }
