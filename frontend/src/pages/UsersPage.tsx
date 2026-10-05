@@ -72,8 +72,8 @@ export function UsersPage({ me, onNotify }: Props) {
           <input className={`${inputClass} flex-1 min-w-[10rem]`} placeholder="Username" autoComplete="off" autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} />
           <input className={`${inputClass} flex-1 min-w-[12rem]`} type="password" autoComplete="new-password" placeholder="Password (12+ characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
           <select className={inputClass} value={role} onChange={(e) => setRole(e.target.value as Role)}>
-            <option value="viewer">Viewer (read-only)</option>
             <option value="admin">Admin</option>
+            <option value="viewer">Viewer (read-only)</option>
           </select>
           <button type="submit" disabled={!username.trim() || password.length < 12} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-lg font-medium">
             Create

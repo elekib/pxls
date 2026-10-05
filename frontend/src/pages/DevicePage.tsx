@@ -270,10 +270,10 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
             <option value="custom">Custom Pages</option>
             <option value="env">Environment Mode</option>
             <option value="light">Light Mode</option>
-            <option value="special">Special Mode</option>
             <option value="music">Music Mode</option>
-            <option value="user">User Mode</option>
             <option value="score">Score Mode</option>
+            <option value="special">Special Mode</option>
+            <option value="user">User Mode</option>
           </select>
           <p className="text-gray-500 text-sm mt-2">
             {deviceConfig.light_mode === 'custom' 
@@ -329,12 +329,12 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
                 }))}
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-green-400"
               >
-                <option value="digital">Digital</option>
-                <option value="digital_rainbow">Digital Rainbow</option>
-                <option value="digital_box">Digital Box</option>
                 <option value="analog1">Analog 1</option>
-                <option value="digital_inverted">Digital Inverted</option>
                 <option value="analog2">Analog 2</option>
+                <option value="digital">Digital</option>
+                <option value="digital_box">Digital Box</option>
+                <option value="digital_inverted">Digital Inverted</option>
+                <option value="digital_rainbow">Digital Rainbow</option>
               </select>
             </div>
 
@@ -465,10 +465,10 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
                 }))}
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-yellow-400"
               >
-                <option value="0">Normal</option>
-                <option value="1">Rainbow</option>
-                <option value="2">Plants</option>
                 <option value="3">Fly</option>
+                <option value="0">Normal</option>
+                <option value="2">Plants</option>
+                <option value="1">Rainbow</option>
                 <option value="4">Sleep</option>
               </select>
             </div>
@@ -504,9 +504,9 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
                 }))}
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-red-400"
               >
+                <option value="breath">Breath</option>
                 <option value="default">Default</option>
                 <option value="sparkle">Sparkle</option>
-                <option value="breath">Breath</option>
                 <option value="wave">Wave</option>
               </select>
             </div>
@@ -530,16 +530,16 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
               >
                 <option value="bottom_bars">Bottom Bars</option>
                 <option value="center_bars">Center Bars</option>
-                <option value="side_bars">Side Bars</option>
+                <option value="dancing_boy">Dancing Boy</option>
+                <option value="dancing_girl">Dancing Girl</option>
                 <option value="face1">Face 1</option>
                 <option value="face2">Face 2</option>
                 <option value="face3">Face 3</option>
-                <option value="frog_face">Frog Face</option>
-                <option value="matrix">Matrix</option>
                 <option value="falling_blocks">Falling Blocks</option>
                 <option value="fireworks">Fireworks</option>
-                <option value="dancing_boy">Dancing Boy</option>
-                <option value="dancing_girl">Dancing Girl</option>
+                <option value="frog_face">Frog Face</option>
+                <option value="matrix">Matrix</option>
+                <option value="side_bars">Side Bars</option>
               </select>
             </div>
             <p className="text-gray-400 text-sm">Music visualization reacts to ambient sound</p>

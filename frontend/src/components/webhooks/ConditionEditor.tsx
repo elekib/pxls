@@ -1,6 +1,7 @@
 import { OPERATORS, OPERATORS_WITHOUT_VALUE } from '../../webhooks/schema';
 import type { Condition, ConditionOperator } from '../../webhooks/types';
 import { compactInputClass } from './ui';
+import { sortAlpha } from '../../utils/sort';
 
 interface Props {
   condition: Condition;
@@ -30,7 +31,7 @@ export function ConditionEditor({ condition, onChange, onRemove, fieldListId }: 
           onChange={(e) => onChange({ ...condition, operator: e.target.value as ConditionOperator })}
           className={`sm:col-span-3 ${compactInputClass}`}
         >
-          {OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+          {sortAlpha(OPERATORS, (op) => op.label).map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
         </select>
         {needsValue ? (
           <input
