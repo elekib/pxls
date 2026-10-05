@@ -45,15 +45,19 @@ impl ImageUploadPage {
             }
         };
 
-        let full_path = format!("/app/data/uploads/{}", path);
-
-        if !Path::new(&full_path).exists() {
-            warn!("Uploaded file not found: {}", full_path);
-            let mut img = DynamicImage::new_rgba8(16, 16);
-            Renderer::clear_screen(&mut img);
-            Renderer::draw_text(&mut img, "?", 7, 6, [255, 0, 0], 0);
-            return Ok(img);
-        }
+        let full_path = match crate::image_guard::resolve_upload_path(
+            Path::new(crate::routes::upload::UPLOADS_DIR),
+            path,
+        ) {
+            Some(p) => p.to_string_lossy().into_owned(),
+            None => {
+                warn!("Uploaded file not found or invalid: {}", path);
+                let mut img = DynamicImage::new_rgba8(16, 16);
+                Renderer::clear_screen(&mut img);
+                Renderer::draw_text(&mut img, "?", 7, 6, [255, 0, 0], 0);
+                return Ok(img);
+            }
+        };
 
         // Check if this is a GIF and animated mode
         let is_gif = path.to_lowercase().ends_with(".gif");

@@ -248,7 +248,7 @@ Use the `command_tester` utility to experiment:
 
 ```bash
 cd backend
-cargo run --bin command_tester
+cargo run --example command_tester
 ```
 
 ### Recommended Testing Workflow

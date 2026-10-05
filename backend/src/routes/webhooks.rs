@@ -1,8 +1,8 @@
 use axum::{
-    extract::{Path, State},
-    Json,
+    body::Bytes,
+    extract::{Path, RawQuery, State},
     response::Response,
-    http::{StatusCode, header},
+    http::{HeaderMap, StatusCode, header},
 };
 use serde_json::{json, Value};
 use tracing::{info, warn, instrument};
@@ -43,12 +43,46 @@ impl WebhookOutcome {
     }
 }
 
-#[instrument(skip(state, payload))]
+fn json_error(status: StatusCode, message: &str) -> Response {
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(json!({ "success": false, "error": message }).to_string().into())
+        .unwrap()
+}
+
+/// Receive a webhook from an external sender. The sender authenticates with the
+/// webhook's own secret; unknown webhooks and wrong secrets get the same 401 so
+/// callers cannot probe which webhook names exist.
+#[instrument(skip(state, headers, query, body))]
 pub async fn handle_webhook(
     State(state): State<AppState>,
     Path(name): Path<String>,
-    Json(payload): Json<Value>,
+    headers: HeaderMap,
+    RawQuery(query): RawQuery,
+    body: Bytes,
 ) -> Response {
+    let provided = crate::auth::extract_webhook_secret(&headers, query.as_deref());
+    let authorized = match state.webhook_database.load_webhooks() {
+        Ok(db) => db
+            .webhooks
+            .iter()
+            .find(|w| w.path == name || w.name == name)
+            .map_or(false, |w| crate::auth::webhook_secret_ok(&w.secret, provided.as_deref())),
+        Err(e) => {
+            warn!("Failed to load webhooks for authentication: {}", e);
+            false
+        }
+    };
+    if !authorized {
+        warn!(webhook_name = %name, "Rejected webhook: unknown webhook or missing/invalid secret");
+        return json_error(StatusCode::UNAUTHORIZED, "Unauthorized");
+    }
+
+    let payload: Value = match serde_json::from_slice(&body) {
+        Ok(v) => v,
+        Err(_) => return json_error(StatusCode::BAD_REQUEST, "Request body must be valid JSON"),
+    };
     info!(webhook_name = %name, "Received webhook");
     ingest_webhook(&state, &name, payload).await
 }
@@ -255,5 +289,105 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
             outcome.error = Some(outcome.message.clone());
             outcome
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::actions::ActionExecutor;
+    use crate::config::Config;
+    use crate::database::WebhookDatabase;
+    use crate::notification::NotificationManager;
+    use crate::pixoo_wrapper::PixooWrapper;
+    use crate::token_manager::TokenManager;
+    use crate::webhook_image_processor::WebhookImageProcessor;
+    use axum::{routing::post, Router};
+    use base64::Engine;
+    use std::sync::{atomic::AtomicBool, Arc, Mutex};
+    use std::time::Instant;
+
+    const SECRET: &str = "0123456789abcdef0123456789abcdef";
+
+    /// Serve the real webhook receiver on a random port with one disabled webhook
+    /// ("radarr"), so a request that passes authentication returns without touching a device.
+    async fn serve() -> (String, std::path::PathBuf) {
+        let dir = std::env::temp_dir().join(format!("pxls-webhook-test-{}", Uuid::new_v4().simple()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let webhook = json!({
+            "name": "radarr", "enabled": false, "path": "radarr", "secret": SECRET,
+            "log_events": false, "max_events": 10, "rules": [], "default_actions": [],
+            "duration_secs": 5, "display_mode": "icon_only", "background_color": "FF0000",
+            "text_color": "FFFFFF", "title_field": "title", "subtitle_field": "subtitle",
+            "flash": false, "flash_speed_ms": 500, "icon": "x", "icon_image_url": "",
+            "image_url_field": ""
+        });
+        std::fs::write(
+            dir.join("webhooks.json"),
+            json!({ "webhooks": [webhook] }).to_string(),
+        )
+        .unwrap();
+
+        let config = Arc::new(Mutex::new(Config::default()));
+        let pixoo = Arc::new(Mutex::new(PixooWrapper::new()));
+        let notification_manager = NotificationManager::new();
+        let processor = Arc::new(tokio::sync::Mutex::new(WebhookImageProcessor::new()));
+        let state = crate::AppState {
+            config: config.clone(),
+            pixoo: pixoo.clone(),
+            should_reconnect: Arc::new(AtomicBool::new(false)),
+            manual_disconnect: Arc::new(AtomicBool::new(false)),
+            tool_active_until: Arc::new(Mutex::new(Instant::now())),
+            active_tool_type: Arc::new(Mutex::new(None)),
+            notification_manager: notification_manager.clone(),
+            webhook_image_processor: processor.clone(),
+            webhook_database: Arc::new(WebhookDatabase::new(dir.to_str().unwrap())),
+            action_executor: Arc::new(ActionExecutor::new(notification_manager, processor, pixoo)),
+            token_manager: Arc::new(TokenManager::new(config)),
+        };
+        let app = Router::new()
+            .route("/api/webhook/:name", post(handle_webhook))
+            .with_state(state);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        (base, dir)
+    }
+
+    async fn post_status(url: String, headers: &[(&str, String)], body: &str) -> u16 {
+        let mut req = reqwest::Client::new()
+            .post(url)
+            .header("content-type", "application/json")
+            .body(body.to_string());
+        for (k, v) in headers {
+            req = req.header(*k, v);
+        }
+        req.send().await.unwrap().status().as_u16()
+    }
+
+    #[tokio::test]
+    async fn webhook_requires_the_webhook_secret() {
+        let (base, dir) = serve().await;
+        let url = format!("{}/api/webhook/radarr", base);
+        let body = r#"{"eventType":"Download"}"#;
+
+        // No secret, wrong secret, and an unknown webhook are all the same 401.
+        assert_eq!(post_status(url.clone(), &[], body).await, 401);
+        assert_eq!(post_status(url.clone(), &[("x-webhook-secret", "wrong".into())], body).await, 401);
+        assert_eq!(post_status(format!("{}?secret=wrong", url), &[], body).await, 401);
+        assert_eq!(
+            post_status(format!("{}/api/webhook/nope", base), &[("x-webhook-secret", SECRET.into())], body).await,
+            401
+        );
+
+        // Correct secret by header, query string and Basic auth passes authentication.
+        assert_eq!(post_status(url.clone(), &[("x-webhook-secret", SECRET.into())], body).await, 200);
+        assert_eq!(post_status(format!("{}?secret={}", url, SECRET), &[], body).await, 200);
+        let basic = base64::engine::general_purpose::STANDARD.encode(format!("radarr:{}", SECRET));
+        assert_eq!(post_status(url.clone(), &[("authorization", format!("Basic {}", basic))], body).await, 200);
+
+        // Authenticated but not JSON.
+        assert_eq!(post_status(url, &[("x-webhook-secret", SECRET.into())], "not json").await, 400);
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

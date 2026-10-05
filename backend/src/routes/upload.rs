@@ -1,144 +1,104 @@
 use axum::{
-    extract::Path as AxumPath,
-    extract::Multipart,
-    response::Response,
-    http::{StatusCode, header},
     body::Body,
+    extract::Multipart,
+    extract::Path as AxumPath,
+    http::{header, StatusCode},
+    response::Response,
 };
-use serde_json::json;
-use tracing::instrument;
+use serde_json::{json, Value};
+use std::path::Path;
+use tracing::{instrument, warn};
 
-#[instrument]
+use crate::image_guard::{
+    content_type_for, resolve_upload_path, sanitize_stem, validate_image_bytes, MAX_UPLOAD_BYTES,
+};
+
+pub const UPLOADS_DIR: &str = "/app/data/uploads";
+
+fn json_response(status: StatusCode, body: Value) -> Response {
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(body.to_string().into())
+        .unwrap()
+}
+
+fn error_response(status: StatusCode, message: &str) -> Response {
+    json_response(status, json!({ "error": message }))
+}
+
+#[instrument(skip(multipart))]
 pub async fn upload_file(mut multipart: Multipart) -> Response {
-    let uploads_dir = "/app/data/uploads";
-    if !std::path::Path::new(uploads_dir).exists() {
-        if let Err(e) = tokio::fs::create_dir_all(uploads_dir).await {
-            let error = json!({"error": format!("Failed to create uploads directory: {}", e)});
-            return Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header(header::CONTENT_TYPE, "application/json")
-                .body(error.to_string().into())
-                .unwrap();
-        }
+    if let Err(e) = tokio::fs::create_dir_all(UPLOADS_DIR).await {
+        warn!("Failed to create uploads directory: {}", e);
+        return error_response(StatusCode::INTERNAL_SERVER_ERROR, "Failed to create uploads directory");
     }
 
-    while let Ok(Some(mut field)) = multipart.next_field().await {
-        let name = field.name().unwrap_or("unknown").to_string();
-        let filename = field.file_name().unwrap_or("upload").to_string();
-        
+    while let Ok(Some(field)) = multipart.next_field().await {
+        let original_name = field.file_name().unwrap_or("upload").to_string();
+
+        let data = match field.bytes().await {
+            Ok(data) => data,
+            Err(_) => return error_response(StatusCode::BAD_REQUEST, "Failed to read file (too large or malformed)"),
+        };
+        if data.len() > MAX_UPLOAD_BYTES {
+            return error_response(StatusCode::BAD_REQUEST, "File too large (max 5MB)");
+        }
+
+        // Trust the content, not the client-supplied name or extension.
+        let ext = match validate_image_bytes(&data) {
+            Ok(ext) => ext,
+            Err(msg) => return error_response(StatusCode::BAD_REQUEST, &msg),
+        };
+
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let safe_filename = format!("{}_{}", timestamp, filename.replace(' ', "_"));
-        let filepath = format!("{}/{}", uploads_dir, safe_filename);
-        
-        match field.bytes().await {
-            Ok(data) => {
-                // Validate file size (max 5MB)
-                if data.len() > 5 * 1024 * 1024 {
-                    let error = json!({"error": "File too large (max 5MB)"});
-                    return Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .header(header::CONTENT_TYPE, "application/json")
-                        .body(error.to_string().into())
-                        .unwrap();
-                }
-                
-                // Validate file type
-                let is_valid = filename.ends_with(".png") 
-                    || filename.ends_with(".jpg") 
-                    || filename.ends_with(".jpeg")
-                    || filename.ends_with(".gif")
-                    || filename.ends_with(".bmp")
-                    || filename.ends_with(".webp");
-                
-                if !is_valid {
-                    let error = json!({"error": "Invalid file type. Allowed: PNG, JPG, JPEG, GIF, BMP, WEBP"});
-                    return Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .header(header::CONTENT_TYPE, "application/json")
-                        .body(error.to_string().into())
-                        .unwrap();
-                }
-                
-                // Write file
-                match tokio::fs::write(&filepath, &data).await {
-                    Ok(_) => {
-                        let success = json!({
-                            "success": true,
-                            "filename": safe_filename,
-                            "original_name": filename,
-                            "size": data.len()
-                        });
-                        return Response::builder()
-                            .status(StatusCode::OK)
-                            .header(header::CONTENT_TYPE, "application/json")
-                            .body(success.to_string().into())
-                            .unwrap();
-                    }
-                    Err(e) => {
-                        let error = json!({"error": format!("Failed to save file: {}", e)});
-                        return Response::builder()
-                            .status(StatusCode::INTERNAL_SERVER_ERROR)
-                            .header(header::CONTENT_TYPE, "application/json")
-                            .body(error.to_string().into())
-                            .unwrap();
-                    }
-                }
-            }
+        let unique = &uuid::Uuid::new_v4().simple().to_string()[..8];
+        let stored_name = format!("{}_{}_{}.{}", timestamp, unique, sanitize_stem(&original_name), ext);
+        let filepath = Path::new(UPLOADS_DIR).join(&stored_name);
+
+        return match tokio::fs::write(&filepath, &data).await {
+            Ok(_) => json_response(
+                StatusCode::OK,
+                json!({
+                    "success": true,
+                    "filename": stored_name,
+                    "original_name": original_name,
+                    "size": data.len()
+                }),
+            ),
             Err(e) => {
-                let error = json!({"error": format!("Failed to read file: {}", e)});
-                return Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(error.to_string().into())
-                    .unwrap();
+                warn!("Failed to save upload: {}", e);
+                error_response(StatusCode::INTERNAL_SERVER_ERROR, "Failed to save file")
             }
-        }
+        };
     }
-    
-    let error = json!({"error": "No file uploaded"});
-    Response::builder()
-        .status(StatusCode::BAD_REQUEST)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(error.to_string().into())
-        .unwrap()
+
+    error_response(StatusCode::BAD_REQUEST, "No file uploaded")
 }
 
 #[instrument]
 pub async fn serve_file(AxumPath(filename): AxumPath<String>) -> Response {
-    let filepath = format!("/app/data/uploads/{}", filename);
-    
-    match tokio::fs::read(&filepath).await {
-        Ok(data) => {
-            let content_type = if filename.ends_with(".png") {
-                "image/png"
-            } else if filename.ends_with(".jpg") || filename.ends_with(".jpeg") {
-                "image/jpeg"
-            } else if filename.ends_with(".gif") {
-                "image/gif"
-            } else if filename.ends_with(".bmp") {
-                "image/bmp"
-            } else if filename.ends_with(".webp") {
-                "image/webp"
-            } else {
-                "application/octet-stream"
-            };
-            
-            Response::builder()
-                .status(StatusCode::OK)
-                .header(header::CONTENT_TYPE, content_type)
-                .body(Body::from(data))
-                .unwrap()
-        }
-        Err(_) => {
-            let error = json!({"error": "File not found"});
-            Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header(header::CONTENT_TYPE, "application/json")
-                .body(error.to_string().into())
-                .unwrap()
-        }
+    let not_found = || error_response(StatusCode::NOT_FOUND, "File not found");
+
+    let content_type = match content_type_for(&filename) {
+        Some(ct) => ct,
+        None => return not_found(),
+    };
+    let path = match resolve_upload_path(Path::new(UPLOADS_DIR), &filename) {
+        Some(p) => p,
+        None => return not_found(),
+    };
+    match tokio::fs::read(&path).await {
+        Ok(data) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, content_type)
+            .header(header::X_CONTENT_TYPE_OPTIONS, "nosniff")
+            .header(header::CACHE_CONTROL, "private, max-age=3600")
+            .body(Body::from(data))
+            .unwrap(),
+        Err(_) => not_found(),
     }
 }

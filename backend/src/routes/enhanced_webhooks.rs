@@ -134,6 +134,12 @@ pub async fn create_enhanced_webhook(
         name,
         enabled: payload.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),
         path,
+        secret: crate::auth::Secret(
+            str_field(&payload, "secret")
+                .filter(|s| s.len() >= crate::auth::MIN_WEBHOOK_SECRET_LEN)
+                .map(str::to_string)
+                .unwrap_or_else(crate::auth::generate_secret),
+        ),
         log_events: payload.get("log_events").and_then(|v| v.as_bool()).unwrap_or(true),
         max_events: payload.get("max_events").and_then(|v| v.as_u64()).unwrap_or(100) as usize,
         rules,
@@ -220,6 +226,13 @@ pub async fn update_enhanced_webhook(
     if let Some(v) = str_field(&payload, "path") {
         if !v.trim().is_empty() {
             webhook.path = v.to_string();
+        }
+    }
+    if payload.get("regenerate_secret").and_then(|v| v.as_bool()) == Some(true) {
+        webhook.secret = crate::auth::Secret(crate::auth::generate_secret());
+    } else if let Some(v) = str_field(&payload, "secret") {
+        if v.len() >= crate::auth::MIN_WEBHOOK_SECRET_LEN {
+            webhook.secret = crate::auth::Secret(v.to_string());
         }
     }
     if let Some(v) = payload.get("enabled").and_then(|v| v.as_bool()) {

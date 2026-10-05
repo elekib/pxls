@@ -1508,33 +1508,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pxls_backend"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64 0.21.7",
- "bluetooth-serial-port",
- "chrono",
- "dotenvy",
- "hex",
- "image",
- "once_cell",
- "pixoo",
- "reqwest",
- "serde",
- "serde_json",
- "sysinfo",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "ureq",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
 name = "png"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1621,6 +1594,33 @@ name = "pxfm"
 version = "0.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea"
+
+[[package]]
+name = "pxls_backend"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.21.7",
+ "bluetooth-serial-port",
+ "chrono",
+ "dotenvy",
+ "hex",
+ "image",
+ "once_cell",
+ "pixoo",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "ureq",
+ "urlencoding",
+ "uuid",
+]
 
 [[package]]
 name = "qoi"

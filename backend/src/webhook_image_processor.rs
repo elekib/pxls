@@ -9,12 +9,15 @@ use crate::webhook_enhanced::{WebhookAction, ActionType};
 
 pub struct WebhookImageProcessor {
     image_cache: HashMap<String, RgbaImage>,
+    /// Allow fetching images from private/LAN addresses (`PXLS_ALLOW_PRIVATE_URLS`).
+    allow_private_urls: bool,
 }
 
 impl WebhookImageProcessor {
     pub fn new() -> Self {
         Self {
             image_cache: HashMap::new(),
+            allow_private_urls: crate::net_guard::allow_private_from_env(),
         }
     }
 
@@ -59,11 +62,10 @@ impl WebhookImageProcessor {
     async fn download_and_process_image(&mut self, url: &str, action: &WebhookAction) -> Result<RgbaImage> {
         info!("Downloading image from URL: {}", url);
         
-        let response = reqwest::get(url).await
+        let image_bytes = crate::net_guard::fetch_image_bytes(url, self.allow_private_urls).await
             .map_err(|e| anyhow!("Failed to download image: {}", e))?;
-
-        let image_bytes = response.bytes().await
-            .map_err(|e| anyhow!("Failed to read image bytes: {}", e))?;
+        crate::image_guard::validate_image_bytes(&image_bytes)
+            .map_err(|e| anyhow!("Rejected downloaded image: {}", e))?;
 
         let img = image::load_from_memory(&image_bytes)
             .map_err(|e| anyhow!("Failed to parse image: {}", e))?;
@@ -190,11 +192,10 @@ impl WebhookImageProcessor {
             .ok_or_else(|| anyhow!("Missing base_image_url parameter"))?;
 
         // Download base image
-        let response = reqwest::get(base_image_url).await
+        let image_bytes = crate::net_guard::fetch_image_bytes(base_image_url, self.allow_private_urls).await
             .map_err(|e| anyhow!("Failed to download base image: {}", e))?;
-
-        let image_bytes = response.bytes().await
-            .map_err(|e| anyhow!("Failed to read base image bytes: {}", e))?;
+        crate::image_guard::validate_image_bytes(&image_bytes)
+            .map_err(|e| anyhow!("Rejected base image: {}", e))?;
 
         let mut img = image::load_from_memory(&image_bytes)
             .map_err(|e| anyhow!("Failed to parse base image: {}", e))?

@@ -1,4 +1,6 @@
 use axum::{
+    extract::DefaultBodyLimit,
+    middleware,
     routing::{get, post, put, delete},
     Router,
 };
@@ -6,10 +8,12 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, atomic::AtomicBool};
 use std::thread;
 use std::time::Instant;
-use tower_http::cors::CorsLayer;
 use tracing::info;
 
+mod auth;
 mod config;
+mod image_guard;
+mod net_guard;
 mod pixoo_wrapper;
 mod font;
 mod renderer;
@@ -61,7 +65,19 @@ async fn main() {
         .with_level(true)
         .init();
 
-    info!("Starting Pixoo Backend");
+    info!("Starting pxls backend");
+
+    // Fail closed: never serve an unauthenticated API.
+    let auth_config = match auth::AuthConfig::from_env() {
+        Ok(auth) => auth,
+        Err(e) => {
+            tracing::error!(
+                "Refusing to start: {}. Set {} to a random value of at least {} characters.",
+                e, auth::TOKEN_ENV, auth::MIN_TOKEN_LEN
+            );
+            std::process::exit(1);
+        }
+    };
     
     let config = Config::load().unwrap_or_default();
     let config = Arc::new(Mutex::new(config));
@@ -76,6 +92,11 @@ async fn main() {
     let notification_manager = NotificationManager::new();
     let webhook_image_processor = Arc::new(tokio::sync::Mutex::new(WebhookImageProcessor::new()));
     let webhook_database = Arc::new(WebhookDatabase::new("/app/data"));
+    match webhook_database.ensure_secrets() {
+        Ok(0) => {}
+        Ok(n) => info!("Generated a secret for {} webhook(s); view it on the Webhooks page", n),
+        Err(e) => tracing::warn!("Could not ensure webhook secrets: {}", e),
+    }
     let action_executor = Arc::new(ActionExecutor::new(
         notification_manager.clone(),
         webhook_image_processor.clone(),
@@ -109,7 +130,7 @@ async fn main() {
         rendering_loop(render_pixoo, render_config, render_reconnect, render_manual_disconnect, render_tool_active, render_notification_manager, render_token_manager);
     });
 
-    let cors = CorsLayer::permissive();
+    let cors = auth::cors_from_env();
     
     let app = Router::new()
         .route("/api/config", get(routes::config::get_config).post(routes::config::update_config))
@@ -119,7 +140,11 @@ async fn main() {
         .route("/api/disconnect", post(routes::device::disconnect_device))
         .route("/api/connection-status", get(routes::device::connection_status))
         .route("/api/device-config", post(routes::device::update_device_config))
-        .route("/api/upload", post(routes::upload::upload_file))
+        .route(
+            "/api/upload",
+            post(routes::upload::upload_file)
+                .layer(DefaultBodyLimit::max(image_guard::MAX_UPLOAD_BYTES + 64 * 1024)),
+        )
         .route("/api/uploads/:filename", get(routes::upload::serve_file))
         .route("/api/health", get(routes::health::health_check))
         .route("/api/buzzer", post(routes::tools::play_buzzer))
@@ -144,6 +169,7 @@ async fn main() {
         .route("/api/webhooks/:name/rules-order", put(routes::webhook_rules::reorder_webhook_rules))
         .route("/api/webhooks/:name/rules/:rule_id", put(routes::webhook_rules::update_webhook_rule))
         .route("/api/webhooks/:name/rules/:rule_id", delete(routes::webhook_rules::delete_webhook_rule))
+        .layer(middleware::from_fn_with_state(auth_config, auth::require_token))
         .layer(cors)
         .with_state(state);
     

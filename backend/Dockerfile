@@ -21,11 +21,5 @@ COPY src ./src
 # Build the application
 RUN cargo build --release
 
-# Build command tester utility
-RUN cargo build --release --bin command_tester
-
-# Build library tool test utility
-RUN cargo build --release --bin library_tool_test
-
 # Run the backend API server
 CMD ["./target/release/pxls_backend"]

@@ -112,6 +112,9 @@ pub struct EnhancedWebhookConfig {
     pub name: String,
     pub enabled: bool,
     pub path: String,
+    /// Shared secret the sender must present (header, Basic auth password or `?secret=`).
+    #[serde(default)]
+    pub secret: crate::auth::Secret,
     pub log_events: bool,
     pub max_events: usize,
     pub rules: Vec<WebhookRule>, // Full rule objects, not just names

@@ -163,6 +163,23 @@ impl WebhookDatabase {
         Ok(())
     }
 
+    /// Give every webhook that has no secret a random one, so existing webhooks
+    /// keep working once they are configured in the sender. Returns how many were set.
+    pub fn ensure_secrets(&self) -> Result<usize> {
+        let mut db = self.load_webhooks()?;
+        let mut changed = 0;
+        for webhook in db.webhooks.iter_mut() {
+            if webhook.secret.0.is_empty() {
+                webhook.secret = crate::auth::Secret(crate::auth::generate_secret());
+                changed += 1;
+            }
+        }
+        if changed > 0 {
+            self.save_webhooks(&db)?;
+        }
+        Ok(changed)
+    }
+
     pub fn migrate_from_config(&self, old_webhooks: Vec<crate::config::WebhookConfig>) -> Result<()> {
         let mut db = self.load_webhooks()?;
         
@@ -178,6 +195,7 @@ impl WebhookDatabase {
                 name: old_webhook.name.clone(),
                 enabled: old_webhook.enabled,
                 path: old_webhook.path.clone(),
+                secret: crate::auth::Secret(crate::auth::generate_secret()),
                 log_events: true,
                 max_events: 100,
                 rules: Vec::new(),
