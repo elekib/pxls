@@ -9,7 +9,11 @@ permissions:
   packages: write
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   images:
+    needs: ci
     uses: ./.github/workflows/build-images.yml
     with:
       release: true
