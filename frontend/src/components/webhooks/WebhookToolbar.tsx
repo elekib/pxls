@@ -3,6 +3,7 @@ import { SERVICE_PRESETS } from '../../webhooks/schema';
 import type { Webhook } from '../../webhooks/types';
 import type { useWebhooks } from '../../webhooks/useWebhooks';
 import { btn } from './ui';
+import { sortAlpha } from '../../utils/sort';
 
 type Store = ReturnType<typeof useWebhooks>;
 type Notify = (message: string, type?: 'success' | 'error') => void;
@@ -48,7 +49,7 @@ export function WebhookToolbar({ store, onNotify }: { store: Store; onNotify: No
       >
         <option value="">+ Add webhook…</option>
         <option value="blank">Blank webhook</option>
-        {SERVICE_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label} preset</option>)}
+        {sortAlpha(SERVICE_PRESETS, (p) => p.label).map((p) => <option key={p.id} value={p.id}>{p.label} preset</option>)}
       </select>
       <button onClick={exportAll} disabled={store.webhooks.length === 0} className={btn.secondary}>Export</button>
       <button onClick={() => fileRef.current?.click()} disabled={store.busy} className={btn.secondary}>Import</button>

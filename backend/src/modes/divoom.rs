@@ -1,7 +1,4 @@
-use pixoo::{
-    mode::{LightMode, TimeFormat},
-    Brightness, Pixoo,
-};
+use crate::device::{Brightness, LightMode, Pixoo, TimeFormat};
 use tracing::info;
 
 use crate::config::{CustomPage, DeviceConfig, PageType};
@@ -31,13 +28,13 @@ pub fn apply_divoom_mode_from_config(
             };
 
             let cd = match env_config.clock_design.as_str() {
-                "digital" => pixoo::mode::ClockDesign::Digital,
-                "digital_rainbow" => pixoo::mode::ClockDesign::DigitalRainbow,
-                "digital_box" => pixoo::mode::ClockDesign::DigitalBox,
-                "analog1" => pixoo::mode::ClockDesign::Analog1,
-                "digital_inverted" => pixoo::mode::ClockDesign::DigitalInverted,
-                "analog2" => pixoo::mode::ClockDesign::Analog2,
-                _ => pixoo::mode::ClockDesign::Digital,
+                "digital" => crate::device::mode::ClockDesign::Digital,
+                "digital_rainbow" => crate::device::mode::ClockDesign::DigitalRainbow,
+                "digital_box" => crate::device::mode::ClockDesign::DigitalBox,
+                "analog1" => crate::device::mode::ClockDesign::Analog1,
+                "digital_inverted" => crate::device::mode::ClockDesign::DigitalInverted,
+                "analog2" => crate::device::mode::ClockDesign::Analog2,
+                _ => crate::device::mode::ClockDesign::Digital,
             };
 
             let light_mode = LightMode::Env {
@@ -53,28 +50,15 @@ pub fn apply_divoom_mode_from_config(
         }
         "light" => {
             let light_config = &device_config.light_config;
-            let brightness_value = (light_config.brightness as f32 / 100.0 * 255.0) as u8;
-            let brightness = match Brightness::new(brightness_value) {
-                Some(b) => b,
-                None => {
-                    tracing::warn!(brightness_value, "Invalid brightness value, trying 50");
-                    Brightness::new(50).unwrap_or_else(|| {
-                        tracing::warn!("Invalid brightness value 50, trying 25");
-                        Brightness::new(25).unwrap_or_else(|| {
-                            tracing::warn!("Using minimum brightness 1");
-                            Brightness::new(1).unwrap()
-                        })
-                    })
-                }
-            };
+            let brightness = Brightness::from_percent(light_config.brightness);
 
             let effect_mode = match light_config.effect_mode {
-                0 => pixoo::mode::LightEffectMode::Normal,
-                1 => pixoo::mode::LightEffectMode::Rainbow,
-                2 => pixoo::mode::LightEffectMode::Plants,
-                3 => pixoo::mode::LightEffectMode::Fly,
-                4 => pixoo::mode::LightEffectMode::Sleep,
-                _ => pixoo::mode::LightEffectMode::Normal,
+                0 => crate::device::mode::LightEffectMode::Normal,
+                1 => crate::device::mode::LightEffectMode::Rainbow,
+                2 => crate::device::mode::LightEffectMode::Plants,
+                3 => crate::device::mode::LightEffectMode::Fly,
+                4 => crate::device::mode::LightEffectMode::Sleep,
+                _ => crate::device::mode::LightEffectMode::Normal,
             };
 
             let light_mode = LightMode::Light {
@@ -110,19 +94,19 @@ pub fn apply_divoom_mode_from_config(
         "music" => {
             let music_config = &device_config.music_config;
             let music_mode = match music_config.mode.as_str() {
-                "bottom_bars" => pixoo::mode::MusicMode::BottomBars,
-                "center_bars" => pixoo::mode::MusicMode::CenterBars,
-                "side_bars" => pixoo::mode::MusicMode::SideBars,
-                "face1" => pixoo::mode::MusicMode::Face1,
-                "face2" => pixoo::mode::MusicMode::Face2,
-                "face3" => pixoo::mode::MusicMode::Face3,
-                "frog_face" => pixoo::mode::MusicMode::FrogFace,
-                "matrix" => pixoo::mode::MusicMode::Matrix,
-                "falling_blocks" => pixoo::mode::MusicMode::FallingBlocks,
-                "fireworks" => pixoo::mode::MusicMode::Fireworks,
-                "dancing_boy" => pixoo::mode::MusicMode::DancingBoy,
-                "dancing_girl" => pixoo::mode::MusicMode::DancingGirl,
-                _ => pixoo::mode::MusicMode::BottomBars,
+                "bottom_bars" => crate::device::mode::MusicMode::BottomBars,
+                "center_bars" => crate::device::mode::MusicMode::CenterBars,
+                "side_bars" => crate::device::mode::MusicMode::SideBars,
+                "face1" => crate::device::mode::MusicMode::Face1,
+                "face2" => crate::device::mode::MusicMode::Face2,
+                "face3" => crate::device::mode::MusicMode::Face3,
+                "frog_face" => crate::device::mode::MusicMode::FrogFace,
+                "matrix" => crate::device::mode::MusicMode::Matrix,
+                "falling_blocks" => crate::device::mode::MusicMode::FallingBlocks,
+                "fireworks" => crate::device::mode::MusicMode::Fireworks,
+                "dancing_boy" => crate::device::mode::MusicMode::DancingBoy,
+                "dancing_girl" => crate::device::mode::MusicMode::DancingGirl,
+                _ => crate::device::mode::MusicMode::BottomBars,
             };
             let light_mode = LightMode::Music { mode: music_mode };
             pixoo.set_mode(light_mode)?;
@@ -168,13 +152,13 @@ pub fn apply_divoom_mode(
             };
 
             let cd = match clock_design.as_str() {
-                "digital" => pixoo::mode::ClockDesign::Digital,
-                "digital_rainbow" => pixoo::mode::ClockDesign::DigitalRainbow,
-                "digital_box" => pixoo::mode::ClockDesign::DigitalBox,
-                "analog1" => pixoo::mode::ClockDesign::Analog1,
-                "digital_inverted" => pixoo::mode::ClockDesign::DigitalInverted,
-                "analog2" => pixoo::mode::ClockDesign::Analog2,
-                _ => pixoo::mode::ClockDesign::Digital,
+                "digital" => crate::device::mode::ClockDesign::Digital,
+                "digital_rainbow" => crate::device::mode::ClockDesign::DigitalRainbow,
+                "digital_box" => crate::device::mode::ClockDesign::DigitalBox,
+                "analog1" => crate::device::mode::ClockDesign::Analog1,
+                "digital_inverted" => crate::device::mode::ClockDesign::DigitalInverted,
+                "analog2" => crate::device::mode::ClockDesign::Analog2,
+                _ => crate::device::mode::ClockDesign::Digital,
             };
 
             let light_mode = LightMode::Env {
@@ -194,28 +178,15 @@ pub fn apply_divoom_mode(
             effect_mode,
             on,
         } => {
-            let brightness_value = (*brightness as f32 / 100.0 * 255.0) as u8;
-            let bounded = match Brightness::new(brightness_value) {
-                Some(b) => b,
-                None => {
-                    tracing::warn!(brightness_value, "Invalid light page brightness, trying 50");
-                    Brightness::new(50).unwrap_or_else(|| {
-                        tracing::warn!("Invalid brightness value 50, trying 25");
-                        Brightness::new(25).unwrap_or_else(|| {
-                            tracing::warn!("Using minimum brightness 1");
-                            Brightness::new(1).unwrap()
-                        })
-                    })
-                }
-            };
+            let bounded = Brightness::from_percent(*brightness);
 
             let effect = match *effect_mode {
-                0 => pixoo::mode::LightEffectMode::Normal,
-                1 => pixoo::mode::LightEffectMode::Rainbow,
-                2 => pixoo::mode::LightEffectMode::Plants,
-                3 => pixoo::mode::LightEffectMode::Fly,
-                4 => pixoo::mode::LightEffectMode::Sleep,
-                _ => pixoo::mode::LightEffectMode::Normal,
+                0 => crate::device::mode::LightEffectMode::Normal,
+                1 => crate::device::mode::LightEffectMode::Rainbow,
+                2 => crate::device::mode::LightEffectMode::Plants,
+                3 => crate::device::mode::LightEffectMode::Fly,
+                4 => crate::device::mode::LightEffectMode::Sleep,
+                _ => crate::device::mode::LightEffectMode::Normal,
             };
 
             let light_mode = LightMode::Light {
@@ -245,19 +216,19 @@ pub fn apply_divoom_mode(
         }
         PageType::DivoomMusic { mode } => {
             let music_mode = match mode.as_str() {
-                "bottom_bars" => pixoo::mode::MusicMode::BottomBars,
-                "center_bars" => pixoo::mode::MusicMode::CenterBars,
-                "side_bars" => pixoo::mode::MusicMode::SideBars,
-                "face1" => pixoo::mode::MusicMode::Face1,
-                "face2" => pixoo::mode::MusicMode::Face2,
-                "face3" => pixoo::mode::MusicMode::Face3,
-                "frog_face" => pixoo::mode::MusicMode::FrogFace,
-                "matrix" => pixoo::mode::MusicMode::Matrix,
-                "falling_blocks" => pixoo::mode::MusicMode::FallingBlocks,
-                "fireworks" => pixoo::mode::MusicMode::Fireworks,
-                "dancing_boy" => pixoo::mode::MusicMode::DancingBoy,
-                "dancing_girl" => pixoo::mode::MusicMode::DancingGirl,
-                _ => pixoo::mode::MusicMode::BottomBars,
+                "bottom_bars" => crate::device::mode::MusicMode::BottomBars,
+                "center_bars" => crate::device::mode::MusicMode::CenterBars,
+                "side_bars" => crate::device::mode::MusicMode::SideBars,
+                "face1" => crate::device::mode::MusicMode::Face1,
+                "face2" => crate::device::mode::MusicMode::Face2,
+                "face3" => crate::device::mode::MusicMode::Face3,
+                "frog_face" => crate::device::mode::MusicMode::FrogFace,
+                "matrix" => crate::device::mode::MusicMode::Matrix,
+                "falling_blocks" => crate::device::mode::MusicMode::FallingBlocks,
+                "fireworks" => crate::device::mode::MusicMode::Fireworks,
+                "dancing_boy" => crate::device::mode::MusicMode::DancingBoy,
+                "dancing_girl" => crate::device::mode::MusicMode::DancingGirl,
+                _ => crate::device::mode::MusicMode::BottomBars,
             };
             pixoo.set_mode(LightMode::Music { mode: music_mode })?;
             info!(mode = %mode, "Music page mode applied");

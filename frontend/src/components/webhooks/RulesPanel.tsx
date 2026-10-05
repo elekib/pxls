@@ -6,6 +6,7 @@ import type { useWebhooks } from '../../webhooks/useWebhooks';
 import { EvaluationView, PayloadEditor, parsePayload } from './PayloadTester';
 import { RuleEditor } from './RuleEditor';
 import { Badge, btn, Toggle } from './ui';
+import { sortAlpha } from '../../utils/sort';
 
 type Store = ReturnType<typeof useWebhooks>;
 
@@ -72,7 +73,7 @@ export function RulesPanel({ webhook, store, preset, knownFields }: Props) {
               aria-label="Add rule from template"
             >
               <option value="">+ From {preset?.label} template…</option>
-              {missingTemplates.map((t) => <option key={t.label} value={t.label}>{t.label}</option>)}
+              {sortAlpha(missingTemplates, (t) => t.label).map((t) => <option key={t.label} value={t.label}>{t.label}</option>)}
             </select>
           )}
           <button onClick={() => setEditor({ rule: { ...emptyRule(), name: newRuleName() }, originalKey: null })} className={btn.smallPrimary}>+ Add rule</button>

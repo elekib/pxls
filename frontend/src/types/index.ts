@@ -5,7 +5,8 @@ export type Tab =
   | 'webhooks'
   | 'webhook_events'
   | 'account'
-  | 'users';
+  | 'users'
+  | 'diagnostics';
 
 export interface Config {
   pixoo_mac: string;
@@ -55,8 +56,8 @@ export interface LightConfig {
 }
 
 export interface ScoreConfig {
-  red_score: number; // 0-99
-  blue_score: number; // 0-99
+  red_score: number; // 0-999
+  blue_score: number; // 0-999
 }
 
 export interface SpecialConfig {

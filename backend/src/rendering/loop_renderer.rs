@@ -1,5 +1,5 @@
+use crate::device::Pixoo;
 use bluetooth_serial_port::BtAddr;
-use pixoo::Pixoo;
 use std::str::FromStr;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

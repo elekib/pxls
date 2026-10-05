@@ -4,6 +4,7 @@ import { Badge, btn, CopyButton, Field, inputClass, relativeTime } from '../comp
 import { errorMessage, eventApi, webhookApi } from '../webhooks/api';
 import { prettyJson, presetFor } from '../webhooks/schema';
 import type { DeliveryResult, Webhook, WebhookEvent } from '../webhooks/types';
+import { sortAlpha } from '../utils/sort';
 
 interface WebhookEventsPageProps {
   onNotify: (message: string, type?: 'success' | 'error') => void;
@@ -165,7 +166,7 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
           <Field label="Webhook">
             <select value={selectedWebhook} onChange={(e) => setSelectedWebhook(e.target.value)} className={inputClass}>
               <option value="">All webhooks</option>
-              {webhooks.map((w) => <option key={w.name} value={w.name}>{w.name}</option>)}
+              {sortAlpha(webhooks, (w) => w.name).map((w) => <option key={w.name} value={w.name}>{w.name}</option>)}
             </select>
           </Field>
           <Field label="Show last">
@@ -193,7 +194,7 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
             <div className="max-w-xs">
               <Field label="Target webhook">
                 <select value={testTarget} onChange={(e) => setTestTarget(e.target.value)} className={inputClass}>
-                  {webhooks.map((w) => <option key={w.name} value={w.path || w.name}>{w.name}</option>)}
+                  {sortAlpha(webhooks, (w) => w.name).map((w) => <option key={w.name} value={w.path || w.name}>{w.name}</option>)}
                 </select>
               </Field>
             </div>

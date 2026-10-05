@@ -673,13 +673,13 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                 <label className="block text-gray-400 text-sm mb-2">Page Type</label>
                 <select value={pageType} onChange={(e) => setPageType(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
                   <option value="ClockWeather">Clock & Weather</option>
-                  <option value="SystemStats">System Stats (Dashdot/Beszel)</option>
-                  <option value="GpuStats">GPU Stats</option>
-                  <option value="Temps">Temps (CPU)</option>
                   <option value="CustomScript">Custom Script</option>
+                  <option value="CustomText">Custom Text</option>
+                  <option value="GpuStats">GPU Stats</option>
                   <option value="ImageUpload">Image / GIF</option>
                   <option value="CustomPixels">Pixel Drawing</option>
-                  <option value="CustomText">Custom Text</option>
+                  <option value="SystemStats">System Stats (Dashdot/Beszel)</option>
+                  <option value="Temps">Temps (CPU)</option>
                 </select>
               </div>
               
@@ -707,8 +707,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Temperature Unit</label>
                     <select value={temperatureUnit} onChange={(e) => setTemperatureUnit(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
-                      <option value="fahrenheit">Fahrenheit (°F)</option>
                       <option value="celsius">Celsius (°C)</option>
+                      <option value="fahrenheit">Fahrenheit (°F)</option>
                     </select>
                   </div>
                 </div>
@@ -720,8 +720,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Source</label>
                     <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
-                      <option value="dashdot">Dashdot</option>
                       <option value="beszel">Beszel</option>
+                      <option value="dashdot">Dashdot</option>
                     </select>
                   </div>
                   
@@ -775,8 +775,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Source</label>
                     <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
-                      <option value="dashdot">Dashdot</option>
                       <option value="beszel">Beszel</option>
+                      <option value="dashdot">Dashdot</option>
                     </select>
                   </div>
                   
@@ -830,8 +830,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Source</label>
                     <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
-                      <option value="dashdot">Dashdot</option>
                       <option value="beszel">Beszel</option>
+                      <option value="dashdot">Dashdot</option>
                     </select>
                   </div>
                   
@@ -937,10 +937,10 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                           <input type="text" placeholder="Name" value={input.name} onChange={(e) => updateScriptInput(idx, 'name', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm flex-1" />
                           <input type="text" placeholder="Label" value={input.label} onChange={(e) => updateScriptInput(idx, 'label', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm flex-1" />
                           <select value={input.input_type} onChange={(e) => updateScriptInput(idx, 'input_type', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm">
-                            <option value="text">text</option>
-                            <option value="number">number</option>
-                            <option value="color">color</option>
                             <option value="boolean">boolean</option>
+                            <option value="color">color</option>
+                            <option value="number">number</option>
+                            <option value="text">text</option>
                           </select>
                           <input type="text" placeholder="Default" value={input.default_value} onChange={(e) => updateScriptInput(idx, 'default_value', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm w-20 flex-none" />
                           <button className="bg-none border-none text-red-400 text-xl cursor-pointer px-2 hover:text-red-500" onClick={() => removeScriptInput(idx)}>×</button>
@@ -960,9 +960,9 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                       <label className="block text-gray-400 text-sm mb-2">Display Mode</label>
                       <div className="h-4"></div>
                       <select value={imageMode} onChange={(e) => setImageMode(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
-                        <option value="static">Static</option>
                         <option value="animated">Animated (GIF)</option>
                         <option value="scroll">Scroll</option>
+                        <option value="static">Static</option>
                       </select>
                     </div>
                     <div className="mb-4">

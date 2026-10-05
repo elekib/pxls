@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DISPLAY_MODES, ICON_PRESETS, PRESET_COLORS } from '../../webhooks/schema';
 import type { DisplayMode, Webhook } from '../../webhooks/types';
 import { btn, Field, inputClass, Toggle } from './ui';
+import { sortAlpha } from '../../utils/sort';
 
 interface Props {
   webhook: Webhook;
@@ -51,7 +52,7 @@ export function WebhookSettingsForm({ webhook, busy, onSave, onCancel }: Props) 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Field label="Display mode">
             <select value={form.display_mode} onChange={(e) => set('display_mode', e.target.value as DisplayMode)} className={inputClass}>
-              {DISPLAY_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              {sortAlpha(DISPLAY_MODES, (m) => m.label).map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </Field>
           <Field label="Background">
@@ -108,7 +109,7 @@ function ColorSelect({ value, onChange }: { value: string; onChange: (v: string)
       <span className="w-5 h-5 rounded border border-gray-600 shrink-0" style={{ backgroundColor: `#${value}` }} />
       <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
         {!known && <option value={value}>#{value}</option>}
-        {PRESET_COLORS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        {sortAlpha(PRESET_COLORS, (c) => c.label).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
     </div>
   );

@@ -144,7 +144,7 @@ Define rules on the **Webhooks** page. Use the **Event Logs** page to inspect in
 
 | Path | Contents |
 |---|---|
-| `backend/` | Rust (axum, tokio) API, rendering loop and Bluetooth driver |
+| `backend/` | Rust (axum, tokio) API, rendering loop and Bluetooth driver (`src/device/`) |
 | `frontend/` | Vite, React and Tailwind web UI, served by nginx |
 | `docs/` | Protocol reference |
 | `scripts/` | Optional helper scripts |
@@ -157,7 +157,7 @@ Early development. The API requires a signed-in user, but the Bluetooth device i
 
 ## Documentation
 
-- [Bluetooth protocol](docs/protocol.md)
+- [Bluetooth protocol](docs/protocol.md) (pxls's own driver; per-command verification status and a device test checklist)
 - [Contributing](CONTRIBUTING.md) and [architecture notes](AGENTS.md)
 - [Changelog](CHANGELOG.md)
 
