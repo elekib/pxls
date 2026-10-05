@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth';
 import { API_URL } from '../types';
 import type {
   Webhook, Rule, WebhookEvent, WebhookSummary, RuleTestResult, DeliveryResult,
@@ -16,7 +17,7 @@ async function request<T = Record<string, unknown>>(
   method: string = 'GET',
   body?: unknown,
 ): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await apiFetch(`${API_URL}${path}`, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -52,10 +53,10 @@ export const webhookApi = {
     request<RuleTestResult>(`/api/webhooks/${enc(webhook)}/rules/test`, 'POST', { payload, rule }),
 
   /** Send a real delivery (runs the actions on the device). */
-  async deliver(path: string, payload: unknown): Promise<DeliveryResult> {
-    const response = await fetch(`${API_URL}/api/webhook/${enc(path)}`, {
+  async deliver(path: string, payload: unknown, secret?: string): Promise<DeliveryResult> {
+    const response = await apiFetch(`${API_URL}/api/webhook/${enc(path)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(secret ? { 'X-Webhook-Secret': secret } : {}) },
       body: JSON.stringify(payload),
     });
     const data = await response.json().catch(() => ({}));

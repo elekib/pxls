@@ -6,9 +6,10 @@ interface SidebarProps {
   activeTab: 'device' | 'pages' | 'tools' | 'webhooks' | 'webhook_events';
   onTabChange: (tab: 'device' | 'pages' | 'tools' | 'webhooks' | 'webhook_events') => void;
   onClose?: () => void;
+  onSignOut?: () => void;
 }
 
-export function Sidebar({ config, activeTab, onTabChange, onClose }: SidebarProps) {
+export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: SidebarProps) {
   const mac = config?.pixoo_mac || '';
 
   return (
@@ -88,6 +89,14 @@ export function Sidebar({ config, activeTab, onTabChange, onClose }: SidebarProp
           </div>
           <code className="text-cyan-400 font-mono text-xs break-all">{mac || 'Not set'}</code>
         </div>
+        {onSignOut && (
+          <button
+            onClick={onSignOut}
+            className="mt-3 w-full py-2 text-sm text-gray-400 hover:text-white bg-gray-900 rounded-lg border border-gray-700"
+          >
+            Sign out
+          </button>
+        )}
       </div>
     </aside>
   );

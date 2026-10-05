@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth';
 import { useState, useEffect, useCallback } from 'react';
 import type { Config, BeszelAuthStatus } from '../types';
 import { API_URL } from '../types';
@@ -20,7 +21,7 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
 
   const loadStatus = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/beszel/status`);
+      const response = await apiFetch(`${API_URL}/api/beszel/status`);
       if (response.ok) setStatus(await response.json());
     } catch {
       setStatus(null);
@@ -38,7 +39,7 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
   };
 
   const postConfig = async (beszel_auth: { email: string; password: string }) => {
-    const response = await fetch(`${API_URL}/api/config`, {
+    const response = await apiFetch(`${API_URL}/api/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...config, beszel_auth }),
@@ -49,7 +50,7 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
   const handleTest = async () => {
     setBusy(true);
     try {
-      const response = await fetch(`${API_URL}/api/beszel/test-login`, {
+      const response = await apiFetch(`${API_URL}/api/beszel/test-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

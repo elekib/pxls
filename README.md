@@ -36,7 +36,7 @@ docker compose up --build
 ```
 
 - Web UI: http://localhost:3030
-- Backend API: http://localhost:3400
+- Backend API: http://localhost:3400 (the UI proxies `/api` to it)
 
 Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`) and connect.
 

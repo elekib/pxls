@@ -1,3 +1,5 @@
+import { apiFetch } from '../auth';
+import { AuthImage } from '../components/AuthImage';
 import { useState, useEffect, type ChangeEvent, type FocusEvent } from 'react';
 import type { Config, CustomPage, ScriptInput, Pixel } from '../types';
 import { API_URL, typeLabels } from '../types';
@@ -292,7 +294,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     };
     
     try {
-      const response = await fetch(`${API_URL}/api/config`, {
+      const response = await apiFetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -324,7 +326,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     };
     
     try {
-      const response = await fetch(`${API_URL}/api/config`, {
+      const response = await apiFetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -354,7 +356,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/config`, {
+      const response = await apiFetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -411,7 +413,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/config`, {
+      const response = await apiFetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -447,7 +449,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/config`, {
+      const response = await apiFetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -509,7 +511,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_URL}/api/upload`, {
+      const response = await apiFetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       });
@@ -1004,7 +1006,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                               Remove
                             </button>
                           </div>
-                          <img
+                          <AuthImage
                             src={`${API_URL}/api/uploads/${imageFilePath}`}
                             alt="Preview"
                             className="w-16 h-16 object-cover rounded border border-gray-600"

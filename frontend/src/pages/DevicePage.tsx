@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth';
 import { useState, useEffect, type ChangeEvent, type FocusEvent } from 'react';
 import type { Config, DeviceConfig } from '../types';
 import { API_URL } from '../types';
@@ -73,7 +74,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
       if (document.hidden) return; // Skip if tab not visible
       
       try {
-        const response = await fetch(`${API_URL}/api/connection-status`);
+        const response = await apiFetch(`${API_URL}/api/connection-status`);
         const status = await response.json();
         setIsConnected(status.connected);
         setIsManualDisconnect(status.manual_disconnect);
@@ -89,7 +90,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
 
   const handleDisconnect = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/disconnect`, {
+      const response = await apiFetch(`${API_URL}/api/disconnect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -114,7 +115,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
     }
     
     try {
-      const response = await fetch(`${API_URL}/api/connect`, {
+      const response = await apiFetch(`${API_URL}/api/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mac: newMac })
@@ -138,7 +139,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
     const newConfig = { ...config, timezone };
     
     try {
-      const response = await fetch(`${API_URL}/api/config`, {
+      const response = await apiFetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -156,7 +157,7 @@ export function DevicePage({ config, onConfigUpdate, onNotify }: DevicePageProps
 
   const handleSaveDeviceConfig = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/device-config`, {
+      const response = await apiFetch(`${API_URL}/api/device-config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(deviceConfig)

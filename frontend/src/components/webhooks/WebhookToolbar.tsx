@@ -11,7 +11,7 @@ export function WebhookToolbar({ store, onNotify }: { store: Store; onNotify: No
   const fileRef = useRef<HTMLInputElement>(null);
 
   const exportAll = () => {
-    const blob = new Blob([JSON.stringify({ webhooks: store.webhooks }, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({ webhooks: store.webhooks.map(({ secret: _secret, ...rest }) => rest) }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `pxls-webhooks-${new Date().toISOString().slice(0, 10)}.json`;

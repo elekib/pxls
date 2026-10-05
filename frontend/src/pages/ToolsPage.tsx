@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth';
 import { useState, useEffect } from 'react';
 import type { Config, CountdownPreset, DeviceConfig } from '../types';
 import { API_URL } from '../types';
@@ -57,7 +58,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
       if (document.hidden) return; // Skip if tab not visible
 
       try {
-        const response = await fetch(`${API_URL}/api/connection-status`);
+        const response = await apiFetch(`${API_URL}/api/connection-status`);
         const status = await response.json();
         setIsConnected(status.connected);
 
@@ -92,7 +93,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   const handleStartCountdown = async (minutes: number, seconds: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/countdown`, {
+      const response = await apiFetch(`${API_URL}/api/countdown`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ minutes, seconds })
@@ -116,7 +117,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   const handleStopTool = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/stop-tool`, {
+      const response = await apiFetch(`${API_URL}/api/stop-tool`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -135,7 +136,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   const handleTestBuzzer = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/buzzer`, {
+      const response = await apiFetch(`${API_URL}/api/buzzer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,7 +159,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   const handleSetScoreboard = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/scoreboard`, {
+      const response = await apiFetch(`${API_URL}/api/scoreboard`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ red_score: redScore, blue_score: blueScore })
@@ -207,7 +208,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
     if (toolStatus.active && toolStatus.tool_type === 'scoreboard') {
       console.log('Sending score update to API:', { red_score: newRed, blue_score: newBlue });
       try {
-        const response = await fetch(`${API_URL}/api/scoreboard`, {
+        const response = await apiFetch(`${API_URL}/api/scoreboard`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ red_score: newRed, blue_score: newBlue })
@@ -229,7 +230,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   const handleSoundDetector = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/sound-detector`, {
+      const response = await apiFetch(`${API_URL}/api/sound-detector`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -259,7 +260,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/device-config`, {
+      const response = await apiFetch(`${API_URL}/api/device-config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newDeviceConfig)

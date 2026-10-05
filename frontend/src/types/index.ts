@@ -182,4 +182,6 @@ export const typeLabels: Record<string, string> = {
   'CustomText': '📝 Text'
 };
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3400';
+// Same-origin: nginx proxies /api to the backend in production, and the Vite dev
+// server does the same (see vite.config.ts).
+export const API_URL = '';

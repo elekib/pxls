@@ -66,17 +66,14 @@ export function Badge({
   );
 }
 
-/** Where external services should POST to reach a webhook. */
+/** Where external services should POST to reach a webhook (never includes the secret). */
 export function webhookUrl(path: string): string {
-  try {
-    const base = new URL(API_URL, window.location.origin);
-    // The default API_URL points at localhost, which is useless to Radarr/Sonarr
-    // when this UI is opened from another machine; use the host actually in use.
-    if (['localhost', '127.0.0.1'].includes(base.hostname)) base.hostname = window.location.hostname;
-    return `${base.origin}/api/webhook/${path}`;
-  } catch {
-    return `/api/webhook/${path}`;
-  }
+  return `${window.location.origin}${API_URL}/api/webhook/${encodeURIComponent(path)}`;
+}
+
+/** Same URL with the secret in the query string, for senders that cannot set headers. */
+export function webhookUrlWithSecret(path: string, secret: string): string {
+  return `${webhookUrl(path)}?secret=${encodeURIComponent(secret)}`;
 }
 
 async function copyText(text: string): Promise<boolean> {

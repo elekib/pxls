@@ -5,7 +5,7 @@ import type { Webhook, WebhookSummary } from '../../webhooks/types';
 import type { useWebhooks } from '../../webhooks/useWebhooks';
 import { RulesPanel } from './RulesPanel';
 import { WebhookSettingsForm } from './WebhookSettingsForm';
-import { Badge, btn, CopyButton, relativeTime, Toggle, webhookUrl } from './ui';
+import { Badge, btn, CopyButton, relativeTime, Toggle, webhookUrl, webhookUrlWithSecret } from './ui';
 
 type Store = ReturnType<typeof useWebhooks>;
 type Notify = (message: string, type?: 'success' | 'error') => void;
@@ -58,7 +58,7 @@ export function WebhookCard({ webhook, summary, store, onNotify }: Props) {
     if (!confirm(`Send this test delivery to '${webhook.name}'? It will show on the device.\n\n${prettyJson(payload)}`)) return;
     setSending(true);
     try {
-      const { status, data } = await webhookApi.deliver(webhook.path, payload);
+      const { status, data } = await webhookApi.deliver(webhook.path, payload, webhook.secret);
       if (status >= 200 && status < 300 && data.processed === false) {
         onNotify(`Delivered, but nothing ran: ${data.message ?? 'no rule matched'}. Add a rule for this event or turn on "show default display".`, 'error');
       } else if (status >= 200 && status < 300) onNotify(`Test sent: ${data.message ?? 'ok'}`, 'success');
@@ -100,6 +100,16 @@ export function WebhookCard({ webhook, summary, store, onNotify }: Props) {
                 <code className="text-gray-300 break-all">POST {url}</code>
                 <CopyButton text={url} label="Copy URL" />
               </div>
+              {webhook.secret && (
+                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
+                  <span>Senders must authenticate with this webhook's secret:</span>
+                  <CopyButton text={webhook.secret} label="Copy secret" />
+                  <CopyButton text={webhookUrlWithSecret(webhook.path, webhook.secret)} label="Copy URL with secret" />
+                  <span className="text-gray-500">
+                    (header <code>X-Webhook-Secret</code>, Basic auth password, or <code>?secret=</code>)
+                  </span>
+                </div>
+              )}
               <div className="mt-2 text-xs text-gray-400 flex flex-wrap gap-x-3 gap-y-1 items-center">
                 {summary?.last_timestamp ? (
                   <>

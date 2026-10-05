@@ -1,3 +1,5 @@
+import { apiFetch, AUTH_REQUIRED_EVENT, clearToken, getToken } from './auth';
+import { LoginScreen } from './components/LoginScreen';
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { Sidebar } from './components/Sidebar';
@@ -14,6 +16,8 @@ import horizontalLogo from './assets/logo/pxls_horizontal_icon.png';
 function App() {
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(() => getToken() !== null);
+  const [expired, setExpired] = useState(false);
   const [activeTab, setActiveTab] = useState<'device' | 'pages' | 'tools' | 'webhooks' | 'webhook_events'>('device');
   const [notification, setNotification] = useState<Notification | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,7 +29,8 @@ function App() {
 
   const loadConfig = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/config`);
+      const response = await apiFetch(`${API_URL}/api/config`);
+      if (response.status === 401) return;
       const data = await response.json();
       setConfig(data);
       setLoading(false);
@@ -36,8 +41,37 @@ function App() {
   }, [showNotification]);
 
   useEffect(() => {
-    loadConfig();
-  }, [loadConfig]);
+    const onAuthRequired = () => {
+      setExpired(true);
+      setAuthed(false);
+    };
+    window.addEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
+    return () => window.removeEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
+  }, []);
+
+  useEffect(() => {
+    if (authed) loadConfig();
+  }, [authed, loadConfig]);
+
+  const signOut = () => {
+    clearToken();
+    setConfig(null);
+    setExpired(false);
+    setAuthed(false);
+  };
+
+  if (!authed) {
+    return (
+      <LoginScreen
+        expired={expired}
+        onSuccess={() => {
+          setExpired(false);
+          setLoading(true);
+          setAuthed(true);
+        }}
+      />
+    );
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">Loading...</div>;
@@ -54,7 +88,7 @@ function App() {
       )}
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
-        <Sidebar config={config} activeTab={activeTab} onTabChange={setActiveTab} />
+        <Sidebar config={config} activeTab={activeTab} onTabChange={setActiveTab} onSignOut={signOut} />
       </div>
       
       {/* Mobile Sidebar Overlay */}
@@ -77,6 +111,7 @@ function App() {
             setSidebarOpen(false);
           }}
           onClose={() => setSidebarOpen(false)}
+          onSignOut={signOut}
         />
       </div>
       

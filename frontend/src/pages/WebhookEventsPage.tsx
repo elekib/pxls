@@ -122,7 +122,7 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
     setSending(true);
     setTestResponse(null);
     try {
-      const res = await webhookApi.deliver(testTarget, parsed.value);
+      const res = await webhookApi.deliver(testTarget, parsed.value, webhooks.find((x) => (x.path || x.name) === testTarget)?.secret);
       setTestResponse(res);
       if (res.status >= 200 && res.status < 300) {
         onNotify(`Test sent to ${testTarget}: ${res.data.message ?? 'ok'}`);
