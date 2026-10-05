@@ -8,6 +8,7 @@ RUN npm ci
 
 COPY tsconfig*.json vite.config.ts tailwind.config.ts postcss.config.js index.html ./
 COPY src ./src
+COPY public ./public
 RUN npm run build
 
 # Production stage

@@ -28,7 +28,13 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # Cache static assets
+    # Root-level icons have unhashed names, so they must not be cached as immutable
+    location ~* ^/(favicon\.svg|favicon-32\.png|apple-touch-icon\.png)$ {
+        expires 1d;
+        add_header Cache-Control "public";
+    }
+
+    # Cache static assets (hashed filenames)
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
