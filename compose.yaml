@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pixoo-backend
+    network_mode: host
+    privileged: true
+    env_file:
+      - .env
+    volumes:
+      - /var/run/dbus:/var/run/dbus
+      - /dev:/dev
+      - ./data:/app/data
+    restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:3400}
+    container_name: pixoo-frontend
+    ports:
+      - 3030:80
+    restart: unless-stopped
+    depends_on:
+      - backend

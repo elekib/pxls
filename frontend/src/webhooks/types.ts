@@ -1,0 +1,110 @@
+export type ConditionOperator =
+  | 'Equals' | 'NotEquals' | 'Contains' | 'NotContains'
+  | 'GreaterThan' | 'LessThan' | 'Exists' | 'NotExists';
+
+export type ActionType =
+  | 'DisplayNotification' | 'DisplayImage' | 'FlashScreen'
+  | 'PlaySound' | 'LogEvent' | 'ForwardWebhook';
+
+export type ConditionLogic = 'All' | 'Any';
+
+export type DisplayMode = 'text' | 'icon_only' | 'icon_with_text' | 'image';
+
+export type ParamValue = string | number | boolean;
+
+export interface Condition {
+  field_path: string;
+  operator: ConditionOperator;
+  value: unknown;
+  case_insensitive: boolean;
+}
+
+export interface Action {
+  action_type: ActionType;
+  parameters: Record<string, ParamValue>;
+}
+
+export interface Rule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  condition_logic: ConditionLogic;
+  conditions: Condition[];
+  actions: Action[];
+}
+
+export interface Webhook {
+  name: string;
+  enabled: boolean;
+  path: string;
+  log_events: boolean;
+  max_events: number;
+  rules: Rule[];
+  default_actions: Action[];
+  display_on_no_match: boolean;
+  duration_secs: number;
+  display_mode: DisplayMode;
+  background_color: string;
+  text_color: string;
+  title_field: string;
+  subtitle_field: string;
+  flash: boolean;
+  flash_speed_ms: number;
+  icon: string;
+  icon_image_url: string;
+  image_url_field: string;
+}
+
+export interface WebhookEvent {
+  id: string;
+  webhook_name: string;
+  timestamp: string;
+  payload: unknown;
+  processed: boolean;
+  actions_taken: string[];
+  error?: string | null;
+  matched_rule?: string | null;
+}
+
+export interface WebhookSummary {
+  count: number;
+  error_count: number;
+  last_timestamp: string | null;
+  last_processed: boolean | null;
+  last_error: string | null;
+  last_matched_rule: string | null;
+}
+
+export interface ConditionEvaluation {
+  field_path: string;
+  operator: string;
+  expected: unknown;
+  actual: unknown;
+  passed: boolean;
+}
+
+export interface RuleEvaluation {
+  rule_name: string;
+  matched: boolean;
+  skipped?: boolean;
+  conditions: ConditionEvaluation[];
+}
+
+export interface RuleTestResult {
+  matched?: boolean;
+  matched_rule?: string | null;
+  would_display_default?: boolean;
+  validation_error?: string | null;
+  evaluations: RuleEvaluation[];
+}
+
+export interface DeliveryResult {
+  status: number;
+  data: {
+    message?: string;
+    error?: string;
+    matched_rule?: string;
+    actions_taken?: string[];
+    [key: string]: unknown;
+  };
+}
