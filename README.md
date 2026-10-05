@@ -77,4 +77,4 @@ Issues and pull requests are welcome. Sign off your commits (`git commit -s`) to
 
 ## License
 
-Apache-2.0. A `LICENSE` file is coming with the metadata step.
+No license has been chosen yet, so all rights are reserved for now. A license will be added before the first public release. See [NOTICE](NOTICE).

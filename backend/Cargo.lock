@@ -1508,7 +1508,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pixoo_backend"
+name = "pxls_backend"
 version = "0.1.0"
 dependencies = [
  "anyhow",

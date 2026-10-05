@@ -14,7 +14,7 @@ export function WebhookToolbar({ store, onNotify }: { store: Store; onNotify: No
     const blob = new Blob([JSON.stringify({ webhooks: store.webhooks }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `pixoo-webhooks-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `pxls-webhooks-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };

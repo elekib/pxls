@@ -1,6 +1,7 @@
 [package]
-name = "pixoo_backend"
+name = "pxls_backend"
 version = "0.1.0"
+description = "Backend for pxls, a dashboard for legacy Divoom Pixoo Bluetooth displays"
 edition = "2021"
 
 [dependencies]

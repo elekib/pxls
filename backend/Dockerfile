@@ -28,4 +28,4 @@ RUN cargo build --release --bin command_tester
 RUN cargo build --release --bin library_tool_test
 
 # Run the backend API server
-CMD ["./target/release/pixoo_backend"]
+CMD ["./target/release/pxls_backend"]

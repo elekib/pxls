@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: pixoo-backend
+    container_name: pxls-backend
     network_mode: host
     privileged: true
     env_file:
@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:3400}
-    container_name: pixoo-frontend
+    container_name: pxls-frontend
     ports:
       - 3030:80
     restart: unless-stopped
