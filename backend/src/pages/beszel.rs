@@ -124,16 +124,16 @@ fn lookup(hub_url: &str, name: Option<&str>, token: Option<&str>) -> Result<Stri
             base,
             urlencoding::encode(n)
         ),
-        None => format!("{}/api/collections/systems/records?perPage=1", base),
+        None => format!("{base}/api/collections/systems/records?perPage=1"),
     };
 
     let mut req = ureq::get(&url).timeout(REQUEST_TIMEOUT);
     if let Some(token) = token {
-        req = req.set("Authorization", &format!("Bearer {}", token));
+        req = req.set("Authorization", &format!("Bearer {token}"));
     }
     let body = req.call()?.into_string().unwrap_or_default();
     let data: ListResponse =
-        serde_json::from_str(&body).map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
+        serde_json::from_str(&body).map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
     pick_system(&data.items, name)
 }
 
@@ -156,7 +156,7 @@ fn pick_system(items: &[SystemRecord], name: Option<&str>) -> Result<String> {
                 .find(|s| s.name.as_deref().map(|n| n.to_lowercase()).as_deref() == Some(&lower))
         })
         .map(|s| s.id.clone())
-        .ok_or_else(|| anyhow::anyhow!("System '{}' not found", name))
+        .ok_or_else(|| anyhow::anyhow!("System '{name}' not found"))
 }
 
 #[cfg(test)]

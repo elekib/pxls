@@ -32,7 +32,7 @@ pub fn apply_device_config(
 
     if let Err(e) = pixoo.set_brightness(brightness) {
         error!(error = %e, "Failed to set brightness");
-        return Err(format!("Failed to set brightness: {}", e).into());
+        return Err(format!("Failed to set brightness: {e}").into());
     }
 
     // Apply time format
@@ -44,7 +44,7 @@ pub fn apply_device_config(
 
     if let Err(e) = pixoo.set_time_format(time_format) {
         error!(error = %e, "Failed to set time format");
-        return Err(format!("Failed to set time format: {}", e).into());
+        return Err(format!("Failed to set time format: {e}").into());
     }
 
     // Apply the selected Divoom native mode immediately (env/light/special/music/
@@ -55,7 +55,7 @@ pub fn apply_device_config(
     if device_config.light_mode != "custom" {
         if let Err(e) = apply_divoom_mode_from_config(pixoo, device_config) {
             error!(error = %e, "Failed to apply Divoom mode during device config");
-            return Err(format!("Failed to apply Divoom mode: {}", e).into());
+            return Err(format!("Failed to apply Divoom mode: {e}").into());
         }
     }
 

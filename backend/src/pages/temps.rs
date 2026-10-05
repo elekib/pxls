@@ -175,14 +175,14 @@ impl TempsPage {
 
             if let Some(t) = temp {
                 let rgb = get_temp_color(*t);
-                let temp_str = format!("{}{}", label, t);
+                let temp_str = format!("{label}{t}");
                 let temp_width = temp_str.len() as i32 * 4 - 1;
                 Renderer::draw_text(img, &temp_str, 0, y_pos, rgb, 1);
                 // Draw degree symbol after temperature
                 Renderer::draw_text(img, "*", temp_width + 1, y_pos, rgb, 0);
             } else {
                 // Show placeholder for missing temp
-                let placeholder = format!("{}--*", label);
+                let placeholder = format!("{label}--*");
                 Renderer::draw_text(img, &placeholder, 0, y_pos, [100, 100, 100], 1);
             }
         }
@@ -280,7 +280,7 @@ impl TempsPage {
             if id.len() < 15 || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
                 debug!(name = %id, "Looking up system by name");
                 super::beszel::resolve_system_id(hub_url, Some(id), token_manager)
-                    .ok_or_else(|| anyhow::anyhow!("System '{}' not found", id))?
+                    .ok_or_else(|| anyhow::anyhow!("System '{id}' not found"))?
             } else {
                 id.to_string()
             }
@@ -290,14 +290,14 @@ impl TempsPage {
         };
 
         // Fetch system record from beszel
-        let path = format!("/api/collections/systems/records/{}", system_id);
-        let url = format!("{}{}", hub_url, path);
+        let path = format!("/api/collections/systems/records/{system_id}");
+        let url = format!("{hub_url}{path}");
         debug!(url = %url, "Fetching beszel system record for temps");
 
         let mut req = ureq::get(&url).timeout(std::time::Duration::from_secs(5));
 
         if let Some(token) = auth_token {
-            req = req.set("Authorization", &format!("Bearer {}", token));
+            req = req.set("Authorization", &format!("Bearer {token}"));
         }
 
         let resp = req.call().inspect_err(|e| {
@@ -366,16 +366,15 @@ impl TempsPage {
         auth_token: Option<&str>,
     ) -> Option<u32> {
         let path = format!(
-            "/api/collections/smart_devices/records?filter=system='{}'&perPage=100",
-            system_id
+            "/api/collections/smart_devices/records?filter=system='{system_id}'&perPage=100"
         );
-        let url = format!("{}{}", hub_url, path);
+        let url = format!("{hub_url}{path}");
         debug!(url = %url, "Fetching smart devices for drive temps");
 
         let mut req = ureq::get(&url).timeout(std::time::Duration::from_secs(5));
 
         if let Some(token) = auth_token {
-            req = req.set("Authorization", &format!("Bearer {}", token));
+            req = req.set("Authorization", &format!("Bearer {token}"));
         }
 
         let resp = req.call().ok()?;

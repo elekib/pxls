@@ -275,7 +275,7 @@ fn login(hub_url: &str, email: &str, password: &str) -> Result<String, String> {
         Ok(resp) => resp
             .into_json::<AuthResponse>()
             .map(|r| r.token)
-            .map_err(|e| format!("Unexpected login response: {}", e)),
+            .map_err(|e| format!("Unexpected login response: {e}")),
         Err(ureq::Error::Status(code, resp)) => {
             let message = resp
                 .into_json::<serde_json::Value>()
@@ -283,14 +283,12 @@ fn login(hub_url: &str, email: &str, password: &str) -> Result<String, String> {
                 .and_then(|v| v.get("message").and_then(|m| m.as_str().map(String::from)))
                 .unwrap_or_default();
             Err(match code {
-                400 | 401 => format!("Invalid email or password ({})", code),
+                400 | 401 => format!("Invalid email or password ({code})"),
                 429 => "Hub is rate limiting logins (429), will retry later".to_string(),
-                _ => format!("Hub returned {} {}", code, message)
-                    .trim()
-                    .to_string(),
+                _ => format!("Hub returned {code} {message}").trim().to_string(),
             })
         }
-        Err(e) => Err(format!("Could not reach the hub: {}", e)),
+        Err(e) => Err(format!("Could not reach the hub: {e}")),
     }
 }
 
@@ -314,7 +312,7 @@ mod tests {
         format!(
             "{}.{}.sig",
             enc(r#"{"alg":"HS256"}"#),
-            enc(&format!(r#"{{"exp":{}}}"#, exp))
+            enc(&format!(r#"{{"exp":{exp}}}"#))
         )
     }
 
@@ -384,6 +382,6 @@ mod tests {
             email: "a@b.c".into(),
             password: "hunter2".into(),
         };
-        assert!(!format!("{:?}", auth).contains("hunter2"));
+        assert!(!format!("{auth:?}").contains("hunter2"));
     }
 }

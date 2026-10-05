@@ -116,7 +116,7 @@ pub async fn fetch_image_bytes(url: &str, allow_private: bool) -> Result<Vec<u8>
         }
         let client = builder
             .build()
-            .map_err(|e| format!("HTTP client error: {}", e))?;
+            .map_err(|e| format!("HTTP client error: {e}"))?;
 
         let mut resp = client
             .get(current.clone())
@@ -199,7 +199,7 @@ mod tests {
             "::ffff:10.0.0.1",
             "::ffff:169.254.169.254",
         ] {
-            assert!(is_blocked_ip(ip(s)), "{} should be blocked", s);
+            assert!(is_blocked_ip(ip(s)), "{s} should be blocked");
         }
     }
 
@@ -214,7 +214,7 @@ mod tests {
             "2606:4700:4700::1111",
             "::ffff:8.8.8.8",
         ] {
-            assert!(!is_blocked_ip(ip(s)), "{} should be allowed", s);
+            assert!(!is_blocked_ip(ip(s)), "{s} should be allowed");
         }
     }
 
@@ -234,7 +234,7 @@ mod tests {
             "http://user:pass@example.com/",
             "http://user@example.com/",
         ] {
-            assert!(validate_url(bad).is_err(), "should reject {:?}", bad);
+            assert!(validate_url(bad).is_err(), "should reject {bad:?}");
         }
     }
 
@@ -251,12 +251,10 @@ mod tests {
             "http://0x7f.0.0.1/", // hex form
         ] {
             let err = fetch_image_bytes(u, false).await.unwrap_err();
-            assert!(!err.is_empty(), "{} should fail", u);
+            assert!(!err.is_empty(), "{u} should fail");
             assert!(
                 err.contains("not allowed") || err.contains("private") || err.contains("resolve"),
-                "{} failed for the wrong reason: {}",
-                u,
-                err
+                "{u} failed for the wrong reason: {err}"
             );
         }
     }
@@ -274,8 +272,7 @@ mod tests {
             .unwrap_err();
         assert!(
             !err.contains("not allowed"),
-            "guard should be bypassed: {}",
-            err
+            "guard should be bypassed: {err}"
         );
     }
 }

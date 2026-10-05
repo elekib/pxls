@@ -208,8 +208,7 @@ impl ClockWeatherPage {
         };
 
         let weather_url = format!(
-            "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current_weather=true&temperature_unit={}",
-            lat, lon, unit_param
+            "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&temperature_unit={unit_param}"
         );
         debug!(url = %weather_url, "Fetching weather data");
 
@@ -243,7 +242,7 @@ impl ClockWeatherPage {
                     "--".to_string()
                 },
                 |t| {
-                    let temp_str = format!("{:.0}", t);
+                    let temp_str = format!("{t:.0}");
                     debug!(temp = %temp_str, "Got temperature from weather API");
                     temp_str
                 },

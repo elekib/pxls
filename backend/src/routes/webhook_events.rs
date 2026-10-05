@@ -110,7 +110,7 @@ pub async fn get_webhook_events_summary(State(state): State<AppState>) -> Respon
         Err(e) => {
             return json_error(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load events: {}", e),
+                format!("Failed to load events: {e}"),
             );
         }
     };
@@ -155,7 +155,7 @@ pub async fn replay_webhook_event(
         Err(e) => {
             return json_error(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load events: {}", e),
+                format!("Failed to load events: {e}"),
             );
         }
     };
@@ -167,7 +167,7 @@ pub async fn replay_webhook_event(
         }
         None => json_error(
             StatusCode::NOT_FOUND,
-            format!("Event '{}' not found", event_id),
+            format!("Event '{event_id}' not found"),
         ),
     }
 }

@@ -146,7 +146,7 @@ impl GpuStatsPage {
             Some(load) => {
                 let load_rgb = get_usage_color(load);
                 info!(load, "GPU load fetched");
-                Renderer::draw_text(img, &format!("L{}%", load), 0, 0, load_rgb, 1);
+                Renderer::draw_text(img, &format!("L{load}%"), 0, 0, load_rgb, 1);
             }
             None => {
                 warn!("Failed to fetch GPU load, showing offline state");
@@ -269,7 +269,7 @@ impl GpuStatsPage {
                     Some(sid) => sid,
                     None => {
                         warn!(name = %id, "System not found by name");
-                        return Err(anyhow::anyhow!("System not found: {}", id));
+                        return Err(anyhow::anyhow!("System not found: {id}"));
                     }
                 }
             } else {
@@ -288,12 +288,12 @@ impl GpuStatsPage {
         debug!(system_id = %system_id, "Fetching GPU stats for system");
 
         // Fetch system record with GPU stats
-        let path = format!("/api/collections/systems/records/{}", system_id);
-        let url = format!("{}{}", hub_url, path);
+        let path = format!("/api/collections/systems/records/{system_id}");
+        let url = format!("{hub_url}{path}");
         let mut req = ureq::get(&url).timeout(std::time::Duration::from_secs(5));
 
         if let Some(token) = auth_token {
-            req = req.set("Authorization", &format!("Bearer {}", token));
+            req = req.set("Authorization", &format!("Bearer {token}"));
         }
 
         let resp = match req.call() {
@@ -388,7 +388,7 @@ impl GpuStatsPage {
             }
             Err(e) => {
                 warn!(error = %e, body = %body, "Failed to parse Beszel system record");
-                Err(anyhow::anyhow!("Parse error: {}", e))
+                Err(anyhow::anyhow!("Parse error: {e}"))
             }
         }
     }

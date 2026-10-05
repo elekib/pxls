@@ -35,7 +35,7 @@ impl WebhookDatabase {
     }
 
     fn write_atomic<T: Serialize>(&self, path: &str, data: &T) -> Result<()> {
-        let temp_path = format!("{}.tmp", path);
+        let temp_path = format!("{path}.tmp");
         let content = serde_json::to_string_pretty(data).context("Failed to serialize data")?;
 
         fs::write(&temp_path, content).context("Failed to write temp file")?;

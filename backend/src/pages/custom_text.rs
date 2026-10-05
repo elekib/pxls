@@ -48,7 +48,7 @@ impl CustomTextPage {
                 .as_millis();
 
             // Create scrolling text with spaces for smooth edge-to-edge transition
-            let padded_text = format!("{}     {}", display_line, display_line);
+            let padded_text = format!("{display_line}     {display_line}");
             let total_length = padded_text.len();
             let display_width = 5;
 

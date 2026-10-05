@@ -573,7 +573,7 @@ pub fn validate_action(action: &WebhookAction) -> Result<(), String> {
                         );
                     }
                 }
-                other => return Err(format!("Unsupported image_source: '{}'", other)),
+                other => return Err(format!("Unsupported image_source: '{other}'")),
             }
         }
         ActionType::ForwardWebhook if !has("url") => {

@@ -10,6 +10,12 @@ pub struct PixooWrapper {
     bt_addr: Option<BtAddr>,
 }
 
+impl Default for PixooWrapper {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PixooWrapper {
     pub fn new() -> Self {
         Self {
@@ -110,7 +116,7 @@ impl PixooWrapper {
 
         // Create Seconds type for seconds parameter
         let seconds_val = Seconds::new(seconds)
-            .ok_or_else(|| format!("Invalid seconds value: {} (must be 0-59)", seconds))?;
+            .ok_or_else(|| format!("Invalid seconds value: {seconds} (must be 0-59)"))?;
 
         tracing::info!(
             "Calling set_tool_info with CountDown {{ control: Start, minutes: {}, seconds: {} }}",

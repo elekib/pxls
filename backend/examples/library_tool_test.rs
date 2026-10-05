@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    println!("\nConnecting to {}...", mac);
+    println!("\nConnecting to {mac}...");
     let mut pixoo = Pixoo::connect(bt_addr)?;
     println!("✓ Connected!");
 
@@ -126,7 +126,7 @@ fn test_scoreboard(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> 
     ];
 
     for (red, blue, desc) in tests {
-        println!("  {}: {}-{}...", desc, red, blue);
+        println!("  {desc}: {red}-{blue}...");
         pixoo.set_tool_info(ToolInfo::Score {
             on: true,
             red_score: red,
@@ -161,13 +161,13 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    println!("Starting countdown from {}m {}s...", mins, secs);
+    println!("Starting countdown from {mins}m {secs}s...");
     pixoo.set_tool_info(ToolInfo::CountDown {
         control: CountDownControl::Start,
         minutes: mins,
         seconds,
     })?;
-    println!("✓ CountDown(Start, {}:{}) sent", mins, secs);
+    println!("✓ CountDown(Start, {mins}:{secs}) sent");
 
     // Let it run for a bit then offer to cancel
     println!("Countdown running... press Enter to cancel early");
@@ -196,7 +196,7 @@ fn test_brightness_toggle(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::E
     println!("Toggling brightness to verify connection works...");
 
     for brightness in [10, 50, 100, 30] {
-        println!("  Setting brightness to {}%...", brightness);
+        println!("  Setting brightness to {brightness}%...");
         pixoo.set_brightness(Brightness::new(brightness).unwrap())?;
         thread::sleep(Duration::from_millis(500));
     }
@@ -206,7 +206,7 @@ fn test_brightness_toggle(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::E
 }
 
 fn prompt(text: &str) -> String {
-    print!("{}", text);
+    print!("{text}");
     io::stdout().flush().unwrap();
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();

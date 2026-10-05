@@ -156,10 +156,7 @@ impl PageRenderer {
                             error!(error = %e, "Connection lost during image push");
                             // Clear the connection to force reconnect
                             *wrapper = PixooWrapper::new();
-                            return Err(anyhow::anyhow!(
-                                "Connection lost during image push: {}",
-                                e
-                            ));
+                            return Err(anyhow::anyhow!("Connection lost during image push: {e}"));
                         }
                         Err(e.into())
                     }

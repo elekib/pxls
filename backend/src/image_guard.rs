@@ -34,7 +34,9 @@ pub fn validate_image_bytes(data: &[u8]) -> Result<&'static str, String> {
         || h > MAX_DIMENSION
         || (w as u64 * h as u64) > MAX_PIXELS
     {
-        return Err(format!("Image too large (max {0}x{0})", MAX_DIMENSION));
+        return Err(format!(
+            "Image too large (max {MAX_DIMENSION}x{MAX_DIMENSION})"
+        ));
     }
     Ok(ext)
 }
@@ -183,8 +185,7 @@ mod tests {
         ] {
             assert!(
                 resolve_upload_path(&uploads, bad).is_none(),
-                "should reject {:?}",
-                bad
+                "should reject {bad:?}"
             );
         }
         #[cfg(unix)]

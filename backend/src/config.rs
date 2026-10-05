@@ -428,7 +428,7 @@ impl Config {
                 use crate::database::WebhookDatabase;
                 let db = WebhookDatabase::new("/app/data");
                 if let Err(e) = db.migrate_from_config(config.webhooks.clone()) {
-                    eprintln!("Failed to migrate webhooks to database: {}", e);
+                    eprintln!("Failed to migrate webhooks to database: {e}");
                 }
             }
 

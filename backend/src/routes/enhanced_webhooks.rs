@@ -27,7 +27,7 @@ fn error_response(status: StatusCode, message: String) -> Response {
 
 fn parse_rules(value: &Value) -> Result<Vec<WebhookRule>, String> {
     let mut rules: Vec<WebhookRule> =
-        serde_json::from_value(value.clone()).map_err(|e| format!("Invalid rules: {}", e))?;
+        serde_json::from_value(value.clone()).map_err(|e| format!("Invalid rules: {e}"))?;
     for rule in &mut rules {
         if rule.id.is_empty() {
             rule.id = Uuid::new_v4().to_string();
@@ -39,7 +39,7 @@ fn parse_rules(value: &Value) -> Result<Vec<WebhookRule>, String> {
 
 fn parse_actions(value: &Value) -> Result<Vec<WebhookAction>, String> {
     let actions: Vec<WebhookAction> =
-        serde_json::from_value(value.clone()).map_err(|e| format!("Invalid actions: {}", e))?;
+        serde_json::from_value(value.clone()).map_err(|e| format!("Invalid actions: {e}"))?;
     for action in &actions {
         validate_action(action)?;
     }
@@ -57,7 +57,7 @@ pub async fn get_enhanced_webhooks(State(state): State<AppState>) -> Response {
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -81,7 +81,7 @@ pub async fn get_enhanced_webhook(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -93,10 +93,7 @@ pub async fn get_enhanced_webhook(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -209,7 +206,7 @@ pub async fn create_enhanced_webhook(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -230,7 +227,7 @@ pub async fn create_enhanced_webhook(
     if let Err(e) = state.webhook_database.save_webhooks(&db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhook: {}", e),
+            format!("Failed to save webhook: {e}"),
         );
     }
 
@@ -255,7 +252,7 @@ pub async fn update_enhanced_webhook(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -267,10 +264,7 @@ pub async fn update_enhanced_webhook(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -357,7 +351,7 @@ pub async fn update_enhanced_webhook(
     if let Err(e) = state.webhook_database.save_webhooks(&db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhook: {}", e),
+            format!("Failed to save webhook: {e}"),
         );
     }
 
@@ -381,7 +375,7 @@ pub async fn delete_enhanced_webhook(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -390,16 +384,13 @@ pub async fn delete_enhanced_webhook(
     db.webhooks.retain(|w| w.name != name && w.path != name);
 
     if db.webhooks.len() == original_len {
-        return error_response(
-            StatusCode::NOT_FOUND,
-            format!("Webhook '{}' not found", name),
-        );
+        return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
     }
 
     if let Err(e) = state.webhook_database.save_webhooks(&db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhook: {}", e),
+            format!("Failed to save webhook: {e}"),
         );
     }
 

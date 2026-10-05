@@ -122,8 +122,8 @@ impl SystemStatsPage {
             let cpu_rgb = get_usage_color(cpu);
             let ram_rgb = get_usage_color(ram);
             info!(cpu, ram, "System stats fetched successfully");
-            Renderer::draw_text(img, &format!("C{}%", cpu), 0, 0, cpu_rgb, 1);
-            Renderer::draw_text(img, &format!("R{}%", ram), 0, 6, ram_rgb, 1);
+            Renderer::draw_text(img, &format!("C{cpu}%"), 0, 0, cpu_rgb, 1);
+            Renderer::draw_text(img, &format!("R{ram}%"), 0, 6, ram_rgb, 1);
         } else {
             warn!("Failed to fetch system stats, showing offline state");
             let offline_color = [100, 100, 100];
@@ -248,7 +248,7 @@ impl SystemStatsPage {
             if id.len() < 15 || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
                 debug!(name = %id, "Looking up system by name");
                 super::beszel::resolve_system_id(hub_url, Some(id), token_manager)
-                    .ok_or_else(|| anyhow::anyhow!("System '{}' not found", id))?
+                    .ok_or_else(|| anyhow::anyhow!("System '{id}' not found"))?
             } else {
                 id.to_string()
             }
@@ -258,12 +258,12 @@ impl SystemStatsPage {
         };
 
         // Fetch system record with stats
-        let path = format!("/api/collections/systems/records/{}", system_id);
+        let path = format!("/api/collections/systems/records/{system_id}");
         let mut req =
-            ureq::get(&format!("{}{}", hub_url, path)).timeout(std::time::Duration::from_secs(5));
+            ureq::get(&format!("{hub_url}{path}")).timeout(std::time::Duration::from_secs(5));
 
         if let Some(token) = auth_token {
-            req = req.set("Authorization", &format!("Bearer {}", token));
+            req = req.set("Authorization", &format!("Bearer {token}"));
         }
 
         let resp = req.call().inspect_err(|e| {

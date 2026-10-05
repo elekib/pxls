@@ -50,12 +50,11 @@ impl AuthConfig {
     pub fn new(token: &str) -> Result<Self, String> {
         let token = token.trim();
         if token.is_empty() {
-            return Err(format!("{} is not set", TOKEN_ENV));
+            return Err(format!("{TOKEN_ENV} is not set"));
         }
         if token.len() < MIN_TOKEN_LEN {
             return Err(format!(
-                "{} must be at least {} characters long",
-                TOKEN_ENV, MIN_TOKEN_LEN
+                "{TOKEN_ENV} must be at least {MIN_TOKEN_LEN} characters long"
             ));
         }
         Ok(Self {
@@ -215,8 +214,8 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         tokio::spawn(async move { axum::serve(listener, app()).await.unwrap() });
 
-        let mut req = reqwest::Client::new()
-            .request(method.parse().unwrap(), format!("http://{}{}", addr, uri));
+        let mut req =
+            reqwest::Client::new().request(method.parse().unwrap(), format!("http://{addr}{uri}"));
         if let Some(a) = auth {
             req = req.header("authorization", a);
         }
@@ -251,12 +250,12 @@ mod tests {
 
     #[tokio::test]
     async fn correct_token_is_accepted() {
-        let ok = format!("Bearer {}", TOKEN);
+        let ok = format!("Bearer {TOKEN}");
         assert_eq!(
             status("GET", "/api/config", Some(&ok)).await,
             StatusCode::OK
         );
-        let lower = format!("bearer {}", TOKEN);
+        let lower = format!("bearer {TOKEN}");
         assert_eq!(
             status("GET", "/api/config", Some(&lower)).await,
             StatusCode::OK
@@ -317,7 +316,7 @@ mod tests {
         let b64 = base64::engine::general_purpose::STANDARD.encode("radarr:from-basic");
         h.insert(
             header::AUTHORIZATION,
-            format!("Basic {}", b64).parse().unwrap(),
+            format!("Basic {b64}").parse().unwrap(),
         );
         assert_eq!(
             extract_webhook_secret(&h, None).as_deref(),

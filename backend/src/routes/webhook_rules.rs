@@ -26,7 +26,7 @@ fn error_response(status: StatusCode, message: String) -> Response {
 /// Deserialize and validate a rule from a JSON payload, filling in id/name.
 fn parse_rule(payload: &Value) -> Result<WebhookRule, String> {
     let mut rule: WebhookRule =
-        serde_json::from_value(payload.clone()).map_err(|e| format!("Invalid rule: {}", e))?;
+        serde_json::from_value(payload.clone()).map_err(|e| format!("Invalid rule: {e}"))?;
 
     if rule.name.trim().is_empty() {
         rule.name = format!("rule_{}", Uuid::new_v4());
@@ -53,7 +53,7 @@ pub async fn get_webhook_rules(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -65,10 +65,7 @@ pub async fn get_webhook_rules(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -98,7 +95,7 @@ pub async fn create_webhook_rule(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -110,10 +107,7 @@ pub async fn create_webhook_rule(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -128,7 +122,7 @@ pub async fn create_webhook_rule(
     if let Err(e) = state.webhook_database.save_webhooks(&webhook_db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhooks: {}", e),
+            format!("Failed to save webhooks: {e}"),
         );
     }
 
@@ -147,7 +141,7 @@ pub async fn update_webhook_rule(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -159,10 +153,7 @@ pub async fn update_webhook_rule(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -175,7 +166,7 @@ pub async fn update_webhook_rule(
         None => {
             return error_response(
                 StatusCode::NOT_FOUND,
-                format!("Rule '{}' not found in webhook", rule_id),
+                format!("Rule '{rule_id}' not found in webhook"),
             );
         }
     };
@@ -203,7 +194,7 @@ pub async fn update_webhook_rule(
     if let Err(e) = state.webhook_database.save_webhooks(&webhook_db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhooks: {}", e),
+            format!("Failed to save webhooks: {e}"),
         );
     }
 
@@ -221,7 +212,7 @@ pub async fn delete_webhook_rule(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -233,10 +224,7 @@ pub async fn delete_webhook_rule(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -246,14 +234,14 @@ pub async fn delete_webhook_rule(
     if webhook.rules.len() == original_len {
         return error_response(
             StatusCode::NOT_FOUND,
-            format!("Rule '{}' not found in webhook", rule_id),
+            format!("Rule '{rule_id}' not found in webhook"),
         );
     }
 
     if let Err(e) = state.webhook_database.save_webhooks(&webhook_db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhooks: {}", e),
+            format!("Failed to save webhooks: {e}"),
         );
     }
 
@@ -294,7 +282,7 @@ pub async fn test_webhook_rules(
         let rule: WebhookRule = match serde_json::from_value(rule_json.clone()) {
             Ok(r) => r,
             Err(e) => {
-                return error_response(StatusCode::BAD_REQUEST, format!("Invalid rule: {}", e));
+                return error_response(StatusCode::BAD_REQUEST, format!("Invalid rule: {e}"));
             }
         };
 
@@ -318,7 +306,7 @@ pub async fn test_webhook_rules(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -330,10 +318,7 @@ pub async fn test_webhook_rules(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -390,7 +375,7 @@ pub async fn reorder_webhook_rules(
         Err(e) => {
             return error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to load webhooks: {}", e),
+                format!("Failed to load webhooks: {e}"),
             );
         }
     };
@@ -402,10 +387,7 @@ pub async fn reorder_webhook_rules(
     {
         Some(w) => w,
         None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                format!("Webhook '{}' not found", name),
-            );
+            return error_response(StatusCode::NOT_FOUND, format!("Webhook '{name}' not found"));
         }
     };
 
@@ -420,7 +402,7 @@ pub async fn reorder_webhook_rules(
                 webhook.rules = reordered;
                 return error_response(
                     StatusCode::BAD_REQUEST,
-                    format!("Rule '{}' not found, or listed more than once", key),
+                    format!("Rule '{key}' not found, or listed more than once"),
                 );
             }
         }
@@ -438,7 +420,7 @@ pub async fn reorder_webhook_rules(
     if let Err(e) = state.webhook_database.save_webhooks(&webhook_db) {
         return error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to save webhooks: {}", e),
+            format!("Failed to save webhooks: {e}"),
         );
     }
 

@@ -22,7 +22,7 @@ fn main() {
         }
     };
 
-    println!("\nConnecting to {}...", mac);
+    println!("\nConnecting to {mac}...");
 
     loop {
         print_menu();
@@ -175,8 +175,8 @@ fn test_buzzer_commands(bt_addr: &BtAddr) {
     ];
 
     for (name, hex, _, desc) in &variations {
-        println!("  {} - {}", name, hex);
-        println!("      ({})", desc);
+        println!("  {name} - {hex}");
+        println!("      ({desc})");
     }
     println!("  9. Custom buzzer - enter your own args");
     println!("  0. Back");
@@ -213,7 +213,7 @@ fn test_buzzer_commands(bt_addr: &BtAddr) {
     let payload = encode_pixoo_cmd(0x31, args);
 
     println!("\nSending: {}", bytes_to_hex(&payload));
-    println!("Args breakdown: {:?}", args);
+    println!("Args breakdown: {args:?}");
     send_and_receive(bt_addr, &payload, Duration::from_millis(2000));
 }
 
@@ -236,7 +236,7 @@ fn test_display_commands(bt_addr: &BtAddr) {
     ];
 
     for (name, payload) in &commands {
-        println!("\nTesting: {}", name);
+        println!("\nTesting: {name}");
         println!("Payload: {}", bytes_to_hex(payload));
         send_and_receive(bt_addr, payload, Duration::from_millis(1000));
         thread::sleep(Duration::from_millis(500));
@@ -330,14 +330,11 @@ fn scan_commands(bt_addr: &BtAddr) {
     let delay = prompt_input("Delay between commands (ms) [500]: ");
     let delay_ms = delay.trim().parse::<u64>().unwrap_or(500);
 
-    println!(
-        "\nScanning commands 0x{:02X} to 0x{:02X}...",
-        start_cmd, end_cmd
-    );
+    println!("\nScanning commands 0x{start_cmd:02X} to 0x{end_cmd:02X}...");
 
     for cmd in start_cmd..=end_cmd {
         let payload = encode_pixoo_cmd(cmd, &[]);
-        print!("Testing 0x{:02X}: ", cmd);
+        print!("Testing 0x{cmd:02X}: ");
         io::stdout().flush().unwrap();
 
         match try_send(bt_addr, &payload, Duration::from_millis(500)) {
@@ -348,7 +345,7 @@ fn scan_commands(bt_addr: &BtAddr) {
                 println!("OK (no response)");
             }
             Err(e) => {
-                println!("ERROR: {}", e);
+                println!("ERROR: {e}");
             }
         }
 
@@ -433,7 +430,7 @@ fn send_and_receive(bt_addr: &BtAddr, data: &[u8], timeout: Duration) {
             println!("✓ Sent successfully (no response within timeout)");
         }
         Err(e) => {
-            println!("✗ Error: {}", e);
+            println!("✗ Error: {e}");
         }
     }
 }
@@ -479,7 +476,7 @@ fn parse_mac(mac: &str) -> Option<BtAddr> {
 }
 
 fn prompt_input(prompt: &str) -> String {
-    print!("{}", prompt);
+    print!("{prompt}");
     io::stdout().flush().unwrap();
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
@@ -498,7 +495,7 @@ fn hex_to_bytes(hex: &str) -> Option<Vec<u8>> {
 fn bytes_to_hex(bytes: &[u8]) -> String {
     bytes
         .iter()
-        .map(|b| format!("{:02X}", b))
+        .map(|b| format!("{b:02X}"))
         .collect::<Vec<_>>()
         .join(" ")
 }

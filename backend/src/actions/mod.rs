@@ -181,7 +181,7 @@ impl ActionExecutor {
         );
 
         info!("Executed display notification: {}", title);
-        Ok(format!("Displayed notification: {}", title))
+        Ok(format!("Displayed notification: {title}"))
     }
 
     async fn execute_display_image(
@@ -249,7 +249,7 @@ impl ActionExecutor {
             .trigger_image(img, duration_secs, flash, flash_speed_ms);
 
         info!("Executed display image from source: {}", source);
-        Ok(format!("Displayed image from source: {}", source))
+        Ok(format!("Displayed image from source: {source}"))
     }
 
     async fn execute_flash_screen(
@@ -284,8 +284,7 @@ impl ActionExecutor {
             color, duration_ms
         );
         Ok(format!(
-            "Flashed screen with color {} for {}ms",
-            color, duration_ms
+            "Flashed screen with color {color} for {duration_ms}ms"
         ))
     }
 
@@ -310,13 +309,13 @@ impl ActionExecutor {
             .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
         wrapper
             .play_buzzer(active_time, off_time, total_time)
-            .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
 
         info!(
             "Play sound action: type={}, total={}ms",
             sound_type, total_time
         );
-        Ok(format!("Played sound {} for {}ms", sound_type, total_time))
+        Ok(format!("Played sound {sound_type} for {total_time}ms"))
     }
 
     async fn execute_log_event(&self, action: &WebhookAction, payload: &Value) -> Result<String> {
@@ -333,7 +332,7 @@ impl ActionExecutor {
             _ => info!("{}", message),
         }
 
-        Ok(format!("Logged event: {}", message))
+        Ok(format!("Logged event: {message}"))
     }
 
     async fn execute_forward_webhook(
@@ -360,7 +359,7 @@ impl ActionExecutor {
             .ok()
             .and_then(|u| {
                 u.host_str().map(|h| match u.port() {
-                    Some(port) => format!("{}:{}", h, port),
+                    Some(port) => format!("{h}:{port}"),
                     None => h.to_string(),
                 })
             })
@@ -371,18 +370,15 @@ impl ActionExecutor {
             "POST" => client.post(&url).json(payload).send().await,
             "PUT" => client.put(&url).json(payload).send().await,
             "DELETE" => client.delete(&url).send().await,
-            _ => return Err(anyhow::anyhow!("Unsupported HTTP method: {}", method)),
+            _ => return Err(anyhow::anyhow!("Unsupported HTTP method: {method}")),
         }
         .map_err(|e| anyhow::anyhow!("Forward to {} failed: {}", target, e.without_url()))?;
 
         let status = response.status();
         info!("Forwarded webhook to {} with status {}", target, status);
         if !status.is_success() {
-            return Err(anyhow::anyhow!("Forward to {} returned {}", target, status));
+            return Err(anyhow::anyhow!("Forward to {target} returned {status}"));
         }
-        Ok(format!(
-            "Forwarded webhook to {} (status: {})",
-            target, status
-        ))
+        Ok(format!("Forwarded webhook to {target} (status: {status})"))
     }
 }

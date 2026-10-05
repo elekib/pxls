@@ -165,7 +165,7 @@ async fn run_actions(
             Ok(result) => actions_taken.push(result),
             Err(e) => {
                 let msg = format!("{:?} action failed: {}", action.action_type, e);
-                actions_taken.push(format!("Action failed: {}", e));
+                actions_taken.push(format!("Action failed: {e}"));
                 failures.push(msg);
             }
         }
@@ -303,7 +303,7 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
             let mut outcome = WebhookOutcome::new(
                 StatusCode::NOT_FOUND,
                 false,
-                format!("Webhook '{}' not found in configuration", name),
+                format!("Webhook '{name}' not found in configuration"),
             );
             outcome.error = Some(outcome.message.clone());
             outcome
@@ -388,7 +388,7 @@ mod tests {
     #[tokio::test]
     async fn webhook_requires_the_webhook_secret() {
         let (base, dir) = serve().await;
-        let url = format!("{}/api/webhook/radarr", base);
+        let url = format!("{base}/api/webhook/radarr");
         let body = r#"{"eventType":"Download"}"#;
 
         // No secret, wrong secret, and an unknown webhook are all the same 401.
@@ -398,12 +398,12 @@ mod tests {
             401
         );
         assert_eq!(
-            post_status(format!("{}?secret=wrong", url), &[], body).await,
+            post_status(format!("{url}?secret=wrong"), &[], body).await,
             401
         );
         assert_eq!(
             post_status(
-                format!("{}/api/webhook/nope", base),
+                format!("{base}/api/webhook/nope"),
                 &[("x-webhook-secret", SECRET.into())],
                 body
             )
@@ -417,14 +417,14 @@ mod tests {
             200
         );
         assert_eq!(
-            post_status(format!("{}?secret={}", url, SECRET), &[], body).await,
+            post_status(format!("{url}?secret={SECRET}"), &[], body).await,
             200
         );
-        let basic = base64::engine::general_purpose::STANDARD.encode(format!("radarr:{}", SECRET));
+        let basic = base64::engine::general_purpose::STANDARD.encode(format!("radarr:{SECRET}"));
         assert_eq!(
             post_status(
                 url.clone(),
-                &[("authorization", format!("Basic {}", basic))],
+                &[("authorization", format!("Basic {basic}"))],
                 body
             )
             .await,

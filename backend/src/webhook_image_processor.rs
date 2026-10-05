@@ -11,6 +11,12 @@ pub struct WebhookImageProcessor {
     allow_private_urls: bool,
 }
 
+impl Default for WebhookImageProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebhookImageProcessor {
     pub fn new() -> Self {
         Self {
@@ -60,7 +66,7 @@ impl WebhookImageProcessor {
             }
             "template" => self.render_template_image(action, payload).await,
             "text_overlay" => self.render_text_overlay_image(action, payload).await,
-            _ => Err(anyhow!("Unsupported image source: {}", image_source)),
+            _ => Err(anyhow!("Unsupported image source: {image_source}")),
         }
     }
 
@@ -73,12 +79,12 @@ impl WebhookImageProcessor {
 
         let image_bytes = crate::net_guard::fetch_image_bytes(url, self.allow_private_urls)
             .await
-            .map_err(|e| anyhow!("Failed to download image: {}", e))?;
+            .map_err(|e| anyhow!("Failed to download image: {e}"))?;
         crate::image_guard::validate_image_bytes(&image_bytes)
-            .map_err(|e| anyhow!("Rejected downloaded image: {}", e))?;
+            .map_err(|e| anyhow!("Rejected downloaded image: {e}"))?;
 
         let img = image::load_from_memory(&image_bytes)
-            .map_err(|e| anyhow!("Failed to parse image: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse image: {e}"))?;
 
         self.process_image_with_params(img, action).await
     }
@@ -95,10 +101,10 @@ impl WebhookImageProcessor {
 
         let image_bytes = base64::engine::general_purpose::STANDARD
             .decode(clean_base64)
-            .map_err(|e| anyhow!("Failed to decode base64: {}", e))?;
+            .map_err(|e| anyhow!("Failed to decode base64: {e}"))?;
 
         let img = image::load_from_memory(&image_bytes)
-            .map_err(|e| anyhow!("Failed to parse base64 image: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse base64 image: {e}"))?;
 
         self.process_image_with_params(img, action).await
     }
@@ -118,7 +124,7 @@ impl WebhookImageProcessor {
             "notification" => self.render_notification_template(action, payload).await,
             "status" => self.render_status_template(action, payload).await,
             "chart" => self.render_chart_template(action, payload).await,
-            _ => Err(anyhow!("Unknown template type: {}", template_type)),
+            _ => Err(anyhow!("Unknown template type: {template_type}")),
         }
     }
 
@@ -239,12 +245,12 @@ impl WebhookImageProcessor {
         let image_bytes =
             crate::net_guard::fetch_image_bytes(base_image_url, self.allow_private_urls)
                 .await
-                .map_err(|e| anyhow!("Failed to download base image: {}", e))?;
+                .map_err(|e| anyhow!("Failed to download base image: {e}"))?;
         crate::image_guard::validate_image_bytes(&image_bytes)
-            .map_err(|e| anyhow!("Rejected base image: {}", e))?;
+            .map_err(|e| anyhow!("Rejected base image: {e}"))?;
 
         let mut img = image::load_from_memory(&image_bytes)
-            .map_err(|e| anyhow!("Failed to parse base image: {}", e))?
+            .map_err(|e| anyhow!("Failed to parse base image: {e}"))?
             .to_rgba8();
 
         // Add text overlay
