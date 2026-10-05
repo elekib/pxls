@@ -1,8 +1,10 @@
+# Run pxls from the published images:
+#   cp .env.example .env   # set PXLS_AUTH_TOKEN and TZ
+#   docker compose up -d
+# To build from source instead, add the build overlay (see compose.build.yaml).
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/elekib/pxls-backend:${PXLS_TAG:-latest}
     container_name: pxls-backend
     network_mode: host
     privileged: true
@@ -14,9 +16,7 @@ services:
       - ./data:/app/data
     restart: unless-stopped
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/elekib/pxls-frontend:${PXLS_TAG:-latest}
     container_name: pxls-frontend
     ports:
       - 3030:80

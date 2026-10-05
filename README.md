@@ -28,29 +28,63 @@ pxls runs next to your Pixoo, talks to it over Bluetooth, and gives you a web UI
 
 Bluetooth access from inside a container is the fiddly part. The backend runs `privileged` with the host's `/dev` and D-Bus socket mounted. Narrowing this is on the roadmap.
 
-## Quick start (development)
+The images are built for `linux/amd64` and `linux/arm64`, so a Raspberry Pi works.
+
+## Quick start
 
 ```bash
-cp .env.example .env   # set TZ at minimum
-docker compose up --build
+cp .env.example .env
+# Edit .env: set PXLS_AUTH_TOKEN (see below) and TZ
+docker compose up -d
 ```
 
-- Web UI: http://localhost:3030
-- Backend API: http://localhost:3400 (the UI proxies `/api` to it)
+Open http://localhost:3030 and sign in with your token. Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`) and connect.
 
-Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`) and connect.
+> Published images are not available yet. Until the first release, build from source:
+> `docker compose -f compose.yaml -f compose.build.yaml up --build -d` (or `make dev`).
 
-Settings are stored in `./data/config.json`, created on first run. Webhook definitions, rules, the event log and uploads live in `./data` too. The `data/` directory and `.env` are git-ignored, so they never get committed.
+## Authentication
+
+pxls requires an API token and refuses to start without one. Generate it and put it in `.env`:
+
+```bash
+openssl rand -hex 32     # use the output as PXLS_AUTH_TOKEN
+```
+
+- The web UI asks for the token on first visit and keeps it in your browser's local storage. **Sign out** forgets it.
+- API clients send `Authorization: Bearer <token>`.
+- `/api/health` is open so container health checks work. It only reports status and version.
+- Incoming webhooks use their own secret instead of the API token (see [Webhooks](#webhooks)).
+
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PXLS_AUTH_TOKEN` | required | API token, at least 16 characters |
+| `TZ` | `UTC` | Timezone for clock pages |
+| `PXLS_ALLOWED_ORIGINS` | empty | Comma-separated browser origins allowed to call the API cross-origin. Leave empty when using the bundled UI, which shares an origin with the API through its proxy |
+| `PXLS_ALLOW_PRIVATE_URLS` | `false` | Let webhook image URLs point at private or LAN addresses (for example a Jellyfin server). Off by default to prevent server-side request forgery |
+| `PXLS_TAG` | `latest` | Image tag for `docker compose`: `latest`, `dev` or a version such as `0.1.0` |
+
+Device settings, pages and the rest of the app configuration are edited in the web UI and stored in `./data/config.json`, created on first run. Webhook definitions, rules, the event log and uploads live in `./data` too. The `data/` directory and `.env` are git-ignored so they never get committed.
 
 ## Webhooks
 
 Point a sender at `POST /api/webhook/<name>`, for example a Radarr or Sonarr "Webhook" connection:
 
 ```
-http://<host>:3400/api/webhook/radarr
+http://<host>:3030/api/webhook/radarr
 ```
 
-Define the webhook and its rules on the **Webhooks** page. Use the **Events** page to inspect incoming payloads, test rules and replay events.
+Each webhook has a secret, generated when you create it (and for existing webhooks the first time this version starts). Copy it from the webhook card on the **Webhooks** page. Senders can present it in any of these ways:
+
+- `X-Webhook-Secret: <secret>` header
+- HTTP Basic auth with the secret as the password (any username). Radarr and Sonarr support this
+- `?secret=<secret>` in the URL, for senders that can do neither. The URL then acts like a password and can show up in logs
+
+A webhook with a missing or wrong secret, or an unknown name, gets `401`.
+
+Define rules on the **Webhooks** page. Use the **Event Logs** page to inspect incoming payloads, test rules and replay events.
 
 ## Project layout
 
@@ -60,20 +94,22 @@ Define the webhook and its rules on the **Webhooks** page. Use the **Events** pa
 | `frontend/` | Vite, React and Tailwind web UI, served by nginx |
 | `docs/` | Protocol reference |
 | `scripts/` | Optional helper scripts |
-| `compose.yaml` | Local build and run |
+| `compose.yaml` | Run the published images |
+| `compose.build.yaml` | Overlay that builds the images from source |
 
 ## Status and security
 
-Early development. Authentication, published container images and a full setup guide are in progress. **Until authentication lands the API is open to anyone on your network.** Run pxls only on a trusted network and do not expose ports 3030 or 3400 to the internet.
+Early development. The API requires a token, but the Bluetooth device is controlled by the host, so keep pxls on a trusted network and put TLS in front of it before exposing ports 3030 or 3400 beyond your LAN. See [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
 - [Bluetooth protocol](docs/protocol.md)
-- [Contributing](AGENTS.md)
+- [Contributing](CONTRIBUTING.md) and [architecture notes](AGENTS.md)
+- [Changelog](CHANGELOG.md)
 
 ## Contributing
 
-Issues and pull requests are welcome. Sign off your commits (`git commit -s`) to certify the Developer Certificate of Origin. See [AGENTS.md](AGENTS.md) for architecture notes.
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Commits must be signed off (`git commit -s`) to certify the Developer Certificate of Origin.
 
 ## License
 

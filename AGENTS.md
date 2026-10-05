@@ -11,9 +11,9 @@ Guide for contributors and coding agents working on pxls.
 
 ## Build and run
 
-- Backend (Rust): `docker compose build backend && docker compose up -d backend`. Builds run inside Docker, so no local cargo is needed.
-- Frontend (Vite/React): `docker compose build frontend && docker compose up -d frontend` (port 3030).
-- Backend API: http://localhost:3400. Logs: `docker logs -f pxls-backend`.
+- Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). Builds run inside Docker.
+- Frontend (Vite/React) is served on port 3030 and proxies `/api` to the backend.
+- Backend API: http://localhost:3400 (requires `Authorization: Bearer $PXLS_AUTH_TOKEN`). Logs: `docker logs -f pxls-backend`.
 
 ## Architecture
 

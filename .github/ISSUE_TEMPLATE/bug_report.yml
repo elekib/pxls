@@ -1,0 +1,36 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: version
+    attributes:
+      label: pxls version
+      description: Shown in the UI sidebar and at /api/health
+  - type: input
+    id: device
+    attributes:
+      label: Pixoo model
+      description: For example Pixoo (16x16)
+  - type: input
+    id: host
+    attributes:
+      label: Host and Docker version
+      description: For example Raspberry Pi 4, Debian 12, Docker 27
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove tokens, secrets and MAC addresses you want to keep private.
+      render: shell
