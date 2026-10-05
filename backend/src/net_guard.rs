@@ -16,7 +16,11 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub fn allow_private_from_env() -> bool {
     matches!(
-        std::env::var(ALLOW_PRIVATE_ENV).unwrap_or_default().trim().to_ascii_lowercase().as_str(),
+        std::env::var(ALLOW_PRIVATE_ENV)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase()
+            .as_str(),
         "1" | "true" | "yes"
     )
 }
@@ -60,7 +64,7 @@ pub fn validate_url(raw: &str) -> Result<Url, String> {
     if url.scheme() != "http" && url.scheme() != "https" {
         return Err("Only http and https URLs are allowed".to_string());
     }
-    if url.host_str().map_or(true, str::is_empty) {
+    if url.host_str().is_none_or(str::is_empty) {
         return Err("URL has no host".to_string());
     }
     if !url.username().is_empty() || url.password().is_some() {
@@ -110,7 +114,9 @@ pub async fn fetch_image_bytes(url: &str, allow_private: bool) -> Result<Vec<u8>
         if let Some((host, addr)) = pin {
             builder = builder.resolve(&host, addr);
         }
-        let client = builder.build().map_err(|e| format!("HTTP client error: {}", e))?;
+        let client = builder
+            .build()
+            .map_err(|e| format!("HTTP client error: {}", e))?;
 
         let mut resp = client
             .get(current.clone())
@@ -125,14 +131,19 @@ pub async fn fetch_image_bytes(url: &str, allow_private: bool) -> Result<Vec<u8>
                 .and_then(|v| v.to_str().ok())
                 .ok_or("Redirect without Location header")?
                 .to_string();
-            let next = current.join(&location).map_err(|_| "Invalid redirect target".to_string())?;
+            let next = current
+                .join(&location)
+                .map_err(|_| "Invalid redirect target".to_string())?;
             current = validate_url(next.as_str())?;
             continue;
         }
         if !resp.status().is_success() {
             return Err(format!("Server returned {}", resp.status()));
         }
-        if resp.content_length().map_or(false, |len| len > MAX_IMAGE_BYTES as u64) {
+        if resp
+            .content_length()
+            .is_some_and(|len| len > MAX_IMAGE_BYTES as u64)
+        {
             return Err("Image is too large".to_string());
         }
 
@@ -163,11 +174,30 @@ mod tests {
     #[test]
     fn blocks_non_public_addresses() {
         for s in [
-            "127.0.0.1", "127.1.2.3", "10.0.0.1", "172.16.0.1", "172.31.255.255", "192.168.1.1",
-            "169.254.169.254", "0.0.0.0", "255.255.255.255", "224.0.0.1", "100.64.0.1",
-            "100.127.255.255", "192.0.0.1", "240.0.0.1", "0.1.2.3",
-            "::1", "::", "fc00::1", "fd12:3456::1", "fe80::1", "ff02::1",
-            "::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:169.254.169.254",
+            "127.0.0.1",
+            "127.1.2.3",
+            "10.0.0.1",
+            "172.16.0.1",
+            "172.31.255.255",
+            "192.168.1.1",
+            "169.254.169.254",
+            "0.0.0.0",
+            "255.255.255.255",
+            "224.0.0.1",
+            "100.64.0.1",
+            "100.127.255.255",
+            "192.0.0.1",
+            "240.0.0.1",
+            "0.1.2.3",
+            "::1",
+            "::",
+            "fc00::1",
+            "fd12:3456::1",
+            "fe80::1",
+            "ff02::1",
+            "::ffff:127.0.0.1",
+            "::ffff:10.0.0.1",
+            "::ffff:169.254.169.254",
         ] {
             assert!(is_blocked_ip(ip(s)), "{} should be blocked", s);
         }
@@ -175,8 +205,15 @@ mod tests {
 
     #[test]
     fn allows_public_addresses() {
-        for s in ["8.8.8.8", "1.1.1.1", "93.184.216.34", "172.32.0.1", "100.128.0.1",
-                  "2606:4700:4700::1111", "::ffff:8.8.8.8"] {
+        for s in [
+            "8.8.8.8",
+            "1.1.1.1",
+            "93.184.216.34",
+            "172.32.0.1",
+            "100.128.0.1",
+            "2606:4700:4700::1111",
+            "::ffff:8.8.8.8",
+        ] {
             assert!(!is_blocked_ip(ip(s)), "{} should be allowed", s);
         }
     }
@@ -185,9 +222,18 @@ mod tests {
     fn url_validation() {
         assert!(validate_url("https://image.tmdb.org/t/p/w300/x.jpg").is_ok());
         assert!(validate_url("http://example.com:8080/a.png").is_ok());
-        for bad in ["file:///etc/passwd", "ftp://example.com/a.png", "gopher://x", "data:text/plain,hi",
-                    "javascript:alert(1)", "http://", "not a url", "",
-                    "http://user:pass@example.com/", "http://user@example.com/"] {
+        for bad in [
+            "file:///etc/passwd",
+            "ftp://example.com/a.png",
+            "gopher://x",
+            "data:text/plain,hi",
+            "javascript:alert(1)",
+            "http://",
+            "not a url",
+            "",
+            "http://user:pass@example.com/",
+            "http://user@example.com/",
+        ] {
             assert!(validate_url(bad).is_err(), "should reject {:?}", bad);
         }
     }
@@ -208,7 +254,9 @@ mod tests {
             assert!(!err.is_empty(), "{} should fail", u);
             assert!(
                 err.contains("not allowed") || err.contains("private") || err.contains("resolve"),
-                "{} failed for the wrong reason: {}", u, err
+                "{} failed for the wrong reason: {}",
+                u,
+                err
             );
         }
     }
@@ -221,7 +269,13 @@ mod tests {
     #[tokio::test]
     async fn private_targets_pass_the_guard_when_allowed() {
         // Nothing listens on this port, so the request fails, but not at the guard.
-        let err = fetch_image_bytes("http://127.0.0.1:9/a.png", true).await.unwrap_err();
-        assert!(!err.contains("not allowed"), "guard should be bypassed: {}", err);
+        let err = fetch_image_bytes("http://127.0.0.1:9/a.png", true)
+            .await
+            .unwrap_err();
+        assert!(
+            !err.contains("not allowed"),
+            "guard should be bypassed: {}",
+            err
+        );
     }
 }

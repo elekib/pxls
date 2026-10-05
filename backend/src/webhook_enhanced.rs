@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::cmp::Ordering;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebhookEvent {
@@ -89,18 +89,13 @@ fn default_enabled() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum ConditionLogic {
     #[serde(alias = "all", alias = "and")]
+    #[default]
     All,
     #[serde(alias = "any", alias = "or")]
     Any,
-}
-
-impl Default for ConditionLogic {
-    fn default() -> Self {
-        ConditionLogic::All
-    }
 }
 
 fn default_display_on_no_match() -> bool {
@@ -419,14 +414,19 @@ pub struct RuleEvaluation {
     pub conditions: Vec<ConditionEvaluation>,
 }
 
-pub fn evaluate_condition_verbose(condition: &WebhookCondition, payload: &Value) -> ConditionEvaluation {
+pub fn evaluate_condition_verbose(
+    condition: &WebhookCondition,
+    payload: &Value,
+) -> ConditionEvaluation {
     let actual = extract_field(payload, &condition.field_path);
 
     let passed = match condition.operator {
         ConditionOperator::Exists => actual.is_some(),
         ConditionOperator::NotExists => actual.is_none(),
         op => match &actual {
-            Some(field_val) => compare_values(field_val, &condition.value, op, condition.case_insensitive),
+            Some(field_val) => {
+                compare_values(field_val, &condition.value, op, condition.case_insensitive)
+            }
             None => false,
         },
     };
@@ -438,10 +438,6 @@ pub fn evaluate_condition_verbose(condition: &WebhookCondition, payload: &Value)
         actual,
         passed,
     }
-}
-
-pub fn evaluate_condition(condition: &WebhookCondition, payload: &Value) -> bool {
-    evaluate_condition_verbose(condition, payload).passed
 }
 
 /// Evaluate a rule against a payload, returning per-condition detail.
@@ -563,22 +559,25 @@ pub fn validate_action(action: &WebhookAction) -> Result<(), String> {
                 }
                 "base64" => {
                     if !has("base64_data") {
-                        return Err("DisplayImage with base64 source requires 'base64_data'".to_string());
+                        return Err(
+                            "DisplayImage with base64 source requires 'base64_data'".to_string()
+                        );
                     }
                 }
                 "template" => {}
                 "text_overlay" => {
                     if !has("base_image_url") {
-                        return Err("DisplayImage with text_overlay source requires 'base_image_url'".to_string());
+                        return Err(
+                            "DisplayImage with text_overlay source requires 'base_image_url'"
+                                .to_string(),
+                        );
                     }
                 }
                 other => return Err(format!("Unsupported image_source: '{}'", other)),
             }
         }
-        ActionType::ForwardWebhook => {
-            if !has("url") {
-                return Err("ForwardWebhook requires a 'url' parameter".to_string());
-            }
+        ActionType::ForwardWebhook if !has("url") => {
+            return Err("ForwardWebhook requires a 'url' parameter".to_string());
         }
         _ => {}
     }
@@ -597,10 +596,14 @@ mod extract_field_tests {
             { "coverType": "poster", "remoteUrl": "p.jpg" },
         ]}});
         assert_eq!(
-            extract_field_as_string(&payload, "series.images[coverType=poster].remoteUrl").as_deref(),
+            extract_field_as_string(&payload, "series.images[coverType=poster].remoteUrl")
+                .as_deref(),
             Some("p.jpg")
         );
-        assert_eq!(extract_field(&payload, "series.images[coverType=logo].remoteUrl"), None);
+        assert_eq!(
+            extract_field(&payload, "series.images[coverType=logo].remoteUrl"),
+            None
+        );
         assert_eq!(
             extract_field_as_string(&payload, "series.images[0].remoteUrl").as_deref(),
             Some("b.jpg")

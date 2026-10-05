@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -179,25 +178,31 @@ pub struct DeviceConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum PageType {
-    ClockWeather { clock_color: String, date_color: String, weather_color: String, weather_location: String, temperature_unit: String },
+    ClockWeather {
+        clock_color: String,
+        date_color: String,
+        weather_color: String,
+        weather_location: String,
+        temperature_unit: String,
+    },
     SystemStats {
-        source: String,  // "dashdot" or "beszel"
+        source: String, // "dashdot" or "beszel"
         dashdot_url: Option<String>,
         beszel_hub_url: Option<String>,
         beszel_system_id: Option<String>,
         brand_text: String,
-        brand_color: String
+        brand_color: String,
     },
     GpuStats {
-        source: String,  // "dashdot" or "beszel"
+        source: String, // "dashdot" or "beszel"
         dashdot_url: Option<String>,
         beszel_hub_url: Option<String>,
         beszel_system_id: Option<String>,
         brand_text: String,
-        brand_color: String
+        brand_color: String,
     },
     Temps {
-        source: String,  // "dashdot" or "beszel"
+        source: String, // "dashdot" or "beszel"
         dashdot_url: Option<String>,
         beszel_hub_url: Option<String>,
         beszel_system_id: Option<String>,
@@ -207,16 +212,55 @@ pub enum PageType {
         show_gpu: bool,
         show_storage: bool,
     },
-    CustomScript { script_path: String, interval: u64, inputs: Vec<ScriptInput> },
-    ImageUpload { mode: String, frame_duration: u64, file_path: Option<String> },
-    CustomPixels { pixels: Vec<Pixel> },
-    CustomText { text: String, y: u8, color: String, background_color: String, scroll_speed: u64, enable_scroll: bool },
-    DivoomEnvironment { time_format: String, clock_design: String, show_divoom: bool, show_weather: bool, show_temp: bool, show_date: bool, color: [u8; 3] },
-    DivoomLight { color: [u8; 3], brightness: u8, effect_mode: u8, on: bool },
-    DivoomSpecial { mode: String },
-    DivoomMusic { mode: String },
-    DivoomUser { mode: String },
-    DivoomScore { red_score: u8, blue_score: u8 },
+    CustomScript {
+        script_path: String,
+        interval: u64,
+        inputs: Vec<ScriptInput>,
+    },
+    ImageUpload {
+        mode: String,
+        frame_duration: u64,
+        file_path: Option<String>,
+    },
+    CustomPixels {
+        pixels: Vec<Pixel>,
+    },
+    CustomText {
+        text: String,
+        y: u8,
+        color: String,
+        background_color: String,
+        scroll_speed: u64,
+        enable_scroll: bool,
+    },
+    DivoomEnvironment {
+        time_format: String,
+        clock_design: String,
+        show_divoom: bool,
+        show_weather: bool,
+        show_temp: bool,
+        show_date: bool,
+        color: [u8; 3],
+    },
+    DivoomLight {
+        color: [u8; 3],
+        brightness: u8,
+        effect_mode: u8,
+        on: bool,
+    },
+    DivoomSpecial {
+        mode: String,
+    },
+    DivoomMusic {
+        mode: String,
+    },
+    DivoomUser {
+        mode: String,
+    },
+    DivoomScore {
+        red_score: u8,
+        blue_score: u8,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -291,19 +335,17 @@ impl Default for Config {
             clock_color: "00FFFF".to_string(),
             date_color: "FFFF00".to_string(),
             weather_color: "FFA500".to_string(),
-            custom_pages: vec![
-                CustomPage {
-                    name: "Clock & Weather".to_string(),
-                    enabled: true,
-                    page_type: PageType::ClockWeather {
-                        clock_color: "00FFFF".to_string(),
-                        date_color: "FFFF00".to_string(),
-                        weather_color: "FFA500".to_string(),
-                        weather_location: "New York,NY".to_string(),
-                        temperature_unit: "fahrenheit".to_string(),
-                    },
-                }
-            ],
+            custom_pages: vec![CustomPage {
+                name: "Clock & Weather".to_string(),
+                enabled: true,
+                page_type: PageType::ClockWeather {
+                    clock_color: "00FFFF".to_string(),
+                    date_color: "FFFF00".to_string(),
+                    weather_color: "FFA500".to_string(),
+                    weather_location: "New York,NY".to_string(),
+                    temperature_unit: "fahrenheit".to_string(),
+                },
+            }],
             webhooks: Vec::new(),
             enhanced_webhooks: Vec::new(),
             beszel_auth: None,
@@ -339,10 +381,26 @@ impl Default for Config {
                 },
                 countdown_config: CountdownConfig {
                     presets: vec![
-                        CountdownPreset { name: "1 Minute".to_string(), minutes: 1, seconds: 0 },
-                        CountdownPreset { name: "5 Minutes".to_string(), minutes: 5, seconds: 0 },
-                        CountdownPreset { name: "15 Minutes".to_string(), minutes: 15, seconds: 0 },
-                        CountdownPreset { name: "25 min (Pomodoro)".to_string(), minutes: 25, seconds: 0 },
+                        CountdownPreset {
+                            name: "1 Minute".to_string(),
+                            minutes: 1,
+                            seconds: 0,
+                        },
+                        CountdownPreset {
+                            name: "5 Minutes".to_string(),
+                            minutes: 5,
+                            seconds: 0,
+                        },
+                        CountdownPreset {
+                            name: "15 Minutes".to_string(),
+                            minutes: 15,
+                            seconds: 0,
+                        },
+                        CountdownPreset {
+                            name: "25 min (Pomodoro)".to_string(),
+                            minutes: 25,
+                            seconds: 0,
+                        },
                     ],
                     buzzer_active_time_ms: 500,
                     buzzer_off_time_ms: 0,

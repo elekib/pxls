@@ -1,6 +1,6 @@
 use crate::renderer::Renderer;
 use anyhow::Result;
-use image::{DynamicImage, AnimationDecoder};
+use image::{AnimationDecoder, DynamicImage};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -10,27 +10,29 @@ use tracing::{debug, warn};
 /// Cached animated GIF data with native frame timing
 struct AnimatedGif {
     frames: Vec<DynamicImage>,
-    frame_delays: Vec<Duration>,  // Native delays from GIF file
-    use_native_timing: bool,      // If true, use frame_delays; if false, use fixed duration
-    fixed_duration: Duration,     // User-specified duration (when use_native_timing is false)
+    frame_delays: Vec<Duration>, // Native delays from GIF file
+    use_native_timing: bool,     // If true, use frame_delays; if false, use fixed duration
+    fixed_duration: Duration,    // User-specified duration (when use_native_timing is false)
 }
 
 /// Global cache for decoded GIFs
 use once_cell::sync::Lazy;
 
-static GIF_CACHE: Lazy<Mutex<HashMap<String, Arc<AnimatedGif>>>> = Lazy::new(|| {
-    Mutex::new(HashMap::new())
-});
+static GIF_CACHE: Lazy<Mutex<HashMap<String, Arc<AnimatedGif>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Track which GIF is currently being displayed per file
-static ACTIVE_GIFS: Lazy<Mutex<HashMap<String, Instant>>> = Lazy::new(|| {
-    Mutex::new(HashMap::new())
-});
+static ACTIVE_GIFS: Lazy<Mutex<HashMap<String, Instant>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub struct ImageUploadPage;
 
 impl ImageUploadPage {
-    pub fn render(mode: &str, file_path: Option<&str>, frame_duration_ms: u64) -> Result<DynamicImage> {
+    pub fn render(
+        mode: &str,
+        file_path: Option<&str>,
+        frame_duration_ms: u64,
+    ) -> Result<DynamicImage> {
         debug!(mode = %mode, file_path = ?file_path, "Rendering image upload page");
 
         // If no file is uploaded, show placeholder
@@ -88,7 +90,11 @@ impl ImageUploadPage {
         }
     }
 
-    fn render_animated_gif(full_path: &str, cache_key: &str, frame_duration_ms: u64) -> Result<DynamicImage> {
+    fn render_animated_gif(
+        full_path: &str,
+        cache_key: &str,
+        frame_duration_ms: u64,
+    ) -> Result<DynamicImage> {
         // Try to get cached GIF or load it
         let gif = {
             let cache = GIF_CACHE.lock().unwrap();
@@ -121,19 +127,21 @@ impl ImageUploadPage {
 
         // Calculate which frame to show based on elapsed time
         let mut active = ACTIVE_GIFS.lock().unwrap();
-        let start_time = *active.entry(cache_key.to_string()).or_insert_with(Instant::now);
+        let start_time = *active
+            .entry(cache_key.to_string())
+            .or_insert_with(Instant::now);
         let elapsed = start_time.elapsed();
-        
+
         let frame_index = if gif.use_native_timing {
             // Use native frame delays from GIF file
             let total_duration: Duration = gif.frame_delays.iter().sum();
             let looped_elapsed_ms = elapsed.as_millis() % total_duration.as_millis();
-            
+
             // Find which frame we're on based on cumulative delays
             let mut cumulative_ms: u128 = 0;
             let mut index = 0;
             for (i, delay) in gif.frame_delays.iter().enumerate() {
-                cumulative_ms += delay.as_millis() as u128;
+                cumulative_ms += delay.as_millis();
                 if looped_elapsed_ms < cumulative_ms {
                     index = i;
                     break;
@@ -146,19 +154,22 @@ impl ImageUploadPage {
             let looped_elapsed = elapsed.as_millis() % total_duration.as_millis();
             (looped_elapsed / gif.fixed_duration.as_millis() as u128) as usize % gif.frames.len()
         };
-        
+
         // Return the appropriate frame (already resized)
         Ok(gif.frames[frame_index].clone())
     }
 
-    fn load_gif_frames(full_path: &str, frame_duration_ms: u64) -> Result<(Vec<DynamicImage>, Vec<Duration>, bool)> {
+    fn load_gif_frames(
+        full_path: &str,
+        frame_duration_ms: u64,
+    ) -> Result<(Vec<DynamicImage>, Vec<Duration>, bool)> {
         let file = std::fs::File::open(full_path)?;
         let reader = std::io::BufReader::new(file);
         let decoder = image::codecs::gif::GifDecoder::new(reader)?;
-        
+
         let mut frames = Vec::new();
         let mut frame_delays = Vec::new();
-        
+
         // Collect all frames and their native delays
         for frame_result in decoder.into_frames() {
             let frame = frame_result?;
@@ -172,25 +183,27 @@ impl ImageUploadPage {
             };
             let delay = Duration::from_millis(delay_ms);
             frame_delays.push(delay);
-            
+
             let buffer = frame.into_buffer();
             let img = DynamicImage::ImageRgba8(buffer);
             let resized = img.resize_exact(16, 16, image::imageops::FilterType::Lanczos3);
             frames.push(resized);
         }
-        
+
         if frames.is_empty() {
             return Err(anyhow::anyhow!("No frames found in GIF"));
         }
-        
+
         // Use native timing if frame_duration_ms is 0, otherwise use user-specified duration
         let use_native_timing = frame_duration_ms == 0;
-        
-        debug!("Loaded {} frames from GIF, use_native_timing={}, avg_delay={}ms", 
-               frames.len(), 
-               use_native_timing,
-               frame_delays.iter().map(|d| d.as_millis()).sum::<u128>() / frame_delays.len() as u128);
-        
+
+        debug!(
+            "Loaded {} frames from GIF, use_native_timing={}, avg_delay={}ms",
+            frames.len(),
+            use_native_timing,
+            frame_delays.iter().map(|d| d.as_millis()).sum::<u128>() / frame_delays.len() as u128
+        );
+
         Ok((frames, frame_delays, use_native_timing))
     }
 }

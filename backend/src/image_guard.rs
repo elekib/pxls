@@ -12,8 +12,8 @@ const MAX_PIXELS: u64 = 16 * 1024 * 1024;
 /// Check the real content of an image rather than trusting its filename.
 /// Returns the canonical file extension for the detected format.
 pub fn validate_image_bytes(data: &[u8]) -> Result<&'static str, String> {
-    let format = image::guess_format(data)
-        .map_err(|_| "Not a recognised image file".to_string())?;
+    let format =
+        image::guess_format(data).map_err(|_| "Not a recognised image file".to_string())?;
     let ext = match format {
         ImageFormat::Png => "png",
         ImageFormat::Jpeg => "jpg",
@@ -28,7 +28,12 @@ pub fn validate_image_bytes(data: &[u8]) -> Result<&'static str, String> {
         .map_err(|_| "Unreadable image".to_string())?
         .into_dimensions()
         .map_err(|_| "Corrupt or unsupported image".to_string())?;
-    if w == 0 || h == 0 || w > MAX_DIMENSION || h > MAX_DIMENSION || (w as u64 * h as u64) > MAX_PIXELS {
+    if w == 0
+        || h == 0
+        || w > MAX_DIMENSION
+        || h > MAX_DIMENSION
+        || (w as u64 * h as u64) > MAX_PIXELS
+    {
         return Err(format!("Image too large (max {0}x{0})", MAX_DIMENSION));
     }
     Ok(ext)
@@ -44,11 +49,21 @@ pub fn sanitize_stem(original: &str) -> String {
     };
     let cleaned: String = stem
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     let cleaned = cleaned.trim_matches('_');
     let cleaned: String = cleaned.chars().take(64).collect();
-    if cleaned.is_empty() { "upload".to_string() } else { cleaned }
+    if cleaned.is_empty() {
+        "upload".to_string()
+    } else {
+        cleaned
+    }
 }
 
 /// Content type for a stored upload, by extension. Unknown types are never served as images.
@@ -67,10 +82,7 @@ pub fn content_type_for(filename: &str) -> Option<&'static str> {
 /// that exists directly under `base` (blocks `..`, separators, absolute paths and
 /// symlinks that point outside).
 pub fn resolve_upload_path(base: &Path, name: &str) -> Option<PathBuf> {
-    if name.is_empty()
-        || name.starts_with('.')
-        || name.contains(['/', '\\', '\0'])
-    {
+    if name.is_empty() || name.starts_with('.') || name.contains(['/', '\\', '\0']) {
         return None;
     }
     let canonical_base = base.canonicalize().ok()?;
@@ -96,9 +108,18 @@ mod tests {
 
     #[test]
     fn accepts_real_images_and_names_the_extension() {
-        assert_eq!(validate_image_bytes(&encode(ImageFormat::Png, 16, 16)), Ok("png"));
-        assert_eq!(validate_image_bytes(&encode(ImageFormat::Gif, 16, 16)), Ok("gif"));
-        assert_eq!(validate_image_bytes(&encode(ImageFormat::Bmp, 16, 16)), Ok("bmp"));
+        assert_eq!(
+            validate_image_bytes(&encode(ImageFormat::Png, 16, 16)),
+            Ok("png")
+        );
+        assert_eq!(
+            validate_image_bytes(&encode(ImageFormat::Gif, 16, 16)),
+            Ok("gif")
+        );
+        assert_eq!(
+            validate_image_bytes(&encode(ImageFormat::Bmp, 16, 16)),
+            Ok("bmp")
+        );
     }
 
     #[test]
@@ -148,9 +169,23 @@ mod tests {
 
         assert!(resolve_upload_path(&uploads, "ok.png").is_some());
         assert!(resolve_upload_path(&uploads, "missing.png").is_none());
-        for bad in ["../secret.txt", "..", ".", "a/../ok.png", "/etc/passwd", "..\\secret.txt",
-                    "%2e%2e%2fsecret.txt", ".hidden", "", "ok.png\0"] {
-            assert!(resolve_upload_path(&uploads, bad).is_none(), "should reject {:?}", bad);
+        for bad in [
+            "../secret.txt",
+            "..",
+            ".",
+            "a/../ok.png",
+            "/etc/passwd",
+            "..\\secret.txt",
+            "%2e%2e%2fsecret.txt",
+            ".hidden",
+            "",
+            "ok.png\0",
+        ] {
+            assert!(
+                resolve_upload_path(&uploads, bad).is_none(),
+                "should reject {:?}",
+                bad
+            );
         }
         #[cfg(unix)]
         assert!(resolve_upload_path(&uploads, "link.png").is_none());

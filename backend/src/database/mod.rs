@@ -1,7 +1,7 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use anyhow::{Context, Result};
 use tracing::info;
 
 use crate::webhook_enhanced::{EnhancedWebhookConfig, WebhookEvent};
@@ -29,38 +29,35 @@ impl WebhookDatabase {
 
     fn ensure_data_dir(&self) -> Result<()> {
         if !Path::new(&self.data_dir).exists() {
-            fs::create_dir_all(&self.data_dir)
-                .context("Failed to create data directory")?;
+            fs::create_dir_all(&self.data_dir).context("Failed to create data directory")?;
         }
         Ok(())
     }
 
     fn write_atomic<T: Serialize>(&self, path: &str, data: &T) -> Result<()> {
         let temp_path = format!("{}.tmp", path);
-        let content = serde_json::to_string_pretty(data)
-            .context("Failed to serialize data")?;
-        
-        fs::write(&temp_path, content)
-            .context("Failed to write temp file")?;
-        
-        fs::rename(&temp_path, path)
-            .context("Failed to rename temp file to final path")?;
-        
+        let content = serde_json::to_string_pretty(data).context("Failed to serialize data")?;
+
+        fs::write(&temp_path, content).context("Failed to write temp file")?;
+
+        fs::rename(&temp_path, path).context("Failed to rename temp file to final path")?;
+
         Ok(())
     }
 
     pub fn load_webhooks(&self) -> Result<WebhooksDatabase> {
         self.ensure_data_dir()?;
         let path = format!("{}/webhooks.json", self.data_dir);
-        
+
         if Path::new(&path).exists() {
-            let content = fs::read_to_string(&path)
-                .context("Failed to read webhooks.json")?;
-            let db: WebhooksDatabase = serde_json::from_str(&content)
-                .context("Failed to parse webhooks.json")?;
+            let content = fs::read_to_string(&path).context("Failed to read webhooks.json")?;
+            let db: WebhooksDatabase =
+                serde_json::from_str(&content).context("Failed to parse webhooks.json")?;
             Ok(db)
         } else {
-            let db = WebhooksDatabase { webhooks: Vec::new() };
+            let db = WebhooksDatabase {
+                webhooks: Vec::new(),
+            };
             self.write_atomic(&path, &db)?;
             Ok(db)
         }
@@ -77,12 +74,12 @@ impl WebhookDatabase {
     pub fn load_events(&self) -> Result<EventsDatabase> {
         self.ensure_data_dir()?;
         let path = format!("{}/webhook_events.json", self.data_dir);
-        
+
         if Path::new(&path).exists() {
-            let content = fs::read_to_string(&path)
-                .context("Failed to read webhook_events.json")?;
-            let db: EventsDatabase = serde_json::from_str(&content)
-                .context("Failed to parse webhook_events.json")?;
+            let content =
+                fs::read_to_string(&path).context("Failed to read webhook_events.json")?;
+            let db: EventsDatabase =
+                serde_json::from_str(&content).context("Failed to parse webhook_events.json")?;
             Ok(db)
         } else {
             let db = EventsDatabase { events: Vec::new() };
@@ -106,7 +103,8 @@ impl WebhookDatabase {
         db.events.push(event);
 
         // Trim oldest events for this webhook beyond its cap
-        let matching: Vec<usize> = db.events
+        let matching: Vec<usize> = db
+            .events
             .iter()
             .enumerate()
             .filter(|(_, e)| e.webhook_name == webhook_name)
@@ -136,10 +134,18 @@ impl WebhookDatabase {
         Ok(())
     }
 
-    pub fn get_events(&self, webhook_name: Option<String>, limit: Option<usize>) -> Result<Vec<WebhookEvent>> {
+    pub fn get_events(
+        &self,
+        webhook_name: Option<String>,
+        limit: Option<usize>,
+    ) -> Result<Vec<WebhookEvent>> {
         let db = self.load_events()?;
         let filtered: Vec<WebhookEvent> = if let Some(name) = webhook_name {
-            db.events.iter().filter(|e| e.webhook_name == name).cloned().collect()
+            db.events
+                .iter()
+                .filter(|e| e.webhook_name == name)
+                .cloned()
+                .collect()
         } else {
             db.events.clone()
         };
@@ -180,13 +186,23 @@ impl WebhookDatabase {
         Ok(changed)
     }
 
-    pub fn migrate_from_config(&self, old_webhooks: Vec<crate::config::WebhookConfig>) -> Result<()> {
+    pub fn migrate_from_config(
+        &self,
+        old_webhooks: Vec<crate::config::WebhookConfig>,
+    ) -> Result<()> {
         let mut db = self.load_webhooks()?;
-        
+
         for old_webhook in old_webhooks {
             // Check if webhook already exists
-            if db.webhooks.iter().any(|w| w.name == old_webhook.name || w.path == old_webhook.path) {
-                info!("Webhook {} already exists, skipping migration", old_webhook.name);
+            if db
+                .webhooks
+                .iter()
+                .any(|w| w.name == old_webhook.name || w.path == old_webhook.path)
+            {
+                info!(
+                    "Webhook {} already exists, skipping migration",
+                    old_webhook.name
+                );
                 continue;
             }
 

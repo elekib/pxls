@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, Query, State},
+    http::{header, StatusCode},
     response::Response,
-    http::{StatusCode, header},
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -20,7 +20,10 @@ pub async fn get_webhook_events(
     State(state): State<AppState>,
     Query(query): Query<WebhookEventsQuery>,
 ) -> Response {
-    match state.webhook_database.get_events(query.webhook_name, query.limit) {
+    match state
+        .webhook_database
+        .get_events(query.webhook_name, query.limit)
+    {
         Ok(events) => {
             let response = json!({
                 "success": true,
@@ -52,7 +55,9 @@ pub async fn clear_webhook_events(
     State(state): State<AppState>,
     Path(webhook_name): Path<String>,
 ) -> Response {
-    let result = state.webhook_database.clear_events(Some(webhook_name.clone()));
+    let result = state
+        .webhook_database
+        .clear_events(Some(webhook_name.clone()));
 
     let (status, body) = match result {
         Ok(_) => (
@@ -76,9 +81,7 @@ pub async fn clear_webhook_events(
 }
 
 #[instrument(skip(state))]
-pub async fn clear_all_webhook_events(
-    State(state): State<AppState>,
-) -> Response {
+pub async fn clear_all_webhook_events(State(state): State<AppState>) -> Response {
     let result = state.webhook_database.clear_events(None);
 
     let (status, body) = match result {
@@ -116,10 +119,12 @@ pub async fn get_webhook_events_summary(State(state): State<AppState>) -> Respon
     // so pick the latest by timestamp rather than relying on order.
     let mut summary: std::collections::BTreeMap<String, serde_json::Value> = Default::default();
     for event in &events {
-        let entry = summary.entry(event.webhook_name.clone()).or_insert_with(|| {
-            json!({ "count": 0, "error_count": 0, "last_timestamp": null,
+        let entry = summary
+            .entry(event.webhook_name.clone())
+            .or_insert_with(|| {
+                json!({ "count": 0, "error_count": 0, "last_timestamp": null,
                     "last_processed": null, "last_error": null, "last_matched_rule": null })
-        });
+            });
         entry["count"] = json!(entry["count"].as_u64().unwrap_or(0) + 1);
         if event.error.is_some() {
             entry["error_count"] = json!(entry["error_count"].as_u64().unwrap_or(0) + 1);
@@ -127,7 +132,7 @@ pub async fn get_webhook_events_summary(State(state): State<AppState>) -> Respon
         let is_newer = entry["last_timestamp"]
             .as_str()
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            .map_or(true, |t| event.timestamp > t.with_timezone(&chrono::Utc));
+            .is_none_or(|t| event.timestamp > t.with_timezone(&chrono::Utc));
         if is_newer {
             entry["last_timestamp"] = json!(event.timestamp);
             entry["last_processed"] = json!(event.processed);
@@ -157,9 +162,13 @@ pub async fn replay_webhook_event(
 
     match events.into_iter().find(|e| e.id == event_id) {
         Some(event) => {
-            crate::routes::webhooks::ingest_webhook(&state, &event.webhook_name, event.payload).await
+            crate::routes::webhooks::ingest_webhook(&state, &event.webhook_name, event.payload)
+                .await
         }
-        None => json_error(StatusCode::NOT_FOUND, format!("Event '{}' not found", event_id)),
+        None => json_error(
+            StatusCode::NOT_FOUND,
+            format!("Event '{}' not found", event_id),
+        ),
     }
 }
 
@@ -175,6 +184,10 @@ fn json_error(status: StatusCode, message: String) -> Response {
     Response::builder()
         .status(status)
         .header(header::CONTENT_TYPE, "application/json")
-        .body(json!({ "success": false, "error": message }).to_string().into())
+        .body(
+            json!({ "success": false, "error": message })
+                .to_string()
+                .into(),
+        )
         .unwrap()
 }

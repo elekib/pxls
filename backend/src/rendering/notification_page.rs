@@ -1,6 +1,6 @@
-use image::{DynamicImage, GenericImage, Rgba, RgbaImage};
 use crate::notification::ActiveNotification;
 use crate::renderer::Renderer;
+use image::{DynamicImage, GenericImage, Rgba};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const WIDTH: u32 = 16;
@@ -28,7 +28,7 @@ pub fn render_notification_page(notification: &ActiveNotification) -> DynamicIma
             .unwrap()
             .as_millis();
         // Flash every flash_speed_ms milliseconds
-        (timestamp / notification.flash_speed_ms as u128) % 2 == 0
+        (timestamp / notification.flash_speed_ms as u128).is_multiple_of(2)
     } else {
         false
     };
@@ -43,7 +43,11 @@ pub fn render_notification_page(notification: &ActiveNotification) -> DynamicIma
     // Fill background
     for py in 0..HEIGHT {
         for px in 0..WIDTH {
-            img.put_pixel(px, py, Rgba([display_bg[0], display_bg[1], display_bg[2], 255]));
+            img.put_pixel(
+                px,
+                py,
+                Rgba([display_bg[0], display_bg[1], display_bg[2], 255]),
+            );
         }
     }
 

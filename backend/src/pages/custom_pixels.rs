@@ -20,7 +20,11 @@ impl CustomPixelsPage {
         for pixel in pixels {
             let rgb = config.hex_to_rgb(&pixel.color);
             if pixel.x < 16 && pixel.y < 16 {
-                img.put_pixel(pixel.x as u32, pixel.y as u32, image::Rgba([rgb[0], rgb[1], rgb[2], 255]));
+                img.put_pixel(
+                    pixel.x as u32,
+                    pixel.y as u32,
+                    image::Rgba([rgb[0], rgb[1], rgb[2], 255]),
+                );
             }
         }
 

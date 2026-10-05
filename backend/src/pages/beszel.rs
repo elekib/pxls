@@ -45,7 +45,8 @@ fn cache_key(hub_url: &str, name: Option<&str>) -> String {
     format!(
         "{}|{}",
         hub_url.trim_end_matches('/'),
-        name.map(|n| n.trim().to_lowercase()).unwrap_or_else(|| "*".to_string())
+        name.map(|n| n.trim().to_lowercase())
+            .unwrap_or_else(|| "*".to_string())
     )
 }
 
@@ -60,7 +61,13 @@ fn cached(key: &str) -> Option<String> {
 
 fn store(key: String, id: &str) {
     if let Ok(mut map) = cache().lock() {
-        map.insert(key, Entry { id: id.to_string(), at: Instant::now() });
+        map.insert(
+            key,
+            Entry {
+                id: id.to_string(),
+                at: Instant::now(),
+            },
+        );
     }
 }
 
@@ -157,7 +164,10 @@ mod tests {
     use super::*;
 
     fn sys(id: &str, name: &str) -> SystemRecord {
-        SystemRecord { id: id.into(), name: Some(name.into()) }
+        SystemRecord {
+            id: id.into(),
+            name: Some(name.into()),
+        }
     }
 
     #[test]
@@ -166,16 +176,24 @@ mod tests {
             cache_key("http://hub:8090/", Some(" Stark ")),
             cache_key("http://hub:8090", Some("stark"))
         );
-        assert_ne!(cache_key("http://hub:8090", Some("a")), cache_key("http://hub:8090", None));
+        assert_ne!(
+            cache_key("http://hub:8090", Some("a")),
+            cache_key("http://hub:8090", None)
+        );
     }
 
     #[test]
     fn entries_expire() {
-        let fresh = Entry { id: "x".into(), at: Instant::now() };
+        let fresh = Entry {
+            id: "x".into(),
+            at: Instant::now(),
+        };
         assert!(is_fresh(&fresh));
         let old = Entry {
             id: "x".into(),
-            at: Instant::now().checked_sub(CACHE_TTL + Duration::from_secs(1)).unwrap(),
+            at: Instant::now()
+                .checked_sub(CACHE_TTL + Duration::from_secs(1))
+                .unwrap(),
         };
         assert!(!is_fresh(&old));
     }
@@ -200,7 +218,10 @@ mod tests {
 
     #[test]
     fn no_name_picks_first() {
-        assert_eq!(pick_system(&[sys("1", "a"), sys("2", "b")], None).unwrap(), "1");
+        assert_eq!(
+            pick_system(&[sys("1", "a"), sys("2", "b")], None).unwrap(),
+            "1"
+        );
         assert!(pick_system(&[], None).is_err());
     }
 }

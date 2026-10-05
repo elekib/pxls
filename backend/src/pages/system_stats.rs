@@ -13,42 +13,63 @@ pub struct SystemStatsPage;
 /// Get color based on usage percentage
 fn get_usage_color(usage: u32) -> [u8; 3] {
     match usage {
-        0..=50 => [0, 255, 0],      // Green - Good
-        51..=75 => [255, 255, 0],   // Yellow - Okay
-        76..=90 => [255, 165, 0],   // Orange - Concerning
-        _ => [255, 0, 0],           // Red - Critical
+        0..=50 => [0, 255, 0],    // Green - Good
+        51..=75 => [255, 255, 0], // Yellow - Okay
+        76..=90 => [255, 165, 0], // Orange - Concerning
+        _ => [255, 0, 0],         // Red - Critical
     }
 }
 
 // Dashdot API structs
 #[derive(Deserialize, Debug)]
-struct DashdotCpuCore { load: f32 }
+struct DashdotCpuCore {
+    load: f32,
+}
 
 #[derive(Deserialize, Debug)]
-struct DashdotRamLoad { #[serde(default)] load: Option<f64> }
+struct DashdotRamLoad {
+    #[serde(default)]
+    load: Option<f64>,
+}
 
 #[derive(Deserialize, Debug)]
-struct DashdotInfo { #[serde(default)] ram: Option<DashdotRamInfo> }
+struct DashdotInfo {
+    #[serde(default)]
+    ram: Option<DashdotRamInfo>,
+}
 
 #[derive(Deserialize, Debug)]
-struct DashdotRamInfo { #[serde(default, rename = "size")] size: Option<u64> }
+struct DashdotRamInfo {
+    #[serde(default, rename = "size")]
+    size: Option<u64>,
+}
 
 // Beszel API structs
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelSystemInfo {
-    #[serde(default)] cpu: Option<f64>,
-    #[serde(default, rename = "mp")] mem_percent: Option<f64>,
+    #[serde(default)]
+    cpu: Option<f64>,
+    #[serde(default, rename = "mp")]
+    mem_percent: Option<f64>,
 }
 
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelSystemRecord {
     id: String,
-    #[serde(default)] name: Option<String>,
-    #[serde(default)] info: Option<BeszelSystemInfo>,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    info: Option<BeszelSystemInfo>,
 }
 
 #[derive(Deserialize, Debug, Default)]
-struct BeszelListResponse<T> { #[serde(default)] items: Vec<T> }
+#[allow(dead_code)]
+struct BeszelListResponse<T> {
+    #[serde(default)]
+    items: Vec<T>,
+}
 
 impl SystemStatsPage {
     pub fn render(
@@ -119,12 +140,15 @@ impl SystemStatsPage {
         let cpu_result = ureq::get(&cpu_url)
             .timeout(std::time::Duration::from_secs(3))
             .call();
-        
+
         let cpu_percent = match cpu_result {
             Ok(response) => {
-                match serde_json::from_str::<Vec<DashdotCpuCore>>(&response.into_string().unwrap_or_default()) {
+                match serde_json::from_str::<Vec<DashdotCpuCore>>(
+                    &response.into_string().unwrap_or_default(),
+                ) {
                     Ok(cores) if !cores.is_empty() => {
-                        let avg_load: f32 = cores.iter().map(|c| c.load).sum::<f32>() / cores.len() as f32;
+                        let avg_load: f32 =
+                            cores.iter().map(|c| c.load).sum::<f32>() / cores.len() as f32;
                         Some(avg_load.round() as u32)
                     }
                     _ => None,
@@ -137,31 +161,39 @@ impl SystemStatsPage {
         let info_result = ureq::get(&info_url)
             .timeout(std::time::Duration::from_secs(3))
             .call();
-        
+
         let total_ram = match info_result {
-            Ok(response) => response.into_json::<DashdotInfo>().ok().and_then(|i| i.ram).and_then(|r| r.size),
+            Ok(response) => response
+                .into_json::<DashdotInfo>()
+                .ok()
+                .and_then(|i| i.ram)
+                .and_then(|r| r.size),
             Err(_) => None,
         };
-        
+
         let ram_url = format!("{}/load/ram", dashdot_url.trim_end_matches('/'));
         let ram_result = ureq::get(&ram_url)
             .timeout(std::time::Duration::from_secs(3))
             .call();
-        
+
         let ram_percent = match ram_result {
-            Ok(response) => {
-                match response.into_json::<DashdotRamLoad>() {
-                    Ok(ram_data) => {
-                        if let (Some(used), Some(total)) = (ram_data.load, total_ram) {
-                            if total > 0 { Some(((used / total as f64) * 100.0) as u32) } else { Some(0) }
-                        } else { None }
+            Ok(response) => match response.into_json::<DashdotRamLoad>() {
+                Ok(ram_data) => {
+                    if let (Some(used), Some(total)) = (ram_data.load, total_ram) {
+                        if total > 0 {
+                            Some(((used / total as f64) * 100.0) as u32)
+                        } else {
+                            Some(0)
+                        }
+                    } else {
+                        None
                     }
-                    Err(_) => None,
                 }
-            }
+                Err(_) => None,
+            },
             Err(_) => None,
         };
-        
+
         (cpu_percent, ram_percent)
     }
 
@@ -174,20 +206,28 @@ impl SystemStatsPage {
         let auth_token = token_manager.and_then(|tm| tm.get_token());
 
         // Try to fetch stats - if auth fails, try to refresh token and retry
-        let result = Self::try_fetch_beszel_stats(hub_url, system_id, auth_token.as_deref(), token_manager);
+        let result =
+            Self::try_fetch_beszel_stats(hub_url, system_id, auth_token.as_deref(), token_manager);
 
         // Check if we got an auth error (401/403)
-        let is_auth_error = result.as_ref().err()
+        let is_auth_error = result
+            .as_ref()
+            .err()
             .and_then(|e| e.downcast_ref::<ureq::Error>())
-            .map_or(false, |ue| matches!(ue, ureq::Error::Status(401 | 403, _)));
+            .is_some_and(|ue| matches!(ue, ureq::Error::Status(401 | 403, _)));
 
         if is_auth_error {
             debug!("Auth error (401/403), attempting token refresh");
             if let Some(tm) = token_manager {
                 if let Some(new_token) = tm.refresh_token() {
                     // Retry with new token
-                    return Self::try_fetch_beszel_stats(hub_url, system_id, Some(&new_token), token_manager)
-                        .unwrap_or((None, None));
+                    return Self::try_fetch_beszel_stats(
+                        hub_url,
+                        system_id,
+                        Some(&new_token),
+                        token_manager,
+                    )
+                    .unwrap_or((None, None));
                 }
             }
         }
@@ -219,16 +259,15 @@ impl SystemStatsPage {
 
         // Fetch system record with stats
         let path = format!("/api/collections/systems/records/{}", system_id);
-        let mut req = ureq::get(&format!("{}{}", hub_url, path))
-            .timeout(std::time::Duration::from_secs(5));
+        let mut req =
+            ureq::get(&format!("{}{}", hub_url, path)).timeout(std::time::Duration::from_secs(5));
 
         if let Some(token) = auth_token {
             req = req.set("Authorization", &format!("Bearer {}", token));
         }
 
-        let resp = req.call().map_err(|e| {
-            super::beszel::note_failure(hub_url, requested, &e);
-            e
+        let resp = req.call().inspect_err(|e| {
+            super::beszel::note_failure(hub_url, requested, e);
         })?;
         let body = resp.into_string().unwrap_or_default();
 

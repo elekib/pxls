@@ -31,15 +31,23 @@ fn error_response(status: StatusCode, message: &str) -> Response {
 pub async fn upload_file(mut multipart: Multipart) -> Response {
     if let Err(e) = tokio::fs::create_dir_all(UPLOADS_DIR).await {
         warn!("Failed to create uploads directory: {}", e);
-        return error_response(StatusCode::INTERNAL_SERVER_ERROR, "Failed to create uploads directory");
+        return error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to create uploads directory",
+        );
     }
 
-    while let Ok(Some(field)) = multipart.next_field().await {
+    if let Ok(Some(field)) = multipart.next_field().await {
         let original_name = field.file_name().unwrap_or("upload").to_string();
 
         let data = match field.bytes().await {
             Ok(data) => data,
-            Err(_) => return error_response(StatusCode::BAD_REQUEST, "Failed to read file (too large or malformed)"),
+            Err(_) => {
+                return error_response(
+                    StatusCode::BAD_REQUEST,
+                    "Failed to read file (too large or malformed)",
+                )
+            }
         };
         if data.len() > MAX_UPLOAD_BYTES {
             return error_response(StatusCode::BAD_REQUEST, "File too large (max 5MB)");
@@ -56,7 +64,13 @@ pub async fn upload_file(mut multipart: Multipart) -> Response {
             .unwrap_or_default()
             .as_secs();
         let unique = &uuid::Uuid::new_v4().simple().to_string()[..8];
-        let stored_name = format!("{}_{}_{}.{}", timestamp, unique, sanitize_stem(&original_name), ext);
+        let stored_name = format!(
+            "{}_{}_{}.{}",
+            timestamp,
+            unique,
+            sanitize_stem(&original_name),
+            ext
+        );
         let filepath = Path::new(UPLOADS_DIR).join(&stored_name);
 
         return match tokio::fs::write(&filepath, &data).await {

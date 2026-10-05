@@ -1,15 +1,17 @@
 use axum::{
     extract::{Path, State},
-    Json,
+    http::{header, StatusCode},
     response::Response,
-    http::{StatusCode, header},
+    Json,
 };
 use serde_json::{json, Value};
 use tracing::{info, instrument};
 use uuid::Uuid;
 
+use crate::webhook_enhanced::{
+    validate_action, validate_rule, EnhancedWebhookConfig, WebhookAction, WebhookRule,
+};
 use crate::AppState;
-use crate::webhook_enhanced::{EnhancedWebhookConfig, WebhookRule, WebhookAction, validate_rule, validate_action};
 
 fn json_response(status: StatusCode, body: Value) -> Response {
     Response::builder()
@@ -24,8 +26,8 @@ fn error_response(status: StatusCode, message: String) -> Response {
 }
 
 fn parse_rules(value: &Value) -> Result<Vec<WebhookRule>, String> {
-    let mut rules: Vec<WebhookRule> = serde_json::from_value(value.clone())
-        .map_err(|e| format!("Invalid rules: {}", e))?;
+    let mut rules: Vec<WebhookRule> =
+        serde_json::from_value(value.clone()).map_err(|e| format!("Invalid rules: {}", e))?;
     for rule in &mut rules {
         if rule.id.is_empty() {
             rule.id = Uuid::new_v4().to_string();
@@ -36,8 +38,8 @@ fn parse_rules(value: &Value) -> Result<Vec<WebhookRule>, String> {
 }
 
 fn parse_actions(value: &Value) -> Result<Vec<WebhookAction>, String> {
-    let actions: Vec<WebhookAction> = serde_json::from_value(value.clone())
-        .map_err(|e| format!("Invalid actions: {}", e))?;
+    let actions: Vec<WebhookAction> =
+        serde_json::from_value(value.clone()).map_err(|e| format!("Invalid actions: {}", e))?;
     for action in &actions {
         validate_action(action)?;
     }
@@ -49,9 +51,7 @@ fn str_field<'a>(payload: &'a Value, key: &str) -> Option<&'a str> {
 }
 
 #[instrument(skip(state))]
-pub async fn get_enhanced_webhooks(
-    State(state): State<AppState>,
-) -> Response {
+pub async fn get_enhanced_webhooks(State(state): State<AppState>) -> Response {
     let db = match state.webhook_database.load_webhooks() {
         Ok(db) => db,
         Err(e) => {
@@ -62,10 +62,13 @@ pub async fn get_enhanced_webhooks(
         }
     };
 
-    json_response(StatusCode::OK, json!({
-        "success": true,
-        "webhooks": db.webhooks,
-    }))
+    json_response(
+        StatusCode::OK,
+        json!({
+            "success": true,
+            "webhooks": db.webhooks,
+        }),
+    )
 }
 
 #[instrument(skip(state))]
@@ -83,7 +86,11 @@ pub async fn get_enhanced_webhook(
         }
     };
 
-    let webhook = match db.webhooks.iter().find(|w| w.path == name || w.name == name) {
+    let webhook = match db
+        .webhooks
+        .iter()
+        .find(|w| w.path == name || w.name == name)
+    {
         Some(w) => w,
         None => {
             return error_response(
@@ -93,10 +100,13 @@ pub async fn get_enhanced_webhook(
         }
     };
 
-    json_response(StatusCode::OK, json!({
-        "success": true,
-        "webhook": webhook,
-    }))
+    json_response(
+        StatusCode::OK,
+        json!({
+            "success": true,
+            "webhook": webhook,
+        }),
+    )
 }
 
 #[instrument(skip(state, payload))]
@@ -132,7 +142,10 @@ pub async fn create_enhanced_webhook(
 
     let webhook = EnhancedWebhookConfig {
         name,
-        enabled: payload.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),
+        enabled: payload
+            .get("enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
         path,
         secret: crate::auth::Secret(
             str_field(&payload, "secret")
@@ -140,23 +153,55 @@ pub async fn create_enhanced_webhook(
                 .map(str::to_string)
                 .unwrap_or_else(crate::auth::generate_secret),
         ),
-        log_events: payload.get("log_events").and_then(|v| v.as_bool()).unwrap_or(true),
-        max_events: payload.get("max_events").and_then(|v| v.as_u64()).unwrap_or(100) as usize,
+        log_events: payload
+            .get("log_events")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+        max_events: payload
+            .get("max_events")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(100) as usize,
         rules,
         default_actions,
-        display_on_no_match: payload.get("display_on_no_match").and_then(|v| v.as_bool()).unwrap_or(true),
+        display_on_no_match: payload
+            .get("display_on_no_match")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
         // Default display settings
-        duration_secs: payload.get("duration_secs").and_then(|v| v.as_u64()).unwrap_or(10) as u32,
-        display_mode: str_field(&payload, "display_mode").unwrap_or("icon_only").to_string(),
-        background_color: str_field(&payload, "background_color").unwrap_or("FF0000").to_string(),
-        text_color: str_field(&payload, "text_color").unwrap_or("FFFFFF").to_string(),
-        title_field: str_field(&payload, "title_field").unwrap_or("title").to_string(),
-        subtitle_field: str_field(&payload, "subtitle_field").unwrap_or("subtitle").to_string(),
-        flash: payload.get("flash").and_then(|v| v.as_bool()).unwrap_or(true),
-        flash_speed_ms: payload.get("flash_speed_ms").and_then(|v| v.as_u64()).unwrap_or(500) as u32,
+        duration_secs: payload
+            .get("duration_secs")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(10) as u32,
+        display_mode: str_field(&payload, "display_mode")
+            .unwrap_or("icon_only")
+            .to_string(),
+        background_color: str_field(&payload, "background_color")
+            .unwrap_or("FF0000")
+            .to_string(),
+        text_color: str_field(&payload, "text_color")
+            .unwrap_or("FFFFFF")
+            .to_string(),
+        title_field: str_field(&payload, "title_field")
+            .unwrap_or("title")
+            .to_string(),
+        subtitle_field: str_field(&payload, "subtitle_field")
+            .unwrap_or("subtitle")
+            .to_string(),
+        flash: payload
+            .get("flash")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+        flash_speed_ms: payload
+            .get("flash_speed_ms")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(500) as u32,
         icon: str_field(&payload, "icon").unwrap_or("📺").to_string(),
-        icon_image_url: str_field(&payload, "icon_image_url").unwrap_or("").to_string(),
-        image_url_field: str_field(&payload, "image_url_field").unwrap_or("").to_string(),
+        icon_image_url: str_field(&payload, "icon_image_url")
+            .unwrap_or("")
+            .to_string(),
+        image_url_field: str_field(&payload, "image_url_field")
+            .unwrap_or("")
+            .to_string(),
     };
 
     let mut db = match state.webhook_database.load_webhooks() {
@@ -169,7 +214,11 @@ pub async fn create_enhanced_webhook(
         }
     };
 
-    if db.webhooks.iter().any(|w| w.name == webhook.name || w.path == webhook.path) {
+    if db
+        .webhooks
+        .iter()
+        .any(|w| w.name == webhook.name || w.path == webhook.path)
+    {
         return error_response(
             StatusCode::CONFLICT,
             format!("Webhook '{}' already exists", webhook.name),
@@ -186,10 +235,13 @@ pub async fn create_enhanced_webhook(
     }
 
     info!("Created enhanced webhook: {}", webhook.name);
-    json_response(StatusCode::CREATED, json!({
-        "success": true,
-        "webhook": webhook,
-    }))
+    json_response(
+        StatusCode::CREATED,
+        json!({
+            "success": true,
+            "webhook": webhook,
+        }),
+    )
 }
 
 #[instrument(skip(state, payload))]
@@ -208,7 +260,11 @@ pub async fn update_enhanced_webhook(
         }
     };
 
-    let webhook = match db.webhooks.iter_mut().find(|w| w.path == name || w.name == name) {
+    let webhook = match db
+        .webhooks
+        .iter_mut()
+        .find(|w| w.path == name || w.name == name)
+    {
         Some(w) => w,
         None => {
             return error_response(
@@ -306,10 +362,13 @@ pub async fn update_enhanced_webhook(
     }
 
     info!("Updated enhanced webhook: {}", webhook_clone.name);
-    json_response(StatusCode::OK, json!({
-        "success": true,
-        "webhook": webhook_clone,
-    }))
+    json_response(
+        StatusCode::OK,
+        json!({
+            "success": true,
+            "webhook": webhook_clone,
+        }),
+    )
 }
 
 #[instrument(skip(state))]
@@ -345,8 +404,11 @@ pub async fn delete_enhanced_webhook(
     }
 
     info!("Deleted enhanced webhook: {}", name);
-    json_response(StatusCode::OK, json!({
-        "success": true,
-        "message": format!("Webhook '{}' deleted", name),
-    }))
+    json_response(
+        StatusCode::OK,
+        json!({
+            "success": true,
+            "message": format!("Webhook '{}' deleted", name),
+        }),
+    )
 }

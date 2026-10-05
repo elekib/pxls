@@ -1,7 +1,7 @@
+use image::RgbaImage;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tracing::info;
-use image::RgbaImage;
 
 #[derive(Debug, Clone)]
 pub struct ActiveNotification {
@@ -30,6 +30,7 @@ impl NotificationManager {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn trigger(
         &self,
         title: String,
@@ -92,10 +93,7 @@ impl NotificationManager {
             image: Some(image),
         };
 
-        info!(
-            duration = duration_secs,
-            "Triggering image notification"
-        );
+        info!(duration = duration_secs, "Triggering image notification");
 
         if let Ok(mut guard) = self.active.lock() {
             *guard = Some(notification);

@@ -61,7 +61,10 @@ pub struct TokenManager {
 
 impl TokenManager {
     pub fn new(config: Arc<Mutex<Config>>) -> Self {
-        Self { config, state: Mutex::new(AuthState::default()) }
+        Self {
+            config,
+            state: Mutex::new(AuthState::default()),
+        }
     }
 
     /// Current token, logging in first if there is none or it is about to expire.
@@ -114,7 +117,11 @@ impl TokenManager {
     pub fn status(&self) -> AuthStatus {
         let state = self.state.lock().unwrap();
         let has_credentials = self.credentials().is_some();
-        let legacy = if has_credentials { None } else { self.legacy_token() };
+        let legacy = if has_credentials {
+            None
+        } else {
+            self.legacy_token()
+        };
         let (mode, configured) = if has_credentials {
             ("credentials", true)
         } else if legacy.is_some() {
@@ -180,14 +187,16 @@ impl TokenManager {
     }
 
     fn throttled(state: &AuthState) -> bool {
-        state.last_attempt.map_or(false, |t| t.elapsed() < MIN_LOGIN_INTERVAL)
+        state
+            .last_attempt
+            .is_some_and(|t| t.elapsed() < MIN_LOGIN_INTERVAL)
     }
 
     fn token_is_fresh(state: &AuthState) -> bool {
         state.token.is_some()
             && state
                 .logged_in_at
-                .map_or(false, |t| t.elapsed() < MIN_TOKEN_AGE_FOR_FORCED_RELOGIN)
+                .is_some_and(|t| t.elapsed() < MIN_TOKEN_AGE_FOR_FORCED_RELOGIN)
     }
 
     fn unexpired_token(state: &AuthState) -> Option<String> {
@@ -206,7 +215,7 @@ impl TokenManager {
     }
 
     fn is_expired(exp: Option<i64>) -> bool {
-        exp.map_or(false, |exp| now_secs() >= exp)
+        exp.is_some_and(|exp| now_secs() >= exp)
     }
 
     fn credentials(&self) -> Option<(String, String)> {
@@ -231,19 +240,25 @@ impl TokenManager {
     /// Hub URL taken from the first page that uses Beszel (all pages share one hub).
     fn hub_url(&self) -> Option<String> {
         let config = self.config.lock().unwrap();
-        config.custom_pages.iter().find_map(|page| match &page.page_type {
-            PageType::SystemStats { beszel_hub_url, .. }
-            | PageType::GpuStats { beszel_hub_url, .. }
-            | PageType::Temps { beszel_hub_url, .. } => beszel_hub_url
-                .clone()
-                .filter(|u| !u.trim().is_empty()),
-            _ => None,
-        })
+        config
+            .custom_pages
+            .iter()
+            .find_map(|page| match &page.page_type {
+                PageType::SystemStats { beszel_hub_url, .. }
+                | PageType::GpuStats { beszel_hub_url, .. }
+                | PageType::Temps { beszel_hub_url, .. } => {
+                    beszel_hub_url.clone().filter(|u| !u.trim().is_empty())
+                }
+                _ => None,
+            })
     }
 }
 
 fn now_secs() -> i64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
 }
 
 /// POST /api/collections/users/auth-with-password. Never logs the password.
@@ -270,7 +285,9 @@ fn login(hub_url: &str, email: &str, password: &str) -> Result<String, String> {
             Err(match code {
                 400 | 401 => format!("Invalid email or password ({})", code),
                 429 => "Hub is rate limiting logins (429), will retry later".to_string(),
-                _ => format!("Hub returned {} {}", code, message).trim().to_string(),
+                _ => format!("Hub returned {} {}", code, message)
+                    .trim()
+                    .to_string(),
             })
         }
         Err(e) => Err(format!("Could not reach the hub: {}", e)),
@@ -283,7 +300,9 @@ fn parse_jwt_exp(token: &str) -> Option<i64> {
     let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
         .decode(payload.trim_end_matches('='))
         .ok()?;
-    serde_json::from_slice::<JwtClaims>(&bytes).ok().map(|c| c.exp)
+    serde_json::from_slice::<JwtClaims>(&bytes)
+        .ok()
+        .map(|c| c.exp)
 }
 
 #[cfg(test)]
@@ -292,7 +311,11 @@ mod tests {
 
     fn jwt_with_exp(exp: i64) -> String {
         let enc = |s: &str| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(s);
-        format!("{}.{}.sig", enc(r#"{"alg":"HS256"}"#), enc(&format!(r#"{{"exp":{}}}"#, exp)))
+        format!(
+            "{}.{}.sig",
+            enc(r#"{"alg":"HS256"}"#),
+            enc(&format!(r#"{{"exp":{}}}"#, exp))
+        )
     }
 
     #[test]
@@ -330,7 +353,8 @@ mod tests {
         assert!(!TokenManager::throttled(&state));
         state.last_attempt = Some(Instant::now());
         assert!(TokenManager::throttled(&state));
-        state.last_attempt = Instant::now().checked_sub(MIN_LOGIN_INTERVAL + Duration::from_secs(1));
+        state.last_attempt =
+            Instant::now().checked_sub(MIN_LOGIN_INTERVAL + Duration::from_secs(1));
         assert!(!TokenManager::throttled(&state));
     }
 

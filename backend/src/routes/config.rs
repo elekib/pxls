@@ -1,23 +1,14 @@
 use axum::{
     extract::State,
-    Json,
+    http::{header, StatusCode},
     response::Response,
-    http::{StatusCode, header},
+    Json,
 };
-use serde::Deserialize;
 use serde_json::json;
-use tracing::{info, instrument};
+use tracing::instrument;
 
-use crate::AppState;
 use crate::config::Config;
-
-#[derive(Deserialize)]
-pub struct ConfigUpdate {
-    pub pixoo_mac: String,
-    pub openweather_api_key: String,
-    pub latitude: f64,
-    pub longitude: f64,
-}
+use crate::AppState;
 
 /// Config as sent to the browser: secrets are removed, and the UI is told
 /// whether a password is stored instead.
@@ -30,7 +21,7 @@ fn public_config_value(cfg: &Config) -> serde_json::Value {
             let password_set = cfg
                 .beszel_auth
                 .as_ref()
-                .map_or(false, |a| !a.password.is_empty());
+                .is_some_and(|a| !a.password.is_empty());
             auth.insert("password".into(), json!(""));
             auth.insert("password_set".into(), json!(password_set));
         }
@@ -84,8 +75,12 @@ fn preserve_secrets(incoming: &mut Config, stored: &Config) {
     let has_login = incoming
         .beszel_auth
         .as_ref()
-        .map_or(false, |a| !a.password.is_empty());
-    incoming.beszel_token = if has_login { None } else { stored.beszel_token.clone() };
+        .is_some_and(|a| !a.password.is_empty());
+    incoming.beszel_token = if has_login {
+        None
+    } else {
+        stored.beszel_token.clone()
+    };
 }
 
 #[instrument(skip(state, new_config))]
@@ -97,7 +92,10 @@ pub async fn update_config(
         Ok(mut cfg) => {
             preserve_secrets(&mut new_config, &cfg);
             let auth_changed = cfg.beszel_auth.as_ref().map(|a| (&a.email, &a.password))
-                != new_config.beszel_auth.as_ref().map(|a| (&a.email, &a.password));
+                != new_config
+                    .beszel_auth
+                    .as_ref()
+                    .map(|a| (&a.email, &a.password));
             *cfg = new_config.clone();
             (Ok(cfg.save()), auth_changed)
         }
@@ -111,26 +109,24 @@ pub async fn update_config(
     }
 
     match result {
-        Ok(save_result) => {
-            match save_result {
-                Ok(_) => {
-                    let success = json!({"success": true, "config": public_config_value(&new_config)});
-                    Response::builder()
-                        .status(StatusCode::OK)
-                        .header(header::CONTENT_TYPE, "application/json")
-                        .body(success.to_string().into())
-                        .unwrap()
-                }
-                Err(e) => {
-                    let error = json!({"error": format!("Failed to save config: {}", e)});
-                    Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .header(header::CONTENT_TYPE, "application/json")
-                        .body(error.to_string().into())
-                        .unwrap()
-                }
+        Ok(save_result) => match save_result {
+            Ok(_) => {
+                let success = json!({"success": true, "config": public_config_value(&new_config)});
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(success.to_string().into())
+                    .unwrap()
             }
-        }
+            Err(e) => {
+                let error = json!({"error": format!("Failed to save config: {}", e)});
+                Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(error.to_string().into())
+                    .unwrap()
+            }
+        },
         Err(_) => {
             let error = json!({"error": "Failed to update config"});
             Response::builder()
@@ -143,12 +139,16 @@ pub async fn update_config(
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
     use crate::config::{BeszelAuthConfig, BeszelTokenConfig};
 
     fn auth(email: &str, password: &str) -> Option<BeszelAuthConfig> {
-        Some(BeszelAuthConfig { email: email.into(), password: password.into() })
+        Some(BeszelAuthConfig {
+            email: email.into(),
+            password: password.into(),
+        })
     }
 
     fn stored() -> Config {
@@ -192,7 +192,10 @@ mod tests {
     #[test]
     fn real_login_drops_legacy_token_but_otherwise_it_is_kept() {
         let mut old = Config::default();
-        old.beszel_token = Some(BeszelTokenConfig { auth_token: "t".into(), last_refresh: None });
+        old.beszel_token = Some(BeszelTokenConfig {
+            auth_token: "t".into(),
+            last_refresh: None,
+        });
 
         let mut with_login = Config::default();
         with_login.beszel_auth = auth("a@b.c", "pw");
@@ -207,7 +210,10 @@ mod tests {
     #[test]
     fn public_config_never_contains_secrets() {
         let mut c = stored();
-        c.beszel_token = Some(BeszelTokenConfig { auth_token: "tok123".into(), last_refresh: None });
+        c.beszel_token = Some(BeszelTokenConfig {
+            auth_token: "tok123".into(),
+            last_refresh: None,
+        });
         let json = public_config_value(&c).to_string();
         assert!(!json.contains("s3cret"));
         assert!(!json.contains("tok123"));

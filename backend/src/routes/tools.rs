@@ -1,13 +1,13 @@
 use axum::{
     extract::State,
-    Json,
+    http::{header, StatusCode},
     response::Response,
-    http::{StatusCode, header},
+    Json,
 };
 use serde::Deserialize;
 use serde_json::json;
 use std::time::{Duration, Instant};
-use tracing::{info, warn, instrument};
+use tracing::{info, instrument, warn};
 
 use crate::AppState;
 
@@ -21,9 +21,15 @@ pub struct BuzzerRequest {
     pub total_time: u32,
 }
 
-fn default_active_time() -> u32 { 500 }
-fn default_off_time() -> u32 { 0 }
-fn default_total_time() -> u32 { 1000 }
+fn default_active_time() -> u32 {
+    500
+}
+fn default_off_time() -> u32 {
+    0
+}
+fn default_total_time() -> u32 {
+    1000
+}
 
 #[derive(Debug, Deserialize)]
 pub struct CountdownRequest {
@@ -58,7 +64,10 @@ pub async fn set_scoreboard(
         Ok(mut wrapper) => {
             match wrapper.set_scoreboard(req.red_score, req.blue_score) {
                 Ok(_) => {
-                    info!("Scoreboard set: Red={}, Blue={}", req.red_score, req.blue_score);
+                    info!(
+                        "Scoreboard set: Red={}, Blue={}",
+                        req.red_score, req.blue_score
+                    );
                     let success = json!({
                         "success": true,
                         "message": format!("Scoreboard set: Red={} Blue={}", req.red_score, req.blue_score),
@@ -152,9 +161,7 @@ pub async fn start_countdown(
 }
 
 #[instrument(skip(state))]
-pub async fn start_sound_detector(
-    State(state): State<AppState>,
-) -> Response {
+pub async fn start_sound_detector(State(state): State<AppState>) -> Response {
     match state.pixoo.lock() {
         Ok(mut wrapper) => {
             match wrapper.start_sound_detector() {
@@ -247,11 +254,9 @@ pub async fn play_buzzer(
 }
 
 #[instrument(skip(state))]
-pub async fn stop_tool(
-    State(state): State<AppState>,
-) -> Response {
+pub async fn stop_tool(State(state): State<AppState>) -> Response {
     use std::sync::atomic::Ordering;
-    
+
     // Clear the tool active timer
     if let Ok(mut tool_until) = state.tool_active_until.lock() {
         *tool_until = Instant::now();

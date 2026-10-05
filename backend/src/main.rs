@@ -1,41 +1,41 @@
 use axum::{
     extract::DefaultBodyLimit,
     middleware,
-    routing::{get, post, put, delete},
+    routing::{delete, get, post, put},
     Router,
 };
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex, atomic::AtomicBool};
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 use tracing::info;
 
+mod actions;
 mod auth;
 mod config;
-mod image_guard;
-mod net_guard;
-mod pixoo_wrapper;
+mod database;
 mod font;
-mod renderer;
-mod pages;
-mod routes;
+mod image_guard;
 mod modes;
-mod rendering;
+mod net_guard;
 mod notification;
+mod pages;
+mod pixoo_wrapper;
+mod renderer;
+mod rendering;
+mod routes;
+mod token_manager;
 mod webhook_enhanced;
 mod webhook_image_processor;
-mod database;
-mod actions;
-mod token_manager;
 
+use actions::ActionExecutor;
 use config::Config;
+use database::WebhookDatabase;
+use notification::NotificationManager;
 use pixoo_wrapper::PixooWrapper;
 use rendering::loop_renderer::rendering_loop;
-use notification::NotificationManager;
-use webhook_image_processor::WebhookImageProcessor;
-use database::WebhookDatabase;
-use actions::ActionExecutor;
 use token_manager::TokenManager;
+use webhook_image_processor::WebhookImageProcessor;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -58,7 +58,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"))
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
         )
         .with_target(true)
         .with_thread_ids(true)
@@ -73,18 +73,20 @@ async fn main() {
         Err(e) => {
             tracing::error!(
                 "Refusing to start: {}. Set {} to a random value of at least {} characters.",
-                e, auth::TOKEN_ENV, auth::MIN_TOKEN_LEN
+                e,
+                auth::TOKEN_ENV,
+                auth::MIN_TOKEN_LEN
             );
             std::process::exit(1);
         }
     };
-    
+
     let config = Config::load().unwrap_or_default();
     let config = Arc::new(Mutex::new(config));
-    
+
     let pixoo = PixooWrapper::new();
     let pixoo = Arc::new(Mutex::new(pixoo));
-    
+
     let should_reconnect = Arc::new(AtomicBool::new(false));
     let manual_disconnect = Arc::new(AtomicBool::new(false));
     let tool_active_until = Arc::new(Mutex::new(Instant::now()));
@@ -94,7 +96,10 @@ async fn main() {
     let webhook_database = Arc::new(WebhookDatabase::new("/app/data"));
     match webhook_database.ensure_secrets() {
         Ok(0) => {}
-        Ok(n) => info!("Generated a secret for {} webhook(s); view it on the Webhooks page", n),
+        Ok(n) => info!(
+            "Generated a secret for {} webhook(s); view it on the Webhooks page",
+            n
+        ),
         Err(e) => tracing::warn!("Could not ensure webhook secrets: {}", e),
     }
     let action_executor = Arc::new(ActionExecutor::new(
@@ -127,56 +132,128 @@ async fn main() {
     let render_notification_manager = notification_manager.clone();
     let render_token_manager = Arc::clone(&token_manager);
     thread::spawn(move || {
-        rendering_loop(render_pixoo, render_config, render_reconnect, render_manual_disconnect, render_tool_active, render_notification_manager, render_token_manager);
+        rendering_loop(
+            render_pixoo,
+            render_config,
+            render_reconnect,
+            render_manual_disconnect,
+            render_tool_active,
+            render_notification_manager,
+            render_token_manager,
+        );
     });
 
     let cors = auth::cors_from_env();
-    
+
     let app = Router::new()
-        .route("/api/config", get(routes::config::get_config).post(routes::config::update_config))
+        .route(
+            "/api/config",
+            get(routes::config::get_config).post(routes::config::update_config),
+        )
         .route("/api/beszel/status", get(routes::beszel::auth_status))
         .route("/api/beszel/test-login", post(routes::beszel::test_login))
         .route("/api/connect", post(routes::device::connect_device))
         .route("/api/disconnect", post(routes::device::disconnect_device))
-        .route("/api/connection-status", get(routes::device::connection_status))
-        .route("/api/device-config", post(routes::device::update_device_config))
+        .route(
+            "/api/connection-status",
+            get(routes::device::connection_status),
+        )
+        .route(
+            "/api/device-config",
+            post(routes::device::update_device_config),
+        )
         .route(
             "/api/upload",
-            post(routes::upload::upload_file)
-                .layer(DefaultBodyLimit::max(image_guard::MAX_UPLOAD_BYTES + 64 * 1024)),
+            post(routes::upload::upload_file).layer(DefaultBodyLimit::max(
+                image_guard::MAX_UPLOAD_BYTES + 64 * 1024,
+            )),
         )
         .route("/api/uploads/:filename", get(routes::upload::serve_file))
         .route("/api/health", get(routes::health::health_check))
         .route("/api/buzzer", post(routes::tools::play_buzzer))
         .route("/api/countdown", post(routes::tools::start_countdown))
-        .route("/api/sound-detector", post(routes::tools::start_sound_detector))
+        .route(
+            "/api/sound-detector",
+            post(routes::tools::start_sound_detector),
+        )
         .route("/api/scoreboard", post(routes::tools::set_scoreboard))
         .route("/api/stop-tool", post(routes::tools::stop_tool))
         .route("/api/webhook/:name", post(routes::webhooks::handle_webhook))
-        .route("/api/webhook-events", get(routes::webhook_events::get_webhook_events))
-        .route("/api/webhook-events/clear/:webhook_name", post(routes::webhook_events::clear_webhook_events))
-        .route("/api/webhook-events/clear-all", post(routes::webhook_events::clear_all_webhook_events))
-        .route("/api/webhook-events/summary", get(routes::webhook_events::get_webhook_events_summary))
-        .route("/api/webhook-events/:event_id/replay", post(routes::webhook_events::replay_webhook_event))
-        .route("/api/enhanced-webhooks", get(routes::enhanced_webhooks::get_enhanced_webhooks))
-        .route("/api/enhanced-webhooks", post(routes::enhanced_webhooks::create_enhanced_webhook))
-        .route("/api/enhanced-webhooks/:name", get(routes::enhanced_webhooks::get_enhanced_webhook))
-        .route("/api/enhanced-webhooks/:name", put(routes::enhanced_webhooks::update_enhanced_webhook))
-        .route("/api/enhanced-webhooks/:name", delete(routes::enhanced_webhooks::delete_enhanced_webhook))
-        .route("/api/webhooks/:name/rules", get(routes::webhook_rules::get_webhook_rules))
-        .route("/api/webhooks/:name/rules", post(routes::webhook_rules::create_webhook_rule))
-        .route("/api/webhooks/:name/rules/test", post(routes::webhook_rules::test_webhook_rules))
-        .route("/api/webhooks/:name/rules-order", put(routes::webhook_rules::reorder_webhook_rules))
-        .route("/api/webhooks/:name/rules/:rule_id", put(routes::webhook_rules::update_webhook_rule))
-        .route("/api/webhooks/:name/rules/:rule_id", delete(routes::webhook_rules::delete_webhook_rule))
-        .layer(middleware::from_fn_with_state(auth_config, auth::require_token))
+        .route(
+            "/api/webhook-events",
+            get(routes::webhook_events::get_webhook_events),
+        )
+        .route(
+            "/api/webhook-events/clear/:webhook_name",
+            post(routes::webhook_events::clear_webhook_events),
+        )
+        .route(
+            "/api/webhook-events/clear-all",
+            post(routes::webhook_events::clear_all_webhook_events),
+        )
+        .route(
+            "/api/webhook-events/summary",
+            get(routes::webhook_events::get_webhook_events_summary),
+        )
+        .route(
+            "/api/webhook-events/:event_id/replay",
+            post(routes::webhook_events::replay_webhook_event),
+        )
+        .route(
+            "/api/enhanced-webhooks",
+            get(routes::enhanced_webhooks::get_enhanced_webhooks),
+        )
+        .route(
+            "/api/enhanced-webhooks",
+            post(routes::enhanced_webhooks::create_enhanced_webhook),
+        )
+        .route(
+            "/api/enhanced-webhooks/:name",
+            get(routes::enhanced_webhooks::get_enhanced_webhook),
+        )
+        .route(
+            "/api/enhanced-webhooks/:name",
+            put(routes::enhanced_webhooks::update_enhanced_webhook),
+        )
+        .route(
+            "/api/enhanced-webhooks/:name",
+            delete(routes::enhanced_webhooks::delete_enhanced_webhook),
+        )
+        .route(
+            "/api/webhooks/:name/rules",
+            get(routes::webhook_rules::get_webhook_rules),
+        )
+        .route(
+            "/api/webhooks/:name/rules",
+            post(routes::webhook_rules::create_webhook_rule),
+        )
+        .route(
+            "/api/webhooks/:name/rules/test",
+            post(routes::webhook_rules::test_webhook_rules),
+        )
+        .route(
+            "/api/webhooks/:name/rules-order",
+            put(routes::webhook_rules::reorder_webhook_rules),
+        )
+        .route(
+            "/api/webhooks/:name/rules/:rule_id",
+            put(routes::webhook_rules::update_webhook_rule),
+        )
+        .route(
+            "/api/webhooks/:name/rules/:rule_id",
+            delete(routes::webhook_rules::delete_webhook_rule),
+        )
+        .layer(middleware::from_fn_with_state(
+            auth_config,
+            auth::require_token,
+        ))
         .layer(cors)
         .with_state(state);
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 3400));
     info!("Backend API server running on http://{}", addr);
     info!("Display engine running in background...");
-    
+
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }

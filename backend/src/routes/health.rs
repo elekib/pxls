@@ -1,8 +1,4 @@
-use axum::{
-    Json,
-    response::Response,
-    http::{StatusCode, header},
-};
+use axum::Json;
 use serde_json::json;
 use tracing::instrument;
 
@@ -19,13 +15,4 @@ pub const GIT_SHA: &str = match option_env!("PXLS_GIT_SHA") {
 #[instrument]
 pub async fn health_check() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok", "version": VERSION, "git_sha": GIT_SHA }))
-}
-
-pub async fn not_found() -> Response {
-    let error = json!({"error": "Not found"});
-    Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(error.to_string().into())
-        .unwrap()
 }

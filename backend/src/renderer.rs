@@ -1,5 +1,5 @@
 use crate::font::Font;
-use image::{DynamicImage, Rgba, GenericImage, GenericImageView};
+use image::{DynamicImage, GenericImage, GenericImageView, Rgba};
 
 pub struct Renderer;
 
@@ -17,7 +17,7 @@ impl Renderer {
 
         for ch in text.chars() {
             let glyph = Font::get_glyph(ch);
-            
+
             let char_width = match ch {
                 ':' | '-' | '.' | ' ' | '*' => 1,
                 _ => 3,
@@ -46,31 +46,6 @@ impl Renderer {
             };
             cursor_x += char_width + space;
         }
-    }
-
-    pub fn draw_5x5_icon(
-        img: &mut DynamicImage,
-        icon_data: &[u8],
-        x: i32,
-        y: i32,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let icon_img = image::load_from_memory(icon_data)?.resize_exact(5, 5, image::imageops::FilterType::Nearest);
-        let (img_width, img_height) = img.dimensions();
-        
-        for py in 0..5 {
-            for px in 0..5 {
-                let pixel = icon_img.get_pixel(px, py);
-                if pixel[3] > 0 { // Non-transparent
-                    let img_x = x + px as i32;
-                    let img_y = y + py as i32;
-                    
-                    if img_x >= 0 && img_x < img_width as i32 && img_y >= 0 && img_y < img_height as i32 {
-                        img.put_pixel(img_x as u32, img_y as u32, pixel);
-                    }
-                }
-            }
-        }
-        Ok(())
     }
 
     pub fn clear_screen(img: &mut DynamicImage) {

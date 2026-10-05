@@ -1,18 +1,17 @@
 use axum::{
     body::Bytes,
     extract::{Path, RawQuery, State},
+    http::{header, HeaderMap, StatusCode},
     response::Response,
-    http::{HeaderMap, StatusCode, header},
 };
 use serde_json::{json, Value};
-use tracing::{info, warn, instrument};
+use tracing::{info, instrument, warn};
 use uuid::Uuid;
 
-use crate::AppState;
 use crate::webhook_enhanced::{
-    WebhookEvent, WebhookAction, DisplayDefaults,
-    evaluate_rule, default_display_action,
+    default_display_action, evaluate_rule, DisplayDefaults, WebhookAction, WebhookEvent,
 };
+use crate::AppState;
 
 /// Upper bound for an action's `delay_ms`, so one rule can't hold a request open for long.
 const MAX_ACTION_DELAY_MS: u64 = 15_000;
@@ -47,7 +46,11 @@ fn json_error(status: StatusCode, message: &str) -> Response {
     Response::builder()
         .status(status)
         .header(header::CONTENT_TYPE, "application/json")
-        .body(json!({ "success": false, "error": message }).to_string().into())
+        .body(
+            json!({ "success": false, "error": message })
+                .to_string()
+                .into(),
+        )
         .unwrap()
 }
 
@@ -68,7 +71,7 @@ pub async fn handle_webhook(
             .webhooks
             .iter()
             .find(|w| w.path == name || w.name == name)
-            .map_or(false, |w| crate::auth::webhook_secret_ok(&w.secret, provided.as_deref())),
+            .is_some_and(|w| crate::auth::webhook_secret_ok(&w.secret, provided.as_deref())),
         Err(e) => {
             warn!("Failed to load webhooks for authentication: {}", e);
             false
@@ -149,9 +152,16 @@ async fn run_actions(
         // Optional pause so a later action can follow an earlier one on the
         // single-slot display (e.g. a "DONE" label, then the poster)
         if let Some(delay_ms) = action.parameters.get("delay_ms").and_then(|v| v.as_u64()) {
-            tokio::time::sleep(std::time::Duration::from_millis(delay_ms.min(MAX_ACTION_DELAY_MS))).await;
+            tokio::time::sleep(std::time::Duration::from_millis(
+                delay_ms.min(MAX_ACTION_DELAY_MS),
+            ))
+            .await;
         }
-        match state.action_executor.execute_action(action, payload, defaults).await {
+        match state
+            .action_executor
+            .execute_action(action, payload, defaults)
+            .await
+        {
             Ok(result) => actions_taken.push(result),
             Err(e) => {
                 let msg = format!("{:?} action failed: {}", action.action_type, e);
@@ -161,7 +171,11 @@ async fn run_actions(
         }
     }
 
-    let error = if failures.is_empty() { None } else { Some(failures.join("; ")) };
+    let error = if failures.is_empty() {
+        None
+    } else {
+        Some(failures.join("; "))
+    };
     (actions_taken, error)
 }
 
@@ -169,12 +183,12 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
     // --- Enhanced webhook path (rules engine) ---
     match state.webhook_database.load_webhooks() {
         Ok(db) => {
-            if let Some(webhook) = db.webhooks.iter().find(|w| w.path == name || w.name == name) {
-                let mut outcome = WebhookOutcome::new(
-                    StatusCode::OK,
-                    false,
-                    String::new(),
-                );
+            if let Some(webhook) = db
+                .webhooks
+                .iter()
+                .find(|w| w.path == name || w.name == name)
+            {
+                let mut outcome = WebhookOutcome::new(StatusCode::OK, false, String::new());
                 outcome.log_event = webhook.log_events;
                 outcome.max_events = webhook.max_events.max(1);
 
@@ -187,7 +201,8 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
 
                 // Evaluate rules in order; first match wins
                 if let Some(rule) = webhook.rules.iter().find(|r| evaluate_rule(r, payload)) {
-                    let (actions, error) = run_actions(state, &rule.actions, payload, &defaults).await;
+                    let (actions, error) =
+                        run_actions(state, &rule.actions, payload, &defaults).await;
                     outcome.actions_taken = actions;
                     outcome.error = error;
                     outcome.processed = true;
@@ -198,7 +213,8 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
 
                 // No rule matched: explicit default actions take precedence
                 if !webhook.default_actions.is_empty() {
-                    let (actions, error) = run_actions(state, &webhook.default_actions, payload, &defaults).await;
+                    let (actions, error) =
+                        run_actions(state, &webhook.default_actions, payload, &defaults).await;
                     outcome.actions_taken = actions;
                     outcome.error = error;
                     outcome.processed = true;
@@ -211,7 +227,8 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
                 if webhook.rules.is_empty() || webhook.display_on_no_match {
                     match default_display_action(&defaults) {
                         Some(action) => {
-                            let (actions, error) = run_actions(state, &[action], payload, &defaults).await;
+                            let (actions, error) =
+                                run_actions(state, &[action], payload, &defaults).await;
                             outcome.actions_taken = actions;
                             outcome.error = error;
                             outcome.processed = true;
@@ -248,7 +265,9 @@ async fn process_webhook(state: &AppState, name: &str, payload: &Value) -> Webho
                 return outcome;
             }
         };
-        config.webhooks.iter()
+        config
+            .webhooks
+            .iter()
             .find(|w| w.name == name || w.path == name)
             .cloned()
     };
@@ -312,7 +331,8 @@ mod tests {
     /// Serve the real webhook receiver on a random port with one disabled webhook
     /// ("radarr"), so a request that passes authentication returns without touching a device.
     async fn serve() -> (String, std::path::PathBuf) {
-        let dir = std::env::temp_dir().join(format!("pxls-webhook-test-{}", Uuid::new_v4().simple()));
+        let dir =
+            std::env::temp_dir().join(format!("pxls-webhook-test-{}", Uuid::new_v4().simple()));
         std::fs::create_dir_all(&dir).unwrap();
         let webhook = json!({
             "name": "radarr", "enabled": false, "path": "radarr", "secret": SECRET,
@@ -373,21 +393,49 @@ mod tests {
 
         // No secret, wrong secret, and an unknown webhook are all the same 401.
         assert_eq!(post_status(url.clone(), &[], body).await, 401);
-        assert_eq!(post_status(url.clone(), &[("x-webhook-secret", "wrong".into())], body).await, 401);
-        assert_eq!(post_status(format!("{}?secret=wrong", url), &[], body).await, 401);
         assert_eq!(
-            post_status(format!("{}/api/webhook/nope", base), &[("x-webhook-secret", SECRET.into())], body).await,
+            post_status(url.clone(), &[("x-webhook-secret", "wrong".into())], body).await,
+            401
+        );
+        assert_eq!(
+            post_status(format!("{}?secret=wrong", url), &[], body).await,
+            401
+        );
+        assert_eq!(
+            post_status(
+                format!("{}/api/webhook/nope", base),
+                &[("x-webhook-secret", SECRET.into())],
+                body
+            )
+            .await,
             401
         );
 
         // Correct secret by header, query string and Basic auth passes authentication.
-        assert_eq!(post_status(url.clone(), &[("x-webhook-secret", SECRET.into())], body).await, 200);
-        assert_eq!(post_status(format!("{}?secret={}", url, SECRET), &[], body).await, 200);
+        assert_eq!(
+            post_status(url.clone(), &[("x-webhook-secret", SECRET.into())], body).await,
+            200
+        );
+        assert_eq!(
+            post_status(format!("{}?secret={}", url, SECRET), &[], body).await,
+            200
+        );
         let basic = base64::engine::general_purpose::STANDARD.encode(format!("radarr:{}", SECRET));
-        assert_eq!(post_status(url.clone(), &[("authorization", format!("Basic {}", basic))], body).await, 200);
+        assert_eq!(
+            post_status(
+                url.clone(),
+                &[("authorization", format!("Basic {}", basic))],
+                body
+            )
+            .await,
+            200
+        );
 
         // Authenticated but not JSON.
-        assert_eq!(post_status(url, &[("x-webhook-secret", SECRET.into())], "not json").await, 400);
+        assert_eq!(
+            post_status(url, &[("x-webhook-secret", SECRET.into())], "not json").await,
+            400
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 }

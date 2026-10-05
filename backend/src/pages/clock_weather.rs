@@ -18,7 +18,10 @@ struct WeatherCache {
 }
 
 static WEATHER_CACHE: Mutex<Option<Arc<WeatherCache>>> = Mutex::new(None);
-static ICON_ANIMATION: Mutex<IconAnimation> = Mutex::new(IconAnimation { last_frame: 0, last_update: None });
+static ICON_ANIMATION: Mutex<IconAnimation> = Mutex::new(IconAnimation {
+    last_frame: 0,
+    last_update: None,
+});
 const WEATHER_CACHE_DURATION: Duration = Duration::from_secs(600); // 10 minutes
 const ICON_FRAME_DURATION: Duration = Duration::from_millis(333); // 3 FPS animation
 
@@ -39,14 +42,14 @@ impl ClockWeatherPage {
         Renderer::clear_screen(&mut img);
 
         let now = Local::now();
-        
+
         // Get cached weather or fetch new data
         let (temp, weathercode) = Self::get_weather(weather_location, temperature_unit);
-        
+
         // Render time components separately to avoid spacing issues
         let hour = now.format("%-I").to_string();
         let minute = now.format("%M").to_string();
-        
+
         // Render date components separately
         let month_abbr = now.format("%b").to_string();
         let day_two_digit = now.format("%d").to_string();
@@ -63,12 +66,12 @@ impl ClockWeatherPage {
         // Draw colon at position after hour (hour is variable width: 1 or 2 chars)
         // Blink the colon every second
         let hour_width = hour.len() as i32 * 4 - 1; // Approximate width
-        if now.second() % 2 == 0 {
+        if now.second().is_multiple_of(2) {
             Renderer::draw_text(&mut img, ":", hour_width, 0, clock_rgb, 1);
         }
         // Draw minute after colon
         Renderer::draw_text(&mut img, &minute, hour_width + 1, 0, clock_rgb, 1);
-        
+
         // Draw date: month abbreviation (3 chars) + day (2 digits) - compact to fit in 16px
         Renderer::draw_text(&mut img, &month_abbr, 0, 5, date_rgb, 0);
         // Draw day right after month (3px per char with spacing=0)
@@ -81,13 +84,13 @@ impl ClockWeatherPage {
         } else {
             temp_clean.to_string()
         };
-        
+
         // Draw temperature and degree symbol separately to avoid spacing
         let temp_width = temp_str.len() as i32 * 4 - 1;
         Renderer::draw_text(&mut img, &temp_str, 0, 11, weather_rgb, 1);
         // Draw degree symbol right after temperature
         Renderer::draw_text(&mut img, "*", temp_width + 1, 11, weather_rgb, 0);
-        
+
         // Draw weather icon (5x5) next to temperature if we have valid weather
         if weathercode >= 0 && temp_str != "--" {
             let frame = Self::get_animation_frame();
@@ -101,17 +104,18 @@ impl ClockWeatherPage {
         // Check cache first
         if let Ok(cache_guard) = WEATHER_CACHE.lock() {
             if let Some(cache) = cache_guard.as_ref() {
-                if cache.location == location 
-                    && cache.unit == unit 
-                    && cache.last_update.elapsed() < WEATHER_CACHE_DURATION {
+                if cache.location == location
+                    && cache.unit == unit
+                    && cache.last_update.elapsed() < WEATHER_CACHE_DURATION
+                {
                     return (cache.temp.clone(), cache.weathercode);
                 }
             }
         }
-        
+
         // Fetch new weather data
         let (temp, _, _, weathercode) = Self::fetch_weather(location, unit);
-        
+
         // Update cache
         if let Ok(mut cache_guard) = WEATHER_CACHE.lock() {
             *cache_guard = Some(Arc::new(WeatherCache {
@@ -122,7 +126,7 @@ impl ClockWeatherPage {
                 last_update: Instant::now(),
             }));
         }
-        
+
         (temp, weathercode)
     }
 
@@ -181,14 +185,27 @@ impl ClockWeatherPage {
         };
 
         let first = &results[0];
-        let lat = first.get("latitude").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let lon = first.get("longitude").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let name = first.get("name").and_then(|v| v.as_str()).unwrap_or("Unknown");
+        let lat = first
+            .get("latitude")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+        let lon = first
+            .get("longitude")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+        let name = first
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown");
 
         info!(location = %name, lat, lon, "Resolved location for weather");
 
         // Fetch weather
-        let unit_param = if unit == "celsius" { "celsius" } else { "fahrenheit" };
+        let unit_param = if unit == "celsius" {
+            "celsius"
+        } else {
+            "fahrenheit"
+        };
 
         let weather_url = format!(
             "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current_weather=true&temperature_unit={}",
@@ -216,7 +233,7 @@ impl ClockWeatherPage {
         };
 
         let current = w_json.get("current_weather");
-        
+
         let temp = current
             .and_then(|c| c.get("temperature"))
             .and_then(|v| v.as_f64())
@@ -246,16 +263,22 @@ impl ClockWeatherPage {
     fn draw_weather_icon(img: &mut DynamicImage, code: i64, x: i32, y: i32, frame: usize) {
         debug!(code, x, y, frame, "Drawing weather icon");
         // Fixed colors for each weather type
-        let white: [u8; 3] = [255, 255, 255];      // Clouds
-        let yellow: [u8; 3] = [255, 200, 0];       // Sun
-        let orange: [u8; 3] = [255, 140, 0];       // Sun core/partly
-        let blue: [u8; 3] = [0, 150, 255];         // Rain drops
+        let white: [u8; 3] = [255, 255, 255]; // Clouds
+        let yellow: [u8; 3] = [255, 200, 0]; // Sun
+        let orange: [u8; 3] = [255, 140, 0]; // Sun core/partly
+        let blue: [u8; 3] = [0, 150, 255]; // Rain drops
         let light_blue: [u8; 3] = [200, 220, 255]; // Snow
-        let purple: [u8; 3] = [180, 0, 255];       // Lightning
-        let gray: [u8; 3] = [180, 180, 180];       // Fog/cloudy
+        let purple: [u8; 3] = [180, 0, 255]; // Lightning
+        let gray: [u8; 3] = [180, 180, 180]; // Fog/cloudy
 
         // Get icon data and colors for this weather condition
-        let (cloud_icon, sun_icon, drop_icon, colors): ([u8; 5], Option<[u8; 5]>, Option<[u8; 5]>, [&[u8; 3]; 5]) = match code {
+        #[allow(clippy::type_complexity)]
+        let (cloud_icon, sun_icon, drop_icon, colors): (
+            [u8; 5],
+            Option<[u8; 5]>,
+            Option<[u8; 5]>,
+            [&[u8; 3]; 5],
+        ) = match code {
             // Clear/Sunny (0) - animated sun with pulsing rays
             0 => {
                 let sun_rays = [
@@ -265,11 +288,16 @@ impl ClockWeatherPage {
                 ];
                 let sun_cores = [
                     [0b00000, 0b00100, 0b01110, 0b00100, 0b00000], // small
-                    [0b00000, 0b01110, 0b01110, 0b01110, 0b00000], // medium  
+                    [0b00000, 0b01110, 0b01110, 0b01110, 0b00000], // medium
                     [0b00000, 0b00100, 0b01110, 0b00100, 0b00000], // small
                 ];
                 let f = frame % 3;
-                (sun_rays[f], Some(sun_cores[f]), None, [&yellow, &yellow, &orange, &orange, &orange])
+                (
+                    sun_rays[f],
+                    Some(sun_cores[f]),
+                    None,
+                    [&yellow, &yellow, &orange, &orange, &orange],
+                )
             }
             // Partly cloudy (1-3) - cloud with animated sun behind (sun is a small circle)
             1..=3 => {
@@ -279,7 +307,12 @@ impl ClockWeatherPage {
                     [0b00110, 0b01110, 0b01100, 0b00000, 0b00000],
                 ];
                 let cloud = [0b00110, 0b01111, 0b11111, 0b11111, 0b01100];
-                (cloud, Some(sun_pos[frame % 3]), None, [&white, &white, &white, &yellow, &yellow])
+                (
+                    cloud,
+                    Some(sun_pos[frame % 3]),
+                    None,
+                    [&white, &white, &white, &yellow, &yellow],
+                )
             }
             // Cloudy/Fog (45, 48) - shifting cloud layers
             45 | 48 => {
@@ -288,7 +321,12 @@ impl ClockWeatherPage {
                     [0b00010, 0b00111, 0b11111, 0b11111, 0b10100], // shifting left
                     [0b01000, 0b01110, 0b11111, 0b11111, 0b01010], // shifting right
                 ];
-                (clouds[frame % 3], None, None, [&gray, &gray, &gray, &gray, &gray])
+                (
+                    clouds[frame % 3],
+                    None,
+                    None,
+                    [&gray, &gray, &gray, &gray, &gray],
+                )
             }
             // Drizzle/Rain (51-65) - cloud with falling drops below it
             51..=65 => {
@@ -298,7 +336,12 @@ impl ClockWeatherPage {
                     [0b00000, 0b00000, 0b00000, 0b01010, 0b00000], // frame 2 - middle drop falling
                 ];
                 let cloud = [0b01110, 0b11111, 0b11111, 0b00000, 0b00000];
-                (cloud, None, Some(drops[frame % 3]), [&white, &white, &white, &blue, &blue])
+                (
+                    cloud,
+                    None,
+                    Some(drops[frame % 3]),
+                    [&white, &white, &white, &blue, &blue],
+                )
             }
             // Snow (71-77) - snowflakes falling from cloud
             71..=77 => {
@@ -308,7 +351,12 @@ impl ClockWeatherPage {
                     [0b00000, 0b00000, 0b00000, 0b00100, 0b00000], // frame 2 - single flake middle
                 ];
                 let cloud = [0b01110, 0b11111, 0b11111, 0b00000, 0b00000];
-                (cloud, None, Some(flakes[frame % 3]), [&white, &white, &white, &light_blue, &light_blue])
+                (
+                    cloud,
+                    None,
+                    Some(flakes[frame % 3]),
+                    [&white, &white, &white, &light_blue, &light_blue],
+                )
             }
             // Thunderstorm (95-99) - flashing lightning
             95..=99 => {
@@ -318,21 +366,31 @@ impl ClockWeatherPage {
                     [0b00000, 0b00010, 0b00110, 0b01100, 0b01000], // bolt again
                 ];
                 let cloud = [0b01110, 0b11111, 0b11111, 0b00000, 0b00000];
-                (cloud, None, Some(lightning[frame % 3]), [&white, &white, &white, &purple, &purple])
+                (
+                    cloud,
+                    None,
+                    Some(lightning[frame % 3]),
+                    [&white, &white, &white, &purple, &purple],
+                )
             }
             // Default (cloud)
-            _ => ([0b00100, 0b01110, 0b11111, 0b11111, 0b01010], None, None, [&white, &white, &white, &white, &white]),
+            _ => (
+                [0b00100, 0b01110, 0b11111, 0b11111, 0b01010],
+                None,
+                None,
+                [&white, &white, &white, &white, &white],
+            ),
         };
 
         // Draw cloud/base layer
         Self::draw_icon_layer(img, x, y, cloud_icon, colors[0]);
-        
+
         // Draw sun layer if present
         if let Some(sun) = sun_icon {
             Self::draw_icon_layer(img, x, y, sun, colors[3]);
         }
-        
-        // Draw drops/flakes/lightning if present  
+
+        // Draw drops/flakes/lightning if present
         if let Some(drops) = drop_icon {
             Self::draw_icon_layer(img, x, y, drops, colors[3]);
         }
@@ -345,8 +403,12 @@ impl ClockWeatherPage {
                 if (row_bits >> (4 - col_idx)) & 1 == 1 {
                     let px = x + col_idx;
                     let py = y + row_idx as i32;
-                    if px >= 0 && px < 16 && py >= 0 && py < 16 {
-                        img.put_pixel(px as u32, py as u32, Rgba([color[0], color[1], color[2], 255]));
+                    if (0..16).contains(&px) && (0..16).contains(&py) {
+                        img.put_pixel(
+                            px as u32,
+                            py as u32,
+                            Rgba([color[0], color[1], color[2], 255]),
+                        );
                     }
                 }
             }

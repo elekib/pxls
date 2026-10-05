@@ -1,17 +1,16 @@
+use anyhow::{Context, Result};
+use image::{Rgba, RgbaImage};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use anyhow::{Result, Context};
-use tracing::{info, error, warn};
-use serde_json::Value;
-use image::{RgbaImage, Rgba};
+use tracing::{error, info, warn};
 
-use crate::webhook_enhanced::{
-    WebhookAction, ActionType, DisplayDefaults,
-    substitute_placeholders, extract_field_as_string,
-};
 use crate::notification::NotificationManager;
-use crate::webhook_image_processor::WebhookImageProcessor;
 use crate::pixoo_wrapper::PixooWrapper;
+use crate::webhook_enhanced::{
+    extract_field_as_string, substitute_placeholders, ActionType, DisplayDefaults, WebhookAction,
+};
+use crate::webhook_image_processor::WebhookImageProcessor;
 
 pub struct ActionExecutor {
     notification_manager: NotificationManager,
@@ -40,23 +39,14 @@ impl ActionExecutor {
     ) -> Result<String> {
         match &action.action_type {
             ActionType::DisplayNotification => {
-                self.execute_display_notification(action, payload, defaults).await
+                self.execute_display_notification(action, payload, defaults)
+                    .await
             }
-            ActionType::DisplayImage => {
-                self.execute_display_image(action, payload, defaults).await
-            }
-            ActionType::FlashScreen => {
-                self.execute_flash_screen(action, defaults).await
-            }
-            ActionType::PlaySound => {
-                self.execute_play_sound(action).await
-            }
-            ActionType::LogEvent => {
-                self.execute_log_event(action, payload).await
-            }
-            ActionType::ForwardWebhook => {
-                self.execute_forward_webhook(action, payload).await
-            }
+            ActionType::DisplayImage => self.execute_display_image(action, payload, defaults).await,
+            ActionType::FlashScreen => self.execute_flash_screen(action, defaults).await,
+            ActionType::PlaySound => self.execute_play_sound(action).await,
+            ActionType::LogEvent => self.execute_log_event(action, payload).await,
+            ActionType::ForwardWebhook => self.execute_forward_webhook(action, payload).await,
         }
     }
 
@@ -66,13 +56,15 @@ impl ActionExecutor {
 
     fn param_u64(action: &WebhookAction, key: &str) -> Option<u64> {
         action.parameters.get(key).and_then(|v| {
-            v.as_u64().or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
+            v.as_u64()
+                .or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
         })
     }
 
     fn param_bool(action: &WebhookAction, key: &str) -> Option<bool> {
         action.parameters.get(key).and_then(|v| {
-            v.as_bool().or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
+            v.as_bool()
+                .or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
         })
     }
 
@@ -119,8 +111,8 @@ impl ActionExecutor {
             .map(|s| s.to_string())
             .unwrap_or_else(|| defaults.icon.clone());
 
-        let duration_secs = Self::param_u64(action, "duration_secs")
-            .unwrap_or(defaults.duration_secs);
+        let duration_secs =
+            Self::param_u64(action, "duration_secs").unwrap_or(defaults.duration_secs);
 
         let display_mode = Self::param_str(action, "display_mode")
             .map(|s| s.to_string())
@@ -134,25 +126,21 @@ impl ActionExecutor {
             .map(|s| s.to_string())
             .unwrap_or_else(|| defaults.text_color.clone());
 
-        let flash = Self::param_bool(action, "flash")
-            .unwrap_or(defaults.flash);
+        let flash = Self::param_bool(action, "flash").unwrap_or(defaults.flash);
 
-        let flash_speed_ms = Self::param_u64(action, "flash_speed_ms")
-            .unwrap_or(defaults.flash_speed_ms);
+        let flash_speed_ms =
+            Self::param_u64(action, "flash_speed_ms").unwrap_or(defaults.flash_speed_ms);
 
         // Icon image URL: param (with placeholders) or webhook default
-        let icon_image_url = self.resolve_text_param(
-            action,
-            "icon_image_url",
-            "",
-            payload,
-        ).or_else(|| {
-            if defaults.icon_image_url.is_empty() {
-                None
-            } else {
-                Some(defaults.icon_image_url.clone())
-            }
-        });
+        let icon_image_url = self
+            .resolve_text_param(action, "icon_image_url", "", payload)
+            .or_else(|| {
+                if defaults.icon_image_url.is_empty() {
+                    None
+                } else {
+                    Some(defaults.icon_image_url.clone())
+                }
+            });
 
         let icon_image = if let Some(icon_url) = icon_image_url.filter(|u| !u.is_empty()) {
             let icon_action = WebhookAction {
@@ -202,14 +190,13 @@ impl ActionExecutor {
         payload: &Value,
         defaults: &DisplayDefaults,
     ) -> Result<String> {
-        let duration_secs = Self::param_u64(action, "duration_secs")
-            .unwrap_or(defaults.duration_secs);
+        let duration_secs =
+            Self::param_u64(action, "duration_secs").unwrap_or(defaults.duration_secs);
 
-        let flash = Self::param_bool(action, "flash")
-            .unwrap_or(defaults.flash);
+        let flash = Self::param_bool(action, "flash").unwrap_or(defaults.flash);
 
-        let flash_speed_ms = Self::param_u64(action, "flash_speed_ms")
-            .unwrap_or(defaults.flash_speed_ms);
+        let flash_speed_ms =
+            Self::param_u64(action, "flash_speed_ms").unwrap_or(defaults.flash_speed_ms);
 
         // Build an effective action with the image URL resolved from
         // placeholders, url_field, or the webhook's default image_url_field.
@@ -240,24 +227,26 @@ impl ActionExecutor {
 
             match resolved_url {
                 Some(url) if !url.is_empty() => {
-                    effective.parameters.insert("url".to_string(), Value::String(url));
+                    effective
+                        .parameters
+                        .insert("url".to_string(), Value::String(url));
                 }
-                _ => return Err(anyhow::anyhow!(
-                    "DisplayImage: no image URL (set 'url' or 'url_field' parameter)"
-                )),
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "DisplayImage: no image URL (set 'url' or 'url_field' parameter)"
+                    ))
+                }
             }
         }
 
         let mut processor = self.image_processor.lock().await;
-        let img = processor.process_image_action(&effective, payload).await
+        let img = processor
+            .process_image_action(&effective, payload)
+            .await
             .context("Failed to process image action")?;
 
-        self.notification_manager.trigger_image(
-            img,
-            duration_secs,
-            flash,
-            flash_speed_ms,
-        );
+        self.notification_manager
+            .trigger_image(img, duration_secs, flash, flash_speed_ms);
 
         info!("Executed display image from source: {}", source);
         Ok(format!("Displayed image from source: {}", source))
@@ -268,17 +257,14 @@ impl ActionExecutor {
         action: &WebhookAction,
         defaults: &DisplayDefaults,
     ) -> Result<String> {
-        let color = Self::param_str(action, "color")
-            .unwrap_or("FFFFFF");
+        let color = Self::param_str(action, "color").unwrap_or("FFFFFF");
 
-        let duration_ms = Self::param_u64(action, "duration_ms")
-            .unwrap_or(500);
+        let duration_ms = Self::param_u64(action, "duration_ms").unwrap_or(500);
 
-        let flash_speed_ms = Self::param_u64(action, "flash_speed_ms")
-            .unwrap_or(defaults.flash_speed_ms);
+        let flash_speed_ms =
+            Self::param_u64(action, "flash_speed_ms").unwrap_or(defaults.flash_speed_ms);
 
-        let rgb = u32::from_str_radix(color.trim_start_matches('#'), 16)
-            .unwrap_or(0xFFFFFF);
+        let rgb = u32::from_str_radix(color.trim_start_matches('#'), 16).unwrap_or(0xFFFFFF);
         let mut img = RgbaImage::new(64, 64);
         for pixel in img.pixels_mut() {
             *pixel = Rgba([
@@ -289,25 +275,23 @@ impl ActionExecutor {
             ]);
         }
 
-        let duration_secs = ((duration_ms + 999) / 1000).max(1);
-        self.notification_manager.trigger_image(
-            img,
-            duration_secs,
-            true,
-            flash_speed_ms.max(50),
-        );
+        let duration_secs = duration_ms.div_ceil(1000).max(1);
+        self.notification_manager
+            .trigger_image(img, duration_secs, true, flash_speed_ms.max(50));
 
-        info!("Flash screen action: color={}, duration={}ms", color, duration_ms);
-        Ok(format!("Flashed screen with color {} for {}ms", color, duration_ms))
+        info!(
+            "Flash screen action: color={}, duration={}ms",
+            color, duration_ms
+        );
+        Ok(format!(
+            "Flashed screen with color {} for {}ms",
+            color, duration_ms
+        ))
     }
 
-    async fn execute_play_sound(
-        &self,
-        action: &WebhookAction,
-    ) -> Result<String> {
+    async fn execute_play_sound(&self, action: &WebhookAction) -> Result<String> {
         // sound_type presets map to (active_time_ms, off_time_ms, total_time_ms)
-        let sound_type = Self::param_str(action, "sound_type")
-            .unwrap_or("default");
+        let sound_type = Self::param_str(action, "sound_type").unwrap_or("default");
 
         let (preset_active, preset_off, preset_total) = match sound_type {
             "short" => (200, 0, 200),
@@ -320,27 +304,28 @@ impl ActionExecutor {
         let off_time = Self::param_u64(action, "off_time_ms").unwrap_or(preset_off) as u16;
         let total_time = Self::param_u64(action, "total_time_ms").unwrap_or(preset_total) as u16;
 
-        let mut wrapper = self.pixoo.lock()
+        let mut wrapper = self
+            .pixoo
+            .lock()
             .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
-        wrapper.play_buzzer(active_time, off_time, total_time)
+        wrapper
+            .play_buzzer(active_time, off_time, total_time)
             .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {}", e))?;
 
-        info!("Play sound action: type={}, total={}ms", sound_type, total_time);
+        info!(
+            "Play sound action: type={}, total={}ms",
+            sound_type, total_time
+        );
         Ok(format!("Played sound {} for {}ms", sound_type, total_time))
     }
 
-    async fn execute_log_event(
-        &self,
-        action: &WebhookAction,
-        payload: &Value,
-    ) -> Result<String> {
+    async fn execute_log_event(&self, action: &WebhookAction, payload: &Value) -> Result<String> {
         let message = Self::param_str(action, "message")
             .map(|s| substitute_placeholders(s, payload))
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| "Event logged".to_string());
 
-        let level = Self::param_str(action, "level")
-            .unwrap_or("info");
+        let level = Self::param_str(action, "level").unwrap_or("info");
 
         match level {
             "error" => error!("{}", message),
@@ -373,10 +358,12 @@ impl ActionExecutor {
         // log or report the full URL; only the destination host.
         let target = reqwest::Url::parse(&url)
             .ok()
-            .and_then(|u| u.host_str().map(|h| match u.port() {
-                Some(port) => format!("{}:{}", h, port),
-                None => h.to_string(),
-            }))
+            .and_then(|u| {
+                u.host_str().map(|h| match u.port() {
+                    Some(port) => format!("{}:{}", h, port),
+                    None => h.to_string(),
+                })
+            })
             .unwrap_or_else(|| "unknown host".to_string());
 
         let response = match method.as_str() {
@@ -393,6 +380,9 @@ impl ActionExecutor {
         if !status.is_success() {
             return Err(anyhow::anyhow!("Forward to {} returned {}", target, status));
         }
-        Ok(format!("Forwarded webhook to {} (status: {})", target, status))
+        Ok(format!(
+            "Forwarded webhook to {} (status: {})",
+            target, status
+        ))
     }
 }

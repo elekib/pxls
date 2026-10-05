@@ -17,15 +17,16 @@ pub struct GpuStatsPage;
 /// - 90-100%: Red (critical)
 fn get_usage_color(usage: u32) -> [u8; 3] {
     match usage {
-        0..=50 => [0, 255, 0],      // Green - Good
-        51..=75 => [255, 255, 0],   // Yellow - Okay
-        76..=90 => [255, 165, 0],   // Orange - Concerning
-        _ => [255, 0, 0],           // Red - Critical
+        0..=50 => [0, 255, 0],    // Green - Good
+        51..=75 => [255, 255, 0], // Yellow - Okay
+        76..=90 => [255, 165, 0], // Orange - Concerning
+        _ => [255, 0, 0],         // Red - Critical
     }
 }
 
 // Dashdot GPU API response struct
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct DashdotGpu {
     #[serde(default)]
     load: f32,
@@ -37,6 +38,7 @@ struct DashdotGpu {
 
 // Beszel API structs for GPU data
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelGpuInfo {
     #[serde(default)]
     load: Option<f64>,
@@ -76,6 +78,7 @@ struct BeszelSystemInfo {
 }
 
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelSystemRecord {
     id: String,
     #[serde(default)]
@@ -85,7 +88,11 @@ struct BeszelSystemRecord {
 }
 
 #[derive(Deserialize, Debug, Default)]
-struct BeszelListResponse<T> { #[serde(default)] items: Vec<T> }
+#[allow(dead_code)]
+struct BeszelListResponse<T> {
+    #[serde(default)]
+    items: Vec<T>,
+}
 
 impl GpuStatsPage {
     pub fn render(
@@ -127,7 +134,7 @@ impl GpuStatsPage {
     fn render_gpu_stats(
         img: &mut DynamicImage,
         gpu_load: Option<u32>,
-        gpu_memory: Option<u32>,
+        _gpu_memory: Option<u32>,
         brand_text: &str,
         brand_color: &str,
     ) -> Result<DynamicImage> {
@@ -161,10 +168,12 @@ impl GpuStatsPage {
         let gpu_result = ureq::get(&gpu_url)
             .timeout(std::time::Duration::from_secs(3))
             .call();
-        
+
         match gpu_result {
             Ok(response) => {
-                match serde_json::from_str::<Vec<DashdotGpu>>(&response.into_string().unwrap_or_default()) {
+                match serde_json::from_str::<Vec<DashdotGpu>>(
+                    &response.into_string().unwrap_or_default(),
+                ) {
                     Ok(gpus) => {
                         if gpus.is_empty() {
                             warn!("GPU response contained empty array");
@@ -199,19 +208,31 @@ impl GpuStatsPage {
         let auth_token = token_manager.and_then(|tm| tm.get_token());
 
         // Try to fetch stats - if auth fails, try to refresh token and retry
-        let result = Self::try_fetch_beszel_gpu_stats(hub_url, system_id, auth_token.as_deref(), token_manager);
+        let result = Self::try_fetch_beszel_gpu_stats(
+            hub_url,
+            system_id,
+            auth_token.as_deref(),
+            token_manager,
+        );
 
         // Check if we got an auth error (401/403)
-        let is_auth_error = result.as_ref().err()
+        let is_auth_error = result
+            .as_ref()
+            .err()
             .and_then(|e| e.downcast_ref::<ureq::Error>())
-            .map_or(false, |ue| matches!(ue, ureq::Error::Status(401 | 403, _)));
+            .is_some_and(|ue| matches!(ue, ureq::Error::Status(401 | 403, _)));
 
         if is_auth_error {
             debug!("Auth error (401/403), attempting token refresh");
             if let Some(tm) = token_manager {
                 if let Some(new_token) = tm.refresh_token() {
                     // Retry with new token
-                    let retry_result = Self::try_fetch_beszel_gpu_stats(hub_url, system_id, Some(&new_token), token_manager);
+                    let retry_result = Self::try_fetch_beszel_gpu_stats(
+                        hub_url,
+                        system_id,
+                        Some(&new_token),
+                        token_manager,
+                    );
                     if let Err(ref e) = retry_result {
                         warn!(error = %e, "GPU stats fetch failed even after token refresh");
                     }
@@ -269,8 +290,7 @@ impl GpuStatsPage {
         // Fetch system record with GPU stats
         let path = format!("/api/collections/systems/records/{}", system_id);
         let url = format!("{}{}", hub_url, path);
-        let mut req = ureq::get(&url)
-            .timeout(std::time::Duration::from_secs(5));
+        let mut req = ureq::get(&url).timeout(std::time::Duration::from_secs(5));
 
         if let Some(token) = auth_token {
             req = req.set("Authorization", &format!("Bearer {}", token));
@@ -286,7 +306,7 @@ impl GpuStatsPage {
         };
 
         let body = resp.into_string().unwrap_or_default();
-        debug!(response_body = %body[..body.len().min(500).max(0)], system_id = %system_id, "Beszel system API response");
+        debug!(response_body = %body[..body.len().min(500)], system_id = %system_id, "Beszel system API response");
 
         match serde_json::from_str::<BeszelSystemRecord>(&body) {
             Ok(record) => {
@@ -330,8 +350,12 @@ impl GpuStatsPage {
                         if let Some(gpu_load) = info.g {
                             let load_pct = gpu_load.round() as u32;
                             // Check for GPU memory in compact format fields first
-                            let mem_pct = info.gm.or(info.gmem).or(info.gpumem).map(|v| v.round() as u32);
-                            
+                            let mem_pct = info
+                                .gm
+                                .or(info.gmem)
+                                .or(info.gpumem)
+                                .map(|v| v.round() as u32);
+
                             info!(load = load_pct, memory = ?mem_pct, "Using compact GPU fields (g/gm/gmem/gpumem)");
                             return Ok((Some(load_pct), mem_pct));
                         }

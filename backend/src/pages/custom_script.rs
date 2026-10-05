@@ -2,7 +2,7 @@ use crate::config::{Config, ScriptInput};
 use crate::renderer::Renderer;
 use anyhow::Result;
 use image::DynamicImage;
-use tracing::{debug, error, warn};
+use tracing::{debug, error};
 
 pub struct CustomScriptPage;
 
@@ -30,19 +30,33 @@ impl CustomScriptPage {
         match output {
             Ok(o) if o.status.success() => {
                 let stdout = String::from_utf8_lossy(&o.stdout);
-                debug!(output_len = stdout.len(), "Custom script executed successfully");
+                debug!(
+                    output_len = stdout.len(),
+                    "Custom script executed successfully"
+                );
                 if let Ok(pixels) = serde_json::from_str::<Vec<crate::config::Pixel>>(&stdout) {
                     let config = Config::default();
                     for pixel in pixels {
                         let rgb = config.hex_to_rgb(&pixel.color);
                         if pixel.x < 16 && pixel.y < 16 {
-                            img.put_pixel(pixel.x as u32, pixel.y as u32, image::Rgba([rgb[0], rgb[1], rgb[2], 255]));
+                            img.put_pixel(
+                                pixel.x as u32,
+                                pixel.y as u32,
+                                image::Rgba([rgb[0], rgb[1], rgb[2], 255]),
+                            );
                         }
                     }
                 } else {
                     let text = stdout.lines().next().unwrap_or("script").to_string();
                     let mut display = DynamicImage::ImageRgba8(img);
-                    Renderer::draw_text(&mut display, &text[..text.len().min(5)], 0, 6, [255, 255, 255], 0);
+                    Renderer::draw_text(
+                        &mut display,
+                        &text[..text.len().min(5)],
+                        0,
+                        6,
+                        [255, 255, 255],
+                        0,
+                    );
                     return Ok(display);
                 }
             }

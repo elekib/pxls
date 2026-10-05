@@ -1,20 +1,23 @@
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
-use std::thread;
-use std::time::{Duration, Instant};
-use sysinfo::System;
-use tracing::{info, warn, error, debug};
 use bluetooth_serial_port::BtAddr;
 use pixoo::Pixoo;
 use std::str::FromStr;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
+use std::thread;
+use std::time::{Duration, Instant};
+use sysinfo::System;
+use tracing::{debug, error, info, warn};
 
-use crate::config::Config;
-use crate::pixoo_wrapper::PixooWrapper;
-use crate::pages::PageRenderer;
-use crate::token_manager::TokenManager;
-use crate::modes::divoom::{is_divoom_page_type, apply_divoom_mode_from_config, apply_divoom_mode};
-use crate::notification::NotificationManager;
 use super::device_config::apply_device_config;
 use super::notification_page::render_notification_page;
+use crate::config::Config;
+use crate::modes::divoom::{apply_divoom_mode, apply_divoom_mode_from_config, is_divoom_page_type};
+use crate::notification::NotificationManager;
+use crate::pages::PageRenderer;
+use crate::pixoo_wrapper::PixooWrapper;
+use crate::token_manager::TokenManager;
 
 pub fn rendering_loop(
     pixoo: Arc<Mutex<PixooWrapper>>,
@@ -45,7 +48,7 @@ pub fn rendering_loop(
         sys.refresh_all();
 
         let is_manual_disconnect = manual_disconnect.load(Ordering::SeqCst);
-        
+
         if should_reconnect.load(Ordering::SeqCst) {
             if is_manual_disconnect {
                 info!("Reconnect signal received but manual disconnect is active, skipping");
@@ -84,17 +87,17 @@ pub fn rendering_loop(
                 thread::sleep(Duration::from_secs(5));
                 continue;
             }
-            
+
             let tool_active = {
                 let tool_until = tool_active_until.lock().unwrap();
                 Instant::now() < *tool_until
             };
-            
+
             if tool_active {
                 thread::sleep(Duration::from_secs(1));
                 continue;
             }
-            
+
             warn!("No connection detected, attempting to reconnect");
             try_reconnect(&pixoo, &config, &tool_active_until);
             thread::sleep(Duration::from_secs(5));
@@ -107,7 +110,7 @@ pub fn rendering_loop(
             let tool_until = tool_active_until.lock().unwrap();
             Instant::now() < *tool_until
         };
-        
+
         if tool_active {
             // Tool is active - just update heartbeat timer and sleep
             // Don't send any commands that might override the tool display
@@ -137,12 +140,12 @@ pub fn rendering_loop(
                     .iter()
                     .filter(|p| p.enabled)
                     .cloned()
-                    .collect::<Vec<_>>()
+                    .collect::<Vec<_>>(),
             )
         };
 
-        let is_custom_mode = device_mode == "custom" && !enabled_pages.is_empty();
-        
+        let _is_custom_mode = device_mode == "custom" && !enabled_pages.is_empty();
+
         // Heartbeat / keep-alive is handled per-branch below. We intentionally do
         // NOT send a set_color heartbeat in native Divoom mode: that overwrites
         // the device's native display (e.g. blanking the environment clock), which
@@ -152,14 +155,14 @@ pub fn rendering_loop(
         // Handle different display modes
         if device_mode == "custom" && !enabled_pages.is_empty() {
             let should_advance = last_page_switch.elapsed().as_secs() >= rotation_time;
-            
+
             if should_advance {
                 current_page_index = (current_page_index + 1) % enabled_pages.len();
                 last_page_switch = Instant::now();
             }
-            current_page_index = current_page_index % enabled_pages.len();
+            current_page_index %= enabled_pages.len();
             let page = &enabled_pages[current_page_index];
-            
+
             if is_divoom_page_type(&page.page_type) {
                 // Divoom native page within custom rotation: apply the device's
                 // native mode for this page. The device renders it itself, so we
@@ -191,10 +194,11 @@ pub fn rendering_loop(
                                     error!(attempt = consecutive_failures, error = %e, "Failed to apply Divoom page mode");
 
                                     let error_str = e.to_string().to_lowercase();
-                                    if error_str.contains("transport endpoint") ||
-                                       error_str.contains("not connected") ||
-                                       error_str.contains("connection") ||
-                                       error_str.contains("107") {
+                                    if error_str.contains("transport endpoint")
+                                        || error_str.contains("not connected")
+                                        || error_str.contains("connection")
+                                        || error_str.contains("107")
+                                    {
                                         warn!("Connection error applying Divoom page, forcing reconnect");
                                         *wrapper = PixooWrapper::new();
                                         try_reconnect(&pixoo, &config, &tool_active_until);
@@ -250,13 +254,14 @@ pub fn rendering_loop(
                 let cfg = config.lock().unwrap();
                 cfg.device_config.clone()
             };
-            
+
             let current_mode = device_config.light_mode.clone();
             let mode_changed = current_mode != last_native_mode;
-            let should_reapply = mode_changed || last_native_mode_applied
-                .map(|last| last.elapsed().as_secs() >= 10)
-                .unwrap_or(true);
-            
+            let should_reapply = mode_changed
+                || last_native_mode_applied
+                    .map(|last| last.elapsed().as_secs() >= 10)
+                    .unwrap_or(true);
+
             if should_reapply {
                 last_native_mode = current_mode.clone();
                 last_native_mode_applied = Some(Instant::now());
@@ -278,11 +283,14 @@ pub fn rendering_loop(
                                 error!(attempt = consecutive_failures, error = %e, "Failed to apply Divoom mode");
 
                                 let error_str = e.to_string().to_lowercase();
-                                if error_str.contains("transport endpoint") ||
-                                   error_str.contains("not connected") ||
-                                   error_str.contains("connection") ||
-                                   error_str.contains("107") {
-                                    warn!("Connection error applying native mode, forcing reconnect");
+                                if error_str.contains("transport endpoint")
+                                    || error_str.contains("not connected")
+                                    || error_str.contains("connection")
+                                    || error_str.contains("107")
+                                {
+                                    warn!(
+                                        "Connection error applying native mode, forcing reconnect"
+                                    );
                                     *wrapper = PixooWrapper::new();
                                     try_reconnect(&pixoo, &config, &tool_active_until);
                                     consecutive_failures = 0;
@@ -307,7 +315,11 @@ pub fn rendering_loop(
     }
 }
 
-pub fn try_reconnect(pixoo: &Arc<Mutex<PixooWrapper>>, config: &Arc<Mutex<Config>>, tool_active_until: &Arc<Mutex<Instant>>) {
+pub fn try_reconnect(
+    pixoo: &Arc<Mutex<PixooWrapper>>,
+    config: &Arc<Mutex<Config>>,
+    tool_active_until: &Arc<Mutex<Instant>>,
+) {
     let (mac_str, device_config) = {
         let cfg = config.lock().unwrap();
         (cfg.pixoo_mac.clone(), cfg.device_config.clone())
@@ -342,11 +354,11 @@ pub fn try_reconnect(pixoo: &Arc<Mutex<PixooWrapper>>, config: &Arc<Mutex<Config
                         } else {
                             info!("Skipping device config application - tool was recently active");
                         }
-                        
+
                         if let Ok(mut wrapper) = pixoo.lock() {
                             wrapper.replace(new_pixoo);
                             wrapper.set_bt_addr(bt_addr);
-                            
+
                             info!(mac = %mac_str, attempt, "Successfully reconnected to device");
                             return;
                         }
@@ -354,16 +366,18 @@ pub fn try_reconnect(pixoo: &Arc<Mutex<PixooWrapper>>, config: &Arc<Mutex<Config
                     Err(e) => {
                         let error_str = e.to_string().to_lowercase();
                         error!(attempt, mac = %mac_str, error = %e, "Reconnect attempt failed");
-                        
-                        if error_str.contains("transport endpoint") || 
-                           error_str.contains("not connected") || 
-                           error_str.contains("connection") ||
-                           error_str.contains("107") {
+
+                        if error_str.contains("transport endpoint")
+                            || error_str.contains("not connected")
+                            || error_str.contains("connection")
+                            || error_str.contains("107")
+                        {
                             debug!("Connection error detected, will retry with backoff");
                         }
-                        
+
                         if attempt < 8 {
-                            let delay = Duration::from_secs(std::cmp::min(2_u64.pow(attempt as u32), 30));
+                            let delay =
+                                Duration::from_secs(std::cmp::min(2_u64.pow(attempt as u32), 30));
                             debug!(?delay, "Waiting before next reconnect attempt");
                             thread::sleep(delay);
                         }

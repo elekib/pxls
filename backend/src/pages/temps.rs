@@ -17,10 +17,10 @@ pub struct TempsPage;
 /// - 85°C+: Red (critical)
 fn get_temp_color(temp: u32) -> [u8; 3] {
     match temp {
-        0..=50 => [0, 255, 0],      // Green - Good
-        51..=70 => [255, 255, 0],   // Yellow - Warm
-        71..=85 => [255, 165, 0],   // Orange - Hot
-        _ => [255, 0, 0],           // Red - Critical
+        0..=50 => [0, 255, 0],    // Green - Good
+        51..=70 => [255, 255, 0], // Yellow - Warm
+        71..=85 => [255, 165, 0], // Orange - Hot
+        _ => [255, 0, 0],         // Red - Critical
     }
 }
 
@@ -33,18 +33,20 @@ struct DashdotCpuCore {
 
 // Beszel API structs for temperature data
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelSystemInfo {
     #[serde(default, rename = "cpuTemp")]
     cpu_temp: Option<f64>,
     #[serde(default, rename = "gpuTemp")]
     gpu_temp: Option<f64>,
     #[serde(default, rename = "dt")]
-    device_temp: Option<f64>,  // Device temperature from beszel agent
+    device_temp: Option<f64>, // Device temperature from beszel agent
     #[serde(default)]
     temps: Option<serde_json::Value>, // For additional temp sensors
 }
 
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelSystemRecord {
     id: String,
     #[serde(default)]
@@ -55,12 +57,14 @@ struct BeszelSystemRecord {
 
 // Stats response for time-series data (includes cpuTemp)
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelStatsResponse {
     #[serde(default)]
     stats: Vec<BeszelStatEntry>,
 }
 
 #[derive(Deserialize, Debug, Default)]
+#[allow(dead_code)]
 struct BeszelStatEntry {
     #[serde(default, rename = "cpuTemp")]
     cpu_temp: Option<f64>,
@@ -69,7 +73,11 @@ struct BeszelStatEntry {
 }
 
 #[derive(Deserialize, Debug, Default)]
-struct BeszelListResponse<T> { #[serde(default)] items: Vec<T> }
+#[allow(dead_code)]
+struct BeszelListResponse<T> {
+    #[serde(default)]
+    items: Vec<T>,
+}
 
 // Temperature data structure for all sensor types
 #[derive(Debug, Default)]
@@ -80,6 +88,7 @@ struct TempData {
 }
 
 impl TempsPage {
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         source: &str,
         dashdot_url: Option<&str>,
@@ -107,12 +116,24 @@ impl TempsPage {
             }
             _ => {
                 // Default to dashdot (only supports CPU)
-                let cpu = dashdot_url.and_then(|url| Self::fetch_dashdot_temps(url));
-                TempData { cpu, gpu: None, storage: None }
+                let cpu = dashdot_url.and_then(Self::fetch_dashdot_temps);
+                TempData {
+                    cpu,
+                    gpu: None,
+                    storage: None,
+                }
             }
         };
 
-        Self::render_temps(&mut img, temps, brand_text, brand_color, show_cpu, show_gpu, show_storage)
+        Self::render_temps(
+            &mut img,
+            temps,
+            brand_text,
+            brand_color,
+            show_cpu,
+            show_gpu,
+            show_storage,
+        )
     }
 
     fn render_temps(
@@ -129,23 +150,29 @@ impl TempsPage {
 
         // Build list of temperatures to display (max 2 lines on 16x16 display)
         let mut display_temps: Vec<(char, Option<u32>)> = Vec::new();
-        if show_cpu { display_temps.push(('C', temps.cpu)); }
-        if show_gpu { display_temps.push(('G', temps.gpu)); }
-        if show_storage { display_temps.push(('S', temps.storage)); }
+        if show_cpu {
+            display_temps.push(('C', temps.cpu));
+        }
+        if show_gpu {
+            display_temps.push(('G', temps.gpu));
+        }
+        if show_storage {
+            display_temps.push(('S', temps.storage));
+        }
 
         // Limit to 2 temperatures (display constraint)
         let display_temps: Vec<_> = display_temps.into_iter().take(2).collect();
 
         // Y positions for 1 or 2 lines - render from very top (y=0)
         let y_positions: Vec<i32> = match display_temps.len() {
-            1 => vec![0],      // Single line, at very top
-            2 => vec![0, 6],   // Two lines, top and middle
-            _ => vec![0],      // Default fallback
+            1 => vec![0],    // Single line, at very top
+            2 => vec![0, 6], // Two lines, top and middle
+            _ => vec![0],    // Default fallback
         };
 
         for (i, (label, temp)) in display_temps.iter().enumerate() {
             let y_pos = y_positions.get(i).copied().unwrap_or(0);
-            
+
             if let Some(t) = temp {
                 let rgb = get_temp_color(*t);
                 let temp_str = format!("{}{}", label, t);
@@ -182,7 +209,9 @@ impl TempsPage {
 
         match cpu_result {
             Ok(response) => {
-                match serde_json::from_str::<Vec<DashdotCpuCore>>(&response.into_string().unwrap_or_default()) {
+                match serde_json::from_str::<Vec<DashdotCpuCore>>(
+                    &response.into_string().unwrap_or_default(),
+                ) {
                     Ok(cores) if !cores.is_empty() => {
                         // Get max temp across all cores
                         let max_temp = cores.iter().map(|c| c.temp).fold(0.0, f32::max);
@@ -209,20 +238,28 @@ impl TempsPage {
         let auth_token = token_manager.and_then(|tm| tm.get_token());
 
         // Try to fetch stats - if auth fails, try to refresh token and retry
-        let result = Self::try_fetch_beszel_temps(hub_url, system_id, auth_token.as_deref(), token_manager);
+        let result =
+            Self::try_fetch_beszel_temps(hub_url, system_id, auth_token.as_deref(), token_manager);
 
         // Check if we got an auth error (401/403)
-        let is_auth_error = result.as_ref().err()
+        let is_auth_error = result
+            .as_ref()
+            .err()
             .and_then(|e| e.downcast_ref::<ureq::Error>())
-            .map_or(false, |ue| matches!(ue, ureq::Error::Status(401 | 403, _)));
+            .is_some_and(|ue| matches!(ue, ureq::Error::Status(401 | 403, _)));
 
         if is_auth_error {
             debug!("Auth error (401/403), attempting token refresh");
             if let Some(tm) = token_manager {
                 if let Some(new_token) = tm.refresh_token() {
                     // Retry with new token
-                    return Self::try_fetch_beszel_temps(hub_url, system_id, Some(&new_token), token_manager)
-                        .unwrap_or_default();
+                    return Self::try_fetch_beszel_temps(
+                        hub_url,
+                        system_id,
+                        Some(&new_token),
+                        token_manager,
+                    )
+                    .unwrap_or_default();
                 }
             }
         }
@@ -256,46 +293,40 @@ impl TempsPage {
         let path = format!("/api/collections/systems/records/{}", system_id);
         let url = format!("{}{}", hub_url, path);
         debug!(url = %url, "Fetching beszel system record for temps");
-        
-        let mut req = ureq::get(&url)
-            .timeout(std::time::Duration::from_secs(5));
-        
+
+        let mut req = ureq::get(&url).timeout(std::time::Duration::from_secs(5));
+
         if let Some(token) = auth_token {
             req = req.set("Authorization", &format!("Bearer {}", token));
         }
 
-        let resp = req.call().map_err(|e| {
-            super::beszel::note_failure(hub_url, requested, &e);
-            e
+        let resp = req.call().inspect_err(|e| {
+            super::beszel::note_failure(hub_url, requested, e);
         })?;
         let status = resp.status();
         let body = resp.into_string().unwrap_or_default();
-        
+
         if status != 200 {
             warn!(status, body = %body[..body.len().min(200)], "Beszel system record request returned non-200 status");
             return Ok(TempData::default());
         }
-        
+
         // Log raw body for debugging
         debug!(body = %body, "Beszel API raw response");
-        
+
         match serde_json::from_str::<BeszelSystemRecord>(&body) {
             Ok(record) => {
                 let info = record.info.as_ref();
-                
+
                 // Debug log all available fields
                 if let Some(i) = info {
                     debug!(device_temp = ?i.device_temp, gpu_temp = ?i.gpu_temp, temps_obj = ?i.temps, "Beszel info fields");
                 }
-                
+
                 // Extract all temperature values
-                let cpu = info
-                    .and_then(|i| i.device_temp)
-                    .map(|v| v.round() as u32);
-                let gpu = info
-                    .and_then(|i| i.gpu_temp)
-                    .map(|v| v.round() as u32);
-                
+                let cpu = info.and_then(|i| i.device_temp).map(|v| v.round() as u32);
+                let gpu = info.and_then(|i| i.gpu_temp).map(|v| v.round() as u32);
+
                 // For storage temp, try to extract from temps object - look for nvme_composite fields
                 let storage = info
                     .and_then(|i| i.temps.as_ref())
@@ -309,14 +340,15 @@ impl TempsPage {
                     })
                     .and_then(|v| v.as_f64())
                     .map(|v| v.round() as u32);
-                
+
                 // Also fetch smart devices for drive temps
-                let smart_storage_temp = Self::fetch_smart_device_temps(hub_url, &system_id, auth_token);
+                let smart_storage_temp =
+                    Self::fetch_smart_device_temps(hub_url, &system_id, auth_token);
                 info!(smart_temp = ?smart_storage_temp, "Smart device temp fetched");
-                
+
                 // Use smart device temp if available, otherwise fall back to temps object
                 let storage = storage.or(smart_storage_temp);
-                
+
                 let temps = TempData { cpu, gpu, storage };
                 info!(cpu = ?cpu, gpu = ?gpu, storage = ?storage, "Beszel temperatures fetched from system record");
                 Ok(temps)
@@ -327,45 +359,47 @@ impl TempsPage {
             }
         }
     }
-    
+
     fn fetch_smart_device_temps(
         hub_url: &str,
         system_id: &str,
         auth_token: Option<&str>,
     ) -> Option<u32> {
-        let path = format!("/api/collections/smart_devices/records?filter=system='{}'&perPage=100", system_id);
+        let path = format!(
+            "/api/collections/smart_devices/records?filter=system='{}'&perPage=100",
+            system_id
+        );
         let url = format!("{}{}", hub_url, path);
         debug!(url = %url, "Fetching smart devices for drive temps");
-        
-        let mut req = ureq::get(&url)
-            .timeout(std::time::Duration::from_secs(5));
-        
+
+        let mut req = ureq::get(&url).timeout(std::time::Duration::from_secs(5));
+
         if let Some(token) = auth_token {
             req = req.set("Authorization", &format!("Bearer {}", token));
         }
-        
+
         let resp = req.call().ok()?;
         let body = resp.into_string().unwrap_or_default();
-        
+
         #[derive(Deserialize, Debug)]
         struct SmartDevice {
             temp: Option<f64>,
             attributes: Option<Vec<SmartAttribute>>,
         }
-        
+
         #[derive(Deserialize, Debug)]
         struct SmartAttribute {
             n: String,
             rv: i64,
         }
-        
+
         #[derive(Deserialize, Debug)]
         struct SmartDeviceList {
             items: Vec<SmartDevice>,
         }
-        
+
         let data: SmartDeviceList = serde_json::from_str(&body).ok()?;
-        
+
         // Find first valid temperature from smart devices
         for device in data.items {
             // Check direct temp field
@@ -385,7 +419,7 @@ impl TempsPage {
                 }
             }
         }
-        
+
         None
     }
 }

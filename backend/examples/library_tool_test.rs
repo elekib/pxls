@@ -1,14 +1,13 @@
 use bluetooth_serial_port::BtAddr;
-use pixoo::{Pixoo, Brightness};
-use pixoo::tool::{ToolInfo, NoiseControl, TimerControl, CountDownControl};
+use pixoo::tool::{CountDownControl, NoiseControl, TimerControl, ToolInfo};
+use pixoo::{Brightness, Pixoo};
 use std::io::{self, Write};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
-/// Proof of Concept: Testing pixoo library's set_tool_info API
-/// This tests the library's native tool methods vs raw commands
-
+// Proof of Concept: Testing pixoo library's set_tool_info API
+// This tests the library's native tool methods vs raw commands
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║    Pixoo Library Tool API POC Tester                         ║");
@@ -45,6 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "5" => test_brightness_toggle(&mut pixoo)?,
             "0" => {
                 println!("\nDisconnecting...");
+                #[allow(clippy::drop_non_drop)]
                 drop(pixoo);
                 println!("Done!");
                 break;
@@ -71,44 +71,44 @@ fn print_menu() {
 
 fn test_noise_meter(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n--- Testing Noise Meter ---");
-    
+
     println!("Starting noise meter for 5 seconds...");
     pixoo.set_tool_info(ToolInfo::Noise(NoiseControl::Start))?;
     println!("✓ Noise(Start) sent");
-    
+
     thread::sleep(Duration::from_secs(5));
-    
+
     println!("Stopping noise meter...");
     pixoo.set_tool_info(ToolInfo::Noise(NoiseControl::Stop))?;
     println!("✓ Noise(Stop) sent");
-    
+
     println!("\nNoise test complete. Did the device show noise levels?");
     Ok(())
 }
 
 fn test_timer(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n--- Testing Timer ---");
-    
+
     println!("Starting timer for 3 seconds...");
     pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Start))?;
     println!("✓ Timer(Start) sent");
-    
+
     thread::sleep(Duration::from_secs(3));
-    
+
     println!("Pausing timer...");
     pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Pause))?;
     println!("✓ Timer(Pause) sent");
     thread::sleep(Duration::from_secs(2));
-    
+
     println!("Resuming timer...");
     pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Start))?;
     println!("✓ Timer(Start) sent - should resume");
     thread::sleep(Duration::from_secs(2));
-    
+
     println!("Resetting timer...");
     pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Reset))?;
     println!("✓ Timer(Reset) sent");
-    
+
     println!("\nTimer test complete.");
     Ok(())
 }
@@ -116,7 +116,7 @@ fn test_timer(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
 fn test_scoreboard(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n--- Testing Scoreboard ---");
     println!("This will cycle through some scores...");
-    
+
     let tests = vec![
         (10, 20, "Initial scores"),
         (50, 20, "Red increases"),
@@ -124,7 +124,7 @@ fn test_scoreboard(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> 
         (99, 50, "Red leads"),
         (99, 100, "Blue takes lead"),
     ];
-    
+
     for (red, blue, desc) in tests {
         println!("  {}: {}-{}...", desc, red, blue);
         pixoo.set_tool_info(ToolInfo::Score {
@@ -134,24 +134,24 @@ fn test_scoreboard(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> 
         })?;
         thread::sleep(Duration::from_secs(2));
     }
-    
+
     println!("Turning off scoreboard...");
     pixoo.set_tool_info(ToolInfo::Score {
         on: false,
         red_score: 0,
         blue_score: 0,
     })?;
-    
+
     println!("\nScoreboard test complete.");
     Ok(())
 }
 
 fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n--- Testing Countdown ---");
-    
+
     let mins = prompt("Minutes [0]: ").trim().parse::<u8>().unwrap_or(0);
     let secs = prompt("Seconds [10]: ").trim().parse::<u8>().unwrap_or(10);
-    
+
     // Validate seconds using library's type
     let seconds = match pixoo::tool::Seconds::new(secs) {
         Some(s) => s,
@@ -160,7 +160,7 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
             return Ok(());
         }
     };
-    
+
     println!("Starting countdown from {}m {}s...", mins, secs);
     pixoo.set_tool_info(ToolInfo::CountDown {
         control: CountDownControl::Start,
@@ -168,13 +168,13 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
         seconds,
     })?;
     println!("✓ CountDown(Start, {}:{}) sent", mins, secs);
-    
+
     // Let it run for a bit then offer to cancel
     println!("Countdown running... press Enter to cancel early");
-    
+
     // Simple non-blocking-ish input check would be complex, so just wait
     thread::sleep(Duration::from_secs(3));
-    
+
     let cancel = prompt("Cancel countdown? (y/n) [n]: ");
     if cancel.trim().to_lowercase() == "y" {
         pixoo.set_tool_info(ToolInfo::CountDown {
@@ -186,7 +186,7 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("Letting countdown finish (or you can wait)...");
     }
-    
+
     println!("\nCountdown test complete.");
     Ok(())
 }
@@ -194,13 +194,13 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
 fn test_brightness_toggle(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n--- Testing Basic Function ---");
     println!("Toggling brightness to verify connection works...");
-    
+
     for brightness in [10, 50, 100, 30] {
         println!("  Setting brightness to {}%...", brightness);
         pixoo.set_brightness(Brightness::new(brightness).unwrap())?;
         thread::sleep(Duration::from_millis(500));
     }
-    
+
     println!("✓ Basic function test passed");
     Ok(())
 }

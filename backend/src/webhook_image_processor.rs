@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-use image::{ImageFormat, DynamicImage, RgbaImage, Rgba, GenericImageView};
-use tracing::{info, warn, error};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use base64::Engine;
+use image::{DynamicImage, GenericImageView, Rgba, RgbaImage};
 use serde_json::Value;
+use tracing::info;
 
-use crate::webhook_enhanced::{WebhookAction, ActionType};
+use crate::webhook_enhanced::{ActionType, WebhookAction};
 
 pub struct WebhookImageProcessor {
-    image_cache: HashMap<String, RgbaImage>,
     /// Allow fetching images from private/LAN addresses (`PXLS_ALLOW_PRIVATE_URLS`).
     allow_private_urls: bool,
 }
@@ -16,53 +14,65 @@ pub struct WebhookImageProcessor {
 impl WebhookImageProcessor {
     pub fn new() -> Self {
         Self {
-            image_cache: HashMap::new(),
             allow_private_urls: crate::net_guard::allow_private_from_env(),
         }
     }
 
-    pub async fn process_image_action(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
+    pub async fn process_image_action(
+        &mut self,
+        action: &WebhookAction,
+        payload: &Value,
+    ) -> Result<RgbaImage> {
         match &action.action_type {
-            ActionType::DisplayImage => {
-                self.render_image_from_webhook_data(action, payload).await
-            }
-            _ => Err(anyhow!("Not an image action"))
+            ActionType::DisplayImage => self.render_image_from_webhook_data(action, payload).await,
+            _ => Err(anyhow!("Not an image action")),
         }
     }
 
-    async fn render_image_from_webhook_data(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
+    async fn render_image_from_webhook_data(
+        &mut self,
+        action: &WebhookAction,
+        payload: &Value,
+    ) -> Result<RgbaImage> {
         // Extract image source from parameters
-        let image_source = action.parameters.get("image_source")
+        let image_source = action
+            .parameters
+            .get("image_source")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow!("Missing image_source parameter"))?;
 
         match image_source {
             "url" => {
-                let url = action.parameters.get("url")
+                let url = action
+                    .parameters
+                    .get("url")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing url parameter"))?;
                 self.download_and_process_image(url, action).await
             }
             "base64" => {
-                let base64_data = action.parameters.get("base64_data")
+                let base64_data = action
+                    .parameters
+                    .get("base64_data")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing base64_data parameter"))?;
                 self.process_base64_image(base64_data, action).await
             }
-            "template" => {
-                self.render_template_image(action, payload).await
-            }
-            "text_overlay" => {
-                self.render_text_overlay_image(action, payload).await
-            }
-            _ => Err(anyhow!("Unsupported image source: {}", image_source))
+            "template" => self.render_template_image(action, payload).await,
+            "text_overlay" => self.render_text_overlay_image(action, payload).await,
+            _ => Err(anyhow!("Unsupported image source: {}", image_source)),
         }
     }
 
-    async fn download_and_process_image(&mut self, url: &str, action: &WebhookAction) -> Result<RgbaImage> {
+    async fn download_and_process_image(
+        &mut self,
+        url: &str,
+        action: &WebhookAction,
+    ) -> Result<RgbaImage> {
         info!("Downloading image from URL: {}", url);
-        
-        let image_bytes = crate::net_guard::fetch_image_bytes(url, self.allow_private_urls).await
+
+        let image_bytes = crate::net_guard::fetch_image_bytes(url, self.allow_private_urls)
+            .await
             .map_err(|e| anyhow!("Failed to download image: {}", e))?;
         crate::image_guard::validate_image_bytes(&image_bytes)
             .map_err(|e| anyhow!("Rejected downloaded image: {}", e))?;
@@ -73,13 +83,18 @@ impl WebhookImageProcessor {
         self.process_image_with_params(img, action).await
     }
 
-    async fn process_base64_image(&mut self, base64_data: &str, action: &WebhookAction) -> Result<RgbaImage> {
+    async fn process_base64_image(
+        &mut self,
+        base64_data: &str,
+        action: &WebhookAction,
+    ) -> Result<RgbaImage> {
         info!("Processing base64 image");
-        
+
         // Remove data URL prefix if present
-        let clean_base64 = base64_data.split(',').last().unwrap_or(base64_data);
-        
-        let image_bytes = base64::engine::general_purpose::STANDARD.decode(clean_base64)
+        let clean_base64 = base64_data.split(',').next_back().unwrap_or(base64_data);
+
+        let image_bytes = base64::engine::general_purpose::STANDARD
+            .decode(clean_base64)
             .map_err(|e| anyhow!("Failed to decode base64: {}", e))?;
 
         let img = image::load_from_memory(&image_bytes)
@@ -88,8 +103,14 @@ impl WebhookImageProcessor {
         self.process_image_with_params(img, action).await
     }
 
-    async fn render_template_image(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
-        let template_type = action.parameters.get("template_type")
+    async fn render_template_image(
+        &mut self,
+        action: &WebhookAction,
+        payload: &Value,
+    ) -> Result<RgbaImage> {
+        let template_type = action
+            .parameters
+            .get("template_type")
             .and_then(|v| v.as_str())
             .unwrap_or("notification");
 
@@ -97,31 +118,39 @@ impl WebhookImageProcessor {
             "notification" => self.render_notification_template(action, payload).await,
             "status" => self.render_status_template(action, payload).await,
             "chart" => self.render_chart_template(action, payload).await,
-            _ => Err(anyhow!("Unknown template type: {}", template_type))
+            _ => Err(anyhow!("Unknown template type: {}", template_type)),
         }
     }
 
-    async fn render_notification_template(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
+    async fn render_notification_template(
+        &mut self,
+        action: &WebhookAction,
+        payload: &Value,
+    ) -> Result<RgbaImage> {
         // Create a 16x16 notification template
         let mut img = RgbaImage::new(16, 16);
-        
+
         // Background color
-        let bg_color = action.parameters.get("background_color")
+        let bg_color = action
+            .parameters
+            .get("background_color")
             .and_then(|v| v.as_str())
             .unwrap_or("1a1a1a");
-        
+
         let bg_rgb = self.parse_hex_color(bg_color)?;
         for pixel in img.pixels_mut() {
             *pixel = Rgba([bg_rgb.0, bg_rgb.1, bg_rgb.2, 255]);
         }
 
         // Extract title and text from payload
-        let title = payload.get("title")
+        let title = payload
+            .get("title")
             .or_else(|| payload.get("subject"))
             .and_then(|v| v.as_str())
             .unwrap_or("Alert");
 
-        let text = payload.get("text")
+        let text = payload
+            .get("text")
             .or_else(|| payload.get("message"))
             .and_then(|v| v.as_str())
             .unwrap_or("");
@@ -133,13 +162,18 @@ impl WebhookImageProcessor {
         Ok(img)
     }
 
-    async fn render_status_template(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
-        let status = payload.get("status")
+    async fn render_status_template(
+        &mut self,
+        _action: &WebhookAction,
+        payload: &Value,
+    ) -> Result<RgbaImage> {
+        let status = payload
+            .get("status")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
 
         let mut img = RgbaImage::new(16, 16);
-        
+
         // Color based on status
         let color = match status {
             "success" | "ok" => (0, 255, 0),
@@ -158,9 +192,13 @@ impl WebhookImageProcessor {
         Ok(img)
     }
 
-    async fn render_chart_template(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
+    async fn render_chart_template(
+        &mut self,
+        _action: &WebhookAction,
+        payload: &Value,
+    ) -> Result<RgbaImage> {
         let mut img = RgbaImage::new(16, 16);
-        
+
         // Black background
         for pixel in img.pixels_mut() {
             *pixel = Rgba([0, 0, 0, 255]);
@@ -170,14 +208,14 @@ impl WebhookImageProcessor {
         if let Some(chart_data) = payload.get("chart_data").and_then(|v| v.as_array()) {
             let max_y = 12;
             let max_x = 14;
-            
+
             for (i, value) in chart_data.iter().enumerate() {
                 if let Some(num) = value.as_f64() {
                     let x = (i * 2) % max_x;
                     let y = max_y - (num as u32 % max_y);
-                    
+
                     if x < 16 && y < 16 {
-                        img.put_pixel(x as u32, y as u32, Rgba([0, 255, 0, 255]));
+                        img.put_pixel(x as u32, y, Rgba([0, 255, 0, 255]));
                     }
                 }
             }
@@ -186,14 +224,22 @@ impl WebhookImageProcessor {
         Ok(img)
     }
 
-    async fn render_text_overlay_image(&mut self, action: &WebhookAction, payload: &Value) -> Result<RgbaImage> {
-        let base_image_url = action.parameters.get("base_image_url")
+    async fn render_text_overlay_image(
+        &mut self,
+        action: &WebhookAction,
+        _payload: &Value,
+    ) -> Result<RgbaImage> {
+        let base_image_url = action
+            .parameters
+            .get("base_image_url")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow!("Missing base_image_url parameter"))?;
 
         // Download base image
-        let image_bytes = crate::net_guard::fetch_image_bytes(base_image_url, self.allow_private_urls).await
-            .map_err(|e| anyhow!("Failed to download base image: {}", e))?;
+        let image_bytes =
+            crate::net_guard::fetch_image_bytes(base_image_url, self.allow_private_urls)
+                .await
+                .map_err(|e| anyhow!("Failed to download base image: {}", e))?;
         crate::image_guard::validate_image_bytes(&image_bytes)
             .map_err(|e| anyhow!("Rejected base image: {}", e))?;
 
@@ -202,11 +248,15 @@ impl WebhookImageProcessor {
             .to_rgba8();
 
         // Add text overlay
-        let overlay_text = action.parameters.get("overlay_text")
+        let overlay_text = action
+            .parameters
+            .get("overlay_text")
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
-        let text_color = action.parameters.get("text_color")
+        let text_color = action
+            .parameters
+            .get("text_color")
             .and_then(|v| v.as_str())
             .and_then(|s| u32::from_str_radix(s, 16).ok())
             .unwrap_or(0xFFFFFF);
@@ -216,7 +266,11 @@ impl WebhookImageProcessor {
         Ok(img)
     }
 
-    async fn process_image_with_params(&self, mut img: DynamicImage, action: &WebhookAction) -> Result<RgbaImage> {
+    async fn process_image_with_params(
+        &self,
+        mut img: DynamicImage,
+        action: &WebhookAction,
+    ) -> Result<RgbaImage> {
         // Default to the Pixoo's 16x16 screen size. Allow override via action params.
         let target_w = action
             .parameters
@@ -261,16 +315,23 @@ impl WebhookImageProcessor {
         Ok(img.to_rgba8())
     }
 
-    fn add_text_to_image(&self, img: &mut RgbaImage, text: &str, x: u32, y: u32, color: u32) -> Result<()> {
+    fn add_text_to_image(
+        &self,
+        img: &mut RgbaImage,
+        text: &str,
+        x: u32,
+        y: u32,
+        color: u32,
+    ) -> Result<()> {
         // This is a very basic text rendering implementation
         // In a production system, you'd want to use a proper font rendering library
-        
+
         let r = ((color >> 16) & 0xFF) as u8;
         let g = ((color >> 8) & 0xFF) as u8;
         let b = (color & 0xFF) as u8;
-        
+
         // Simple pixel-based text rendering (just for demonstration)
-        for (i, ch) in text.chars().enumerate() {
+        for (i, _ch) in text.chars().enumerate() {
             let char_x = x + (i as u32 * 2);
             if char_x < 16 && y < 16 {
                 // Draw a simple representation of the character
@@ -283,7 +344,7 @@ impl WebhookImageProcessor {
                 }
             }
         }
-        
+
         Ok(())
     }
 

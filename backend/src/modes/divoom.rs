@@ -1,7 +1,10 @@
-use pixoo::{Pixoo, Brightness, mode::{TimeFormat, LightMode}};
-use tracing::{info, debug, error};
+use pixoo::{
+    mode::{LightMode, TimeFormat},
+    Brightness, Pixoo,
+};
+use tracing::info;
 
-use crate::config::{DeviceConfig, PageType, CustomPage};
+use crate::config::{CustomPage, DeviceConfig, PageType};
 
 pub fn is_divoom_page_type(page_type: &PageType) -> bool {
     matches!(
@@ -15,7 +18,10 @@ pub fn is_divoom_page_type(page_type: &PageType) -> bool {
     )
 }
 
-pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceConfig) -> Result<(), Box<dyn std::error::Error>> {
+pub fn apply_divoom_mode_from_config(
+    pixoo: &mut Pixoo,
+    device_config: &DeviceConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
     match device_config.light_mode.as_str() {
         "env" => {
             let env_config = &device_config.environment_config;
@@ -23,7 +29,7 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
                 "24h" => TimeFormat::TwentyfourHour,
                 _ => TimeFormat::TwelveHour,
             };
-            
+
             let cd = match env_config.clock_design.as_str() {
                 "digital" => pixoo::mode::ClockDesign::Digital,
                 "digital_rainbow" => pixoo::mode::ClockDesign::DigitalRainbow,
@@ -33,7 +39,7 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
                 "analog2" => pixoo::mode::ClockDesign::Analog2,
                 _ => pixoo::mode::ClockDesign::Digital,
             };
-            
+
             let light_mode = LightMode::Env {
                 time_format: tf,
                 clock_design: cd,
@@ -61,7 +67,7 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
                     })
                 }
             };
-            
+
             let effect_mode = match light_config.effect_mode {
                 0 => pixoo::mode::LightEffectMode::Normal,
                 1 => pixoo::mode::LightEffectMode::Rainbow,
@@ -70,7 +76,7 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
                 4 => pixoo::mode::LightEffectMode::Sleep,
                 _ => pixoo::mode::LightEffectMode::Normal,
             };
-            
+
             let light_mode = LightMode::Light {
                 color: light_config.color,
                 brightness,
@@ -78,7 +84,11 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
                 on: light_config.on,
             };
             pixoo.set_mode(light_mode)?;
-            info!(brightness = light_config.brightness, effect = light_config.effect_mode, "Light mode applied");
+            info!(
+                brightness = light_config.brightness,
+                effect = light_config.effect_mode,
+                "Light mode applied"
+            );
         }
         "user" => {
             pixoo.set_mode(LightMode::User)?;
@@ -125,7 +135,11 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
                 blue_score: score_config.blue_score,
             };
             pixoo.set_mode(light_mode)?;
-            info!(red = score_config.red_score, blue = score_config.blue_score, "Score mode activated");
+            info!(
+                red = score_config.red_score,
+                blue = score_config.blue_score,
+                "Score mode activated"
+            );
         }
         _ => {
             return Ok(());
@@ -134,14 +148,25 @@ pub fn apply_divoom_mode_from_config(pixoo: &mut Pixoo, device_config: &DeviceCo
     Ok(())
 }
 
-pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn apply_divoom_mode(
+    pixoo: &mut Pixoo,
+    page: &CustomPage,
+) -> Result<(), Box<dyn std::error::Error>> {
     match &page.page_type {
-        PageType::DivoomEnvironment { time_format, clock_design, show_divoom, show_weather, show_temp, show_date, color } => {
+        PageType::DivoomEnvironment {
+            time_format,
+            clock_design,
+            show_divoom,
+            show_weather,
+            show_temp,
+            show_date,
+            color,
+        } => {
             let tf = match time_format.as_str() {
                 "24h" => TimeFormat::TwentyfourHour,
                 _ => TimeFormat::TwelveHour,
             };
-            
+
             let cd = match clock_design.as_str() {
                 "digital" => pixoo::mode::ClockDesign::Digital,
                 "digital_rainbow" => pixoo::mode::ClockDesign::DigitalRainbow,
@@ -151,7 +176,7 @@ pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box
                 "analog2" => pixoo::mode::ClockDesign::Analog2,
                 _ => pixoo::mode::ClockDesign::Digital,
             };
-            
+
             let light_mode = LightMode::Env {
                 time_format: tf,
                 clock_design: cd,
@@ -163,7 +188,12 @@ pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box
             };
             pixoo.set_mode(light_mode)?;
         }
-        PageType::DivoomLight { color, brightness, effect_mode, on } => {
+        PageType::DivoomLight {
+            color,
+            brightness,
+            effect_mode,
+            on,
+        } => {
             let brightness_value = (*brightness as f32 / 100.0 * 255.0) as u8;
             let bounded = match Brightness::new(brightness_value) {
                 Some(b) => b,
@@ -178,7 +208,7 @@ pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box
                     })
                 }
             };
-            
+
             let effect = match *effect_mode {
                 0 => pixoo::mode::LightEffectMode::Normal,
                 1 => pixoo::mode::LightEffectMode::Rainbow,
@@ -187,7 +217,7 @@ pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box
                 4 => pixoo::mode::LightEffectMode::Sleep,
                 _ => pixoo::mode::LightEffectMode::Normal,
             };
-            
+
             let light_mode = LightMode::Light {
                 color: *color,
                 brightness: bounded,
@@ -195,7 +225,12 @@ pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box
                 on: *on,
             };
             pixoo.set_mode(light_mode)?;
-            info!(brightness = *brightness, effect = *effect_mode, on = *on, "Light page mode applied");
+            info!(
+                brightness = *brightness,
+                effect = *effect_mode,
+                on = *on,
+                "Light page mode applied"
+            );
         }
         PageType::DivoomSpecial { mode } => {
             let mode_value = match mode.as_str() {
@@ -231,12 +266,19 @@ pub fn apply_divoom_mode(pixoo: &mut Pixoo, page: &CustomPage) -> Result<(), Box
             pixoo.set_mode(LightMode::User)?;
             info!("User page mode activated");
         }
-        PageType::DivoomScore { red_score, blue_score } => {
+        PageType::DivoomScore {
+            red_score,
+            blue_score,
+        } => {
             pixoo.set_mode(LightMode::Score {
                 red_score: *red_score,
                 blue_score: *blue_score,
             })?;
-            info!(red = red_score, blue = blue_score, "Score page mode applied");
+            info!(
+                red = red_score,
+                blue = blue_score,
+                "Score page mode applied"
+            );
         }
         _ => {
             return Ok(());

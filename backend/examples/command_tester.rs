@@ -3,11 +3,10 @@ use std::io::{self, Read, Write};
 use std::thread;
 use std::time::Duration;
 
-/// Pixoo Bluetooth Protocol Command Tester
-/// 
-/// This utility allows you to test various commands through the Bluetooth protocol
-/// to discover what works on your device.
-
+// Pixoo Bluetooth Protocol Command Tester
+//
+// This utility allows you to test various commands through the Bluetooth protocol
+// to discover what works on your device.
 fn main() {
     println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║      Pixoo Bluetooth Protocol Command Tester v1.0            ║");
@@ -24,11 +23,11 @@ fn main() {
     };
 
     println!("\nConnecting to {}...", mac);
-    
+
     loop {
         print_menu();
         let choice = prompt_input("\nSelect option: ");
-        
+
         match choice.trim() {
             "1" => test_custom_command(&bt_addr),
             "2" => test_predefined_command(&bt_addr),
@@ -69,12 +68,12 @@ fn test_custom_command(bt_addr: &BtAddr) {
     println!("  - Hex string: 01 00 05 31 00 00 37 02");
     println!("  - Or with 0x: 0x01 0x00 0x05 0x31 0x00 0x00 0x37 0x02");
     println!("  - Or continuous: 0100053100003702");
-    
+
     let input = prompt_input("Hex data (or 'back' to return): ");
     if input.trim().to_lowercase() == "back" {
         return;
     }
-    
+
     let data = match parse_hex_input(&input) {
         Some(d) => d,
         None => {
@@ -82,17 +81,17 @@ fn test_custom_command(bt_addr: &BtAddr) {
             return;
         }
     };
-    
+
     let response_timeout = prompt_input("Response timeout (ms) [1000]: ");
     let timeout_ms = response_timeout.trim().parse::<u64>().unwrap_or(1000);
-    
+
     send_and_receive(bt_addr, &data, Duration::from_millis(timeout_ms));
 }
 
 fn test_predefined_command(bt_addr: &BtAddr) {
     println!("\n--- Predefined Commands ---");
-    
-    let commands = vec![
+
+    let commands = [
         ("0x01", "Device Info", "010001010302"),
         ("0x21", "Get Settings", "01000321002502"),
         ("0x24", "Get Temp/Weather", "01000324002802"),
@@ -100,63 +99,95 @@ fn test_predefined_command(bt_addr: &BtAddr) {
         ("0x61", "Get Animation", "01000361006502"),
         ("0x71", "Get Tool Status", "01000371007502"),
     ];
-    
+
     for (i, (cmd, name, hex)) in commands.iter().enumerate() {
         println!("  {}. {} ({}) - {}", i + 1, name, cmd, hex);
     }
     println!("  0. Back");
-    
+
     let choice = prompt_input("\nSelect command: ");
     let choice_num = choice.trim().parse::<usize>().unwrap_or(0);
-    
+
     if choice_num == 0 || choice_num > commands.len() {
         return;
     }
-    
+
     let (_, _, hex) = commands[choice_num - 1];
     let data = hex_to_bytes(hex).expect("Invalid hex in predefined");
-    
+
     send_and_receive(bt_addr, &data, Duration::from_millis(1000));
 }
 
 fn test_buzzer_commands(bt_addr: &BtAddr) {
     println!("\n--- Buzzer Command Variations ---");
     println!("Different devices expect different formats. Try these in order:");
-    
+
     let variations = vec![
         // Format: (name, hex_preview, args, description)
-        ("1. Minimal (total_time only)", "310000", vec![0x00, 0x00], 
-         "Some devices only need total time (2 bytes)"),
-        ("2. Duration only (BE)", "3102BC", vec![0x02, 0xBC], 
-         "700ms beep - big-endian duration only"),
-        ("3. Standard 4-byte", "31006400000095", vec![0x00, 0x64, 0x00, 0x00], 
-         "active=100ms, off=0, typical format"),
-        ("4. Full 6-byte (BE)", "31006400000064", vec![0x00, 0x64, 0x00, 0x00, 0x00, 0x64], 
-         "active=100, off=0, total=100 - big-endian"),
-        ("5. Full 6-byte (LE total)", "31006400006400", vec![0x64, 0x00, 0x00, 0x64, 0x00, 0x00], 
-         "Some firmware uses little-endian"),
-        ("6. Long beep (500ms)", "3101F4000001F4", vec![0x01, 0xF4, 0x00, 0x00, 0x01, 0xF4], 
-         "active=500ms, total=500ms"),
-        ("7. Double beep", "310064006400C8", vec![0x00, 0x64, 0x00, 0x64, 0x00, 0xC8], 
-         "active=100, off=100, total=200"),
-        ("8. Just command byte", "", vec![], 
-         "Bare 0x31 command, no args (rare)"),
+        (
+            "1. Minimal (total_time only)",
+            "310000",
+            vec![0x00, 0x00],
+            "Some devices only need total time (2 bytes)",
+        ),
+        (
+            "2. Duration only (BE)",
+            "3102BC",
+            vec![0x02, 0xBC],
+            "700ms beep - big-endian duration only",
+        ),
+        (
+            "3. Standard 4-byte",
+            "31006400000095",
+            vec![0x00, 0x64, 0x00, 0x00],
+            "active=100ms, off=0, typical format",
+        ),
+        (
+            "4. Full 6-byte (BE)",
+            "31006400000064",
+            vec![0x00, 0x64, 0x00, 0x00, 0x00, 0x64],
+            "active=100, off=0, total=100 - big-endian",
+        ),
+        (
+            "5. Full 6-byte (LE total)",
+            "31006400006400",
+            vec![0x64, 0x00, 0x00, 0x64, 0x00, 0x00],
+            "Some firmware uses little-endian",
+        ),
+        (
+            "6. Long beep (500ms)",
+            "3101F4000001F4",
+            vec![0x01, 0xF4, 0x00, 0x00, 0x01, 0xF4],
+            "active=500ms, total=500ms",
+        ),
+        (
+            "7. Double beep",
+            "310064006400C8",
+            vec![0x00, 0x64, 0x00, 0x64, 0x00, 0xC8],
+            "active=100, off=100, total=200",
+        ),
+        (
+            "8. Just command byte",
+            "",
+            vec![],
+            "Bare 0x31 command, no args (rare)",
+        ),
     ];
-    
+
     for (name, hex, _, desc) in &variations {
         println!("  {} - {}", name, hex);
         println!("      ({})", desc);
     }
     println!("  9. Custom buzzer - enter your own args");
     println!("  0. Back");
-    
+
     let choice = prompt_input("\nSelect variation (1-9 or 0): ");
     let choice_num = choice.trim().parse::<usize>().unwrap_or(0);
-    
+
     if choice_num == 0 {
         return;
     }
-    
+
     if choice_num == 9 {
         // Custom entry
         let hex_input = prompt_input("Enter hex args (no 0x prefix): ");
@@ -172,15 +203,15 @@ fn test_buzzer_commands(bt_addr: &BtAddr) {
         send_and_receive(bt_addr, &payload, Duration::from_millis(2000));
         return;
     }
-    
+
     if choice_num > variations.len() {
         println!("Invalid option");
         return;
     }
-    
+
     let (_, _, args, _) = &variations[choice_num - 1];
     let payload = encode_pixoo_cmd(0x31, args);
-    
+
     println!("\nSending: {}", bytes_to_hex(&payload));
     println!("Args breakdown: {:?}", args);
     send_and_receive(bt_addr, &payload, Duration::from_millis(2000));
@@ -188,16 +219,22 @@ fn test_buzzer_commands(bt_addr: &BtAddr) {
 
 fn test_display_commands(bt_addr: &BtAddr) {
     println!("\n--- Display/Brightness Commands ---");
-    
+
     let brightness = prompt_input("Enter brightness (0-100) [50]: ");
     let brightness_val = brightness.trim().parse::<u8>().unwrap_or(50);
     let brightness_byte = (brightness_val as f32 / 100.0 * 255.0) as u8;
-    
+
     let commands = vec![
-        ("Set Brightness (0x32)", encode_pixoo_cmd(0x32, &[brightness_byte])),
-        ("Set Brightness BE", encode_pixoo_cmd_be(0x32, &[brightness_byte])),
+        (
+            "Set Brightness (0x32)",
+            encode_pixoo_cmd(0x32, &[brightness_byte]),
+        ),
+        (
+            "Set Brightness BE",
+            encode_pixoo_cmd_be(0x32, &[brightness_byte]),
+        ),
     ];
-    
+
     for (name, payload) in &commands {
         println!("\nTesting: {}", name);
         println!("Payload: {}", bytes_to_hex(payload));
@@ -208,8 +245,8 @@ fn test_display_commands(bt_addr: &BtAddr) {
 
 fn test_mode_commands(bt_addr: &BtAddr) {
     println!("\n--- Mode Commands ---");
-    
-    let modes = vec![
+
+    let modes = [
         ("Clock Mode (0x00)", 0x00u8),
         ("Light Mode (0x01)", 0x01),
         ("Effects Mode (0x02)", 0x02),
@@ -217,28 +254,28 @@ fn test_mode_commands(bt_addr: &BtAddr) {
         ("User Mode (0x04)", 0x04),
         ("Scoreboard (0x05)", 0x05),
     ];
-    
-    for (i, (name, mode)) in modes.iter().enumerate() {
+
+    for (i, (name, _mode)) in modes.iter().enumerate() {
         println!("  {}. {}", i + 1, name);
     }
     println!("  0. Back");
-    
+
     let choice = prompt_input("\nSelect mode: ");
     let choice_num = choice.trim().parse::<usize>().unwrap_or(0);
-    
+
     if choice_num == 0 || choice_num > modes.len() {
         return;
     }
-    
+
     let (_, mode_val) = modes[choice_num - 1];
     let payload = encode_pixoo_cmd(0x45, &[mode_val, 0x00]);
-    
+
     send_and_receive(bt_addr, &payload, Duration::from_millis(1000));
 }
 
 fn test_tool_commands(bt_addr: &BtAddr) {
     println!("\n--- Tool Commands ---");
-    
+
     println!("  1. Start Countdown");
     println!("  2. Stop Countdown");
     println!("  3. Start Stopwatch");
@@ -246,13 +283,19 @@ fn test_tool_commands(bt_addr: &BtAddr) {
     println!("  5. Start Noise Meter");
     println!("  6. Stop Noise Meter");
     println!("  0. Back");
-    
+
     let choice = prompt_input("\nSelect tool: ");
-    
+
     let args: Vec<u8> = match choice.trim() {
         "1" => {
-            let min = prompt_input("Minutes [1]: ").trim().parse::<u8>().unwrap_or(1);
-            let sec = prompt_input("Seconds [0]: ").trim().parse::<u8>().unwrap_or(0);
+            let min = prompt_input("Minutes [1]: ")
+                .trim()
+                .parse::<u8>()
+                .unwrap_or(1);
+            let sec = prompt_input("Seconds [0]: ")
+                .trim()
+                .parse::<u8>()
+                .unwrap_or(0);
             vec![0x03, 0x01, min, sec]
         }
         "2" => vec![0x03, 0x00, 0x00, 0x00],
@@ -262,7 +305,7 @@ fn test_tool_commands(bt_addr: &BtAddr) {
         "6" => vec![0x02, 0x00, 0x00, 0x00],
         _ => return,
     };
-    
+
     let payload = encode_pixoo_cmd(0x72, &args);
     send_and_receive(bt_addr, &payload, Duration::from_millis(1000));
 }
@@ -271,29 +314,32 @@ fn scan_commands(bt_addr: &BtAddr) {
     println!("\n--- Command Scan Mode ---");
     println!("WARNING: This will send many commands to your device.");
     println!("Only run this if you understand the risks.");
-    
+
     let confirm = prompt_input("Type 'yes' to continue: ");
     if confirm.trim() != "yes" {
         println!("Scan cancelled.");
         return;
     }
-    
+
     let start = prompt_input("Start command (hex) [0x01]: ");
     let start_cmd = u8::from_str_radix(start.trim().trim_start_matches("0x"), 16).unwrap_or(0x01);
-    
+
     let end = prompt_input("End command (hex) [0xFF]: ");
     let end_cmd = u8::from_str_radix(end.trim().trim_start_matches("0x"), 16).unwrap_or(0xFF);
-    
+
     let delay = prompt_input("Delay between commands (ms) [500]: ");
     let delay_ms = delay.trim().parse::<u64>().unwrap_or(500);
-    
-    println!("\nScanning commands 0x{:02X} to 0x{:02X}...", start_cmd, end_cmd);
-    
+
+    println!(
+        "\nScanning commands 0x{:02X} to 0x{:02X}...",
+        start_cmd, end_cmd
+    );
+
     for cmd in start_cmd..=end_cmd {
         let payload = encode_pixoo_cmd(cmd, &[]);
         print!("Testing 0x{:02X}: ", cmd);
         io::stdout().flush().unwrap();
-        
+
         match try_send(bt_addr, &payload, Duration::from_millis(500)) {
             Ok(Some(response)) => {
                 println!("RESPONSE: {}", bytes_to_hex(&response));
@@ -305,10 +351,10 @@ fn scan_commands(bt_addr: &BtAddr) {
                 println!("ERROR: {}", e);
             }
         }
-        
+
         thread::sleep(Duration::from_millis(delay_ms));
     }
-    
+
     println!("\nScan complete!");
 }
 
@@ -325,12 +371,12 @@ fn raw_send(bt_addr: &BtAddr) {
     println!("  01 00 04 31 00 64 00 9A 02  - Standard 4-arg");
     println!("  01 00 06 31 00 64 00 00 64 C6 02  - Full 6-arg");
     println!("  01 00 08 31 01 F4 00 00 03 E8 05 C5 02  - Long beep");
-    
+
     let input = prompt_input("\nEnter full hex packet (or 'back'): ");
     if input.trim().to_lowercase() == "back" {
         return;
     }
-    
+
     let data = match parse_hex_input(&input) {
         Some(d) => d,
         None => {
@@ -338,13 +384,13 @@ fn raw_send(bt_addr: &BtAddr) {
             return;
         }
     };
-    
+
     println!("Sending {} raw bytes: {}", data.len(), bytes_to_hex(&data));
     println!("(No encoding applied - sending exactly what you entered)");
-    
+
     let response_timeout = prompt_input("Response timeout (ms) [1000]: ");
     let timeout_ms = response_timeout.trim().parse::<u64>().unwrap_or(1000);
-    
+
     send_and_receive(bt_addr, &data, Duration::from_millis(timeout_ms));
 }
 
@@ -357,18 +403,6 @@ fn encode_pixoo_cmd(cmd: u8, args: &[u8]) -> Vec<u8> {
     let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
     buf.push((checksum >> 8) as u8);
     buf.push(checksum as u8);
-    buf.push(2);
-    buf
-}
-
-/// Alternative encoding with little-endian size (some devices use this)
-fn encode_pixoo_cmd_le(cmd: u8, args: &[u8]) -> Vec<u8> {
-    let payload_size = args.len() + 3;
-    let mut buf = vec![1, payload_size as u8, (payload_size >> 8) as u8, cmd];
-    buf.extend_from_slice(args);
-    let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
-    buf.push(checksum as u8);
-    buf.push((checksum >> 8) as u8);
     buf.push(2);
     buf
 }
@@ -389,7 +423,11 @@ fn send_and_receive(bt_addr: &BtAddr, data: &[u8], timeout: Duration) {
     match try_send(bt_addr, data, timeout) {
         Ok(Some(response)) => {
             println!("✓ Sent successfully");
-            println!("  Response ({} bytes): {}", response.len(), bytes_to_hex(&response));
+            println!(
+                "  Response ({} bytes): {}",
+                response.len(),
+                bytes_to_hex(&response)
+            );
         }
         Ok(None) => {
             println!("✓ Sent successfully (no response within timeout)");
@@ -400,12 +438,16 @@ fn send_and_receive(bt_addr: &BtAddr, data: &[u8], timeout: Duration) {
     }
 }
 
-fn try_send(bt_addr: &BtAddr, data: &[u8], _timeout: Duration) -> Result<Option<Vec<u8>>, Box<dyn std::error::Error>> {
+fn try_send(
+    bt_addr: &BtAddr,
+    data: &[u8],
+    _timeout: Duration,
+) -> Result<Option<Vec<u8>>, Box<dyn std::error::Error>> {
     let mut socket = BtSocket::new(BtProtocol::RFCOMM)?;
     socket.connect(*bt_addr)?;
     socket.write_all(data)?;
     socket.flush()?;
-    
+
     // Note: BtSocket doesn't support set_read_timeout
     // Just try a non-blocking read immediately after sending
     let mut buf = vec![0u8; 256];
@@ -430,7 +472,7 @@ fn parse_mac(mac: &str) -> Option<BtAddr> {
     if cleaned.len() != 12 {
         return None;
     }
-    
+
     let bytes = hex::decode(&cleaned).ok()?;
     let addr: [u8; 6] = bytes.try_into().ok()?;
     Some(BtAddr(addr))
@@ -454,5 +496,9 @@ fn hex_to_bytes(hex: &str) -> Option<Vec<u8>> {
 }
 
 fn bytes_to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{:02X}", b)).collect::<Vec<_>>().join(" ")
+    bytes
+        .iter()
+        .map(|b| format!("{:02X}", b))
+        .collect::<Vec<_>>()
+        .join(" ")
 }

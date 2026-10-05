@@ -58,7 +58,9 @@ impl AuthConfig {
                 TOKEN_ENV, MIN_TOKEN_LEN
             ));
         }
-        Ok(Self { token: Arc::from(token) })
+        Ok(Self {
+            token: Arc::from(token),
+        })
     }
 
     /// Fails closed: the server must not start without a usable token.
@@ -130,10 +132,16 @@ pub async fn require_token(State(auth): State<AuthConfig>, req: Request, next: N
 /// the `X-Webhook-Secret` header, the password of HTTP Basic auth
 /// (Radarr and Sonarr support this), or a `?secret=` query parameter.
 pub fn extract_webhook_secret(headers: &HeaderMap, query: Option<&str>) -> Option<String> {
-    if let Some(v) = headers.get("x-webhook-secret").and_then(|v| v.to_str().ok()) {
+    if let Some(v) = headers
+        .get("x-webhook-secret")
+        .and_then(|v| v.to_str().ok())
+    {
         return Some(v.trim().to_string());
     }
-    if let Some(v) = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok()) {
+    if let Some(v) = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+    {
         if let Some((scheme, rest)) = v.split_once(' ') {
             if scheme.eq_ignore_ascii_case("basic") {
                 let decoded = base64::engine::general_purpose::STANDARD
@@ -159,7 +167,7 @@ pub fn extract_webhook_secret(headers: &HeaderMap, query: Option<&str>) -> Optio
 /// A webhook with no secret configured rejects everything (fail closed).
 pub fn webhook_secret_ok(expected: &Secret, provided: Option<&str>) -> bool {
     !expected.0.is_empty()
-        && provided.map_or(false, |p| constant_time_eq(p.as_bytes(), expected.0.as_bytes()))
+        && provided.is_some_and(|p| constant_time_eq(p.as_bytes(), expected.0.as_bytes()))
 }
 
 /// CORS from `PXLS_ALLOWED_ORIGINS` (comma-separated). With none set, no
@@ -218,35 +226,59 @@ mod tests {
 
     #[tokio::test]
     async fn missing_token_is_rejected() {
-        assert_eq!(status("GET", "/api/config", None).await, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            status("GET", "/api/config", None).await,
+            StatusCode::UNAUTHORIZED
+        );
     }
 
     #[tokio::test]
     async fn wrong_token_is_rejected() {
         let wrong = "Bearer 0123456789abcdef-wrong-token";
-        assert_eq!(status("GET", "/api/config", Some(wrong)).await, StatusCode::UNAUTHORIZED);
-        assert_eq!(status("GET", "/api/config", Some("Bearer ")).await, StatusCode::UNAUTHORIZED);
-        assert_eq!(status("GET", "/api/config", Some(TOKEN)).await, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            status("GET", "/api/config", Some(wrong)).await,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            status("GET", "/api/config", Some("Bearer ")).await,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            status("GET", "/api/config", Some(TOKEN)).await,
+            StatusCode::UNAUTHORIZED
+        );
     }
 
     #[tokio::test]
     async fn correct_token_is_accepted() {
         let ok = format!("Bearer {}", TOKEN);
-        assert_eq!(status("GET", "/api/config", Some(&ok)).await, StatusCode::OK);
+        assert_eq!(
+            status("GET", "/api/config", Some(&ok)).await,
+            StatusCode::OK
+        );
         let lower = format!("bearer {}", TOKEN);
-        assert_eq!(status("GET", "/api/config", Some(&lower)).await, StatusCode::OK);
+        assert_eq!(
+            status("GET", "/api/config", Some(&lower)).await,
+            StatusCode::OK
+        );
     }
 
     #[tokio::test]
     async fn health_and_webhook_receiver_are_public() {
         assert_eq!(status("GET", "/api/health", None).await, StatusCode::OK);
-        assert_eq!(status("POST", "/api/webhook/radarr", None).await, StatusCode::OK);
+        assert_eq!(
+            status("POST", "/api/webhook/radarr", None).await,
+            StatusCode::OK
+        );
     }
 
     #[tokio::test]
     async fn webhook_admin_routes_are_not_public() {
         // Only the receiver "/api/webhook/<name>" is exempt, not "/api/webhook-events".
-        assert_eq!(status("GET", "/api/webhook-events", None).await, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            status("GET", "/api/webhook-events", None).await,
+            StatusCode::UNAUTHORIZED
+        );
     }
 
     #[test]
@@ -275,13 +307,22 @@ mod tests {
     fn webhook_secret_from_header_basic_and_query() {
         let mut h = HeaderMap::new();
         h.insert("x-webhook-secret", "from-header".parse().unwrap());
-        assert_eq!(extract_webhook_secret(&h, None).as_deref(), Some("from-header"));
+        assert_eq!(
+            extract_webhook_secret(&h, None).as_deref(),
+            Some("from-header")
+        );
 
         let mut h = HeaderMap::new();
         // "radarr:from-basic"
         let b64 = base64::engine::general_purpose::STANDARD.encode("radarr:from-basic");
-        h.insert(header::AUTHORIZATION, format!("Basic {}", b64).parse().unwrap());
-        assert_eq!(extract_webhook_secret(&h, None).as_deref(), Some("from-basic"));
+        h.insert(
+            header::AUTHORIZATION,
+            format!("Basic {}", b64).parse().unwrap(),
+        );
+        assert_eq!(
+            extract_webhook_secret(&h, None).as_deref(),
+            Some("from-basic")
+        );
 
         let h = HeaderMap::new();
         assert_eq!(

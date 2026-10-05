@@ -1,19 +1,19 @@
 use axum::{
     extract::State,
-    Json,
+    http::{header, StatusCode},
     response::Response,
-    http::{StatusCode, header},
+    Json,
 };
 use bluetooth_serial_port::BtAddr;
 use serde::Deserialize;
 use serde_json::json;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
-use tracing::{info, error, instrument};
+use tracing::{error, info, instrument};
 
-use crate::AppState;
 use crate::config::DeviceConfig;
 use crate::rendering::device_config::apply_device_config;
+use crate::AppState;
 use pixoo::Pixoo;
 
 #[derive(Debug, Deserialize)]
@@ -35,27 +35,24 @@ pub async fn connect_device(
                         let cfg = state.config.lock().unwrap();
                         cfg.device_config.clone()
                     };
-                    
+
                     if let Err(e) = apply_device_config(&mut new_pixoo, &device_config) {
                         error!(error = %e, "Failed to apply device configuration during connection");
                     }
-                    
+
                     match state.pixoo.lock() {
                         Ok(mut wrapper) => {
                             wrapper.replace(new_pixoo);
                             wrapper.set_bt_addr(bt_addr);
-                            
-                            match state.config.lock() {
-                                Ok(mut cfg) => {
-                                    cfg.pixoo_mac = req.mac.clone();
-                                    let _ = cfg.save();
-                                }
-                                Err(_) => {}
+
+                            if let Ok(mut cfg) = state.config.lock() {
+                                cfg.pixoo_mac = req.mac.clone();
+                                let _ = cfg.save();
                             }
-                            
+
                             // Clear manual disconnect flag
                             state.manual_disconnect.store(false, Ordering::SeqCst);
-                            
+
                             let success = json!({
                                 "success": true,
                                 "message": format!("Successfully connected to device {}", req.mac)
@@ -103,12 +100,12 @@ pub async fn disconnect_device(State(state): State<AppState>) -> Response {
     if let Ok(mut wrapper) = state.pixoo.lock() {
         *wrapper = crate::pixoo_wrapper::PixooWrapper::new();
     }
-    
+
     // Set manual disconnect flag to prevent auto-reconnect
     state.manual_disconnect.store(true, Ordering::SeqCst);
-    
+
     info!("Device manually disconnected");
-    
+
     let success = json!({
         "success": true,
         "message": "Device disconnected. You can now use the Divoom app. Click 'Connect' to reconnect."
@@ -174,7 +171,7 @@ pub async fn update_device_config(
                             match apply_device_config(pixoo, &device_config) {
                                 Ok(_) => {
                                     let success = json!({
-                                        "success": true, 
+                                        "success": true,
                                         "message": "Device configuration updated and applied"
                                     });
                                     Response::builder()
@@ -196,7 +193,7 @@ pub async fn update_device_config(
                             }
                         } else {
                             let success = json!({
-                                "success": true, 
+                                "success": true,
                                 "message": "Device configuration saved (no device connected)"
                             });
                             Response::builder()
