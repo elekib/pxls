@@ -1,0 +1,142 @@
+# Reusable workflow: build pxls images for each platform, push them to GHCR by
+# digest, then publish one multi-arch tag per image.
+name: Build images
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        description: Tag as a release (semver and latest) instead of dev
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  plan:
+    name: Plan platforms
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.plan.outputs.targets }}
+    steps:
+      - id: plan
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          # Native arm64 runners are only available for public repositories.
+          amd64='{"platform":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"}'
+          arm64='{"platform":"linux/arm64","runner":"ubuntu-24.04-arm","suffix":"arm64"}'
+          if [ "$PRIVATE" = "true" ]; then
+            echo "targets=[$amd64]" >> "$GITHUB_OUTPUT"
+          else
+            echo "targets=[$amd64,$arm64]" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build ${{ matrix.image }} (${{ matrix.target.suffix }})
+    needs: plan
+    runs-on: ${{ matrix.target.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, frontend]
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then v="${REF_NAME#v}"; else v="dev"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.image }}
+          platforms: ${{ matrix.target.platform }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            GIT_SHA=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.target.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.target.suffix }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ steps.version.outputs.owner }}/pxls-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          touch "${{ runner.temp }}/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.target.suffix }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish ${{ matrix.image }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, frontend]
+    steps:
+      - name: Image name
+        id: name
+        run: echo "image=${{ env.REGISTRY }}/${GITHUB_REPOSITORY_OWNER,,}/pxls-${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ matrix.image }}-*
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.name.outputs.image }}
+          tags: |
+            type=raw,value=dev,enable=${{ !inputs.release }}
+            type=sha,prefix=sha-,format=short,enable=${{ !inputs.release }}
+            type=semver,pattern={{version}},enable=${{ inputs.release }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ inputs.release }}
+            type=raw,value=latest,enable=${{ inputs.release && !contains(github.ref_name, '-') }}
+      - name: Create multi-arch manifest
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "$IMAGE@sha256:%s " *)
+      - name: Inspect
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: docker buildx imagetools inspect "$IMAGE:$VERSION"

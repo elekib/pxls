@@ -1,0 +1,15 @@
+name: Publish dev images
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/build-images.yml
+    with:
+      release: false
