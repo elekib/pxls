@@ -1,7 +1,20 @@
 # syntax=docker/dockerfile:1
 
+# ---- Dependency planner ----
+# cargo-chef splits dependency compilation from our own code, so the slow part
+# lives in a normal Docker layer. Unlike cache mounts, layers are exported by
+# the GitHub Actions cache, so CI only recompiles dependencies when
+# Cargo.toml or Cargo.lock change.
+FROM lukemathwalker/cargo-chef:latest-rust-1.88-slim-bookworm AS chef
+WORKDIR /app
+
+FROM chef AS planner
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN cargo chef prepare --recipe-path recipe.json
+
 # ---- Build stage ----
-FROM rust:1.88-slim-bookworm AS builder
+FROM chef AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
@@ -10,7 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-1-dev \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Build dependencies only. This layer is reused until the dependency set changes.
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --locked --recipe-path recipe.json
 
 # Version info baked into the binary and reported by /api/health
 ARG VERSION=dev
@@ -19,12 +34,7 @@ ENV PXLS_VERSION=${VERSION} PXLS_GIT_SHA=${GIT_SHA}
 
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-
-# Cache mounts keep downloaded crates and incremental build output between builds
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    cargo build --release --locked \
+RUN cargo build --release --locked \
     && cp target/release/pxls_backend /usr/local/bin/pxls_backend
 
 # ---- Runtime stage ----
