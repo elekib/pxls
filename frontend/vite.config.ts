@@ -10,7 +10,8 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     proxy: {
-      '/api': { target: apiTarget, changeOrigin: true },
+      // Keep the browser's Host header: the backend's CSRF check compares it with Origin.
+      '/api': { target: apiTarget, changeOrigin: false },
     },
   },
 })

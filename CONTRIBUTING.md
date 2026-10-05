@@ -24,11 +24,11 @@ This adds a `Signed-off-by: Your Name <you@example.com>` line. CI rejects pull r
 You need Docker for the full stack, and optionally Rust 1.88+ and Node 20+ for local checks.
 
 ```bash
-cp .env.example .env     # set PXLS_AUTH_TOKEN, TZ
+cp .env.example .env     # set TZ
 docker compose -f compose.yaml -f compose.build.yaml up --build
 ```
 
-The UI is at http://localhost:3030. Sign in with your `PXLS_AUTH_TOKEN`.
+The UI is at http://localhost:3030. On first run, read the one-time setup code with `docker logs pxls-backend 2>&1 | grep -i "setup code"` and create the admin account in the UI.
 
 ### Backend (Rust)
 

@@ -28,3 +28,13 @@ hex = "0.4"
 uuid = { version = "1.0", features = ["v4"] }
 base64 = "0.21"
 rusqlite = { version = "0.32", features = ["bundled"] }
+argon2 = "0.5"
+password-hash = { version = "0.5", features = ["getrandom"] }
+jsonwebtoken = "9"
+sha2 = "0.10"
+
+# argon2 is deliberately slow; unoptimised it makes debug builds and tests crawl.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3

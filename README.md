@@ -38,48 +38,90 @@ The images are built for `linux/amd64` and `linux/arm64`, so a Raspberry Pi work
 
 ```bash
 cp .env.example .env
-# Edit .env: set PXLS_AUTH_TOKEN (see below) and TZ
+# Edit .env: set TZ
 docker compose up -d
 ```
 
-Open http://localhost:3030 and sign in with your token. Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`) and connect.
+Open http://localhost:3030. On first run pxls asks you to create the admin account (see [Authentication](#authentication)). Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`) and connect.
 
 > Published images are not available yet. Until the first release, build from source:
 > `docker compose -f compose.yaml -f compose.build.yaml up --build -d` (or `make dev`).
 
 ## Authentication
 
-pxls requires an API token and refuses to start without one. Generate it and put it in `.env`:
+pxls has user accounts. There are no default credentials and no shared token. Everything except `/api/health` and the webhook receiver requires a signed-in user.
 
-Any long random string of at least 16 characters works. Pick one of these:
+### First run: create the admin
 
-| Tool | Command |
+With no accounts, the backend prints a one-time setup code to its log, and the web UI shows a setup form instead of a login form:
+
+```bash
+docker logs pxls-backend 2>&1 | grep -i "setup code"
+```
+
+Open http://localhost:3030, enter that code, and choose an admin username and password. This proves you control the server, so a stranger who finds a fresh instance on your network cannot claim it. The code works until an admin exists, is checked in constant time, is rate limited, and is regenerated (and the old one invalidated) on every restart while no accounts exist.
+
+### Users and roles
+
+| Role | Can do |
 |---|---|
-| OpenSSL (Linux, macOS) | `openssl rand -hex 32` |
-| Python 3 | `python3 -c "import secrets; print(secrets.token_hex(32))"` |
-| Node.js | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| Linux / macOS shell, no extra tools | `head -c 32 /dev/urandom \| od -An -tx1 \| tr -d ' \n'; echo` |
-| PowerShell (Windows) | `-join ((1..32) \| ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })` |
-| Password manager | Generate a random password of 32+ characters (1Password, Bitwarden, KeePassXC) and store it there as well |
+| `admin` | Everything, plus the **Users** page: create, disable and delete users, change roles, reset passwords, revoke sessions |
+| `viewer` | Read-only: device status, pages and event logs. Cannot change anything, see webhook definitions (they contain secrets) or manage users |
 
-Then set it in `.env`:
+There is no self-registration; an admin creates accounts. Passwords are 12 to 128 characters and are stored as argon2id hashes with a per-user salt. The last enabled admin cannot be deleted, disabled or demoted.
 
+### Sessions
+
+- Signing in returns a short-lived access token (JWT, 15 minutes) that the UI keeps in memory, and sets a rotating refresh token in an `httpOnly`, `SameSite=Strict` cookie scoped to `/api/auth`. The UI refreshes silently; if the session is gone it returns you to the login screen.
+- Sessions live in the database, so they can be listed and revoked on the **Account** page (and by an admin). Revoking, signing out, disabling a user or changing a password takes effect immediately, not when the access token expires. Changing a password signs that user out everywhere.
+- Using a refresh token twice (a sign of theft) revokes that whole session.
+- Sessions expire after 7 days idle and 30 days in total.
+- The JWT signing secret is generated on first start and stored in `pxls.db`. Set `PXLS_JWT_SECRET` (32+ characters) to supply your own; changing it signs everyone out.
+- Five failed sign-ins for a username lock that name for 15 minutes, and 20 from one IP lock that IP. This applies to names that do not exist too, and error messages never say whether an account exists. A determined attacker can therefore temporarily lock a known username out; that is the cost of throttling guessing.
+- Behind the bundled nginx, the client IP comes from `X-Real-IP`, which is only trusted from loopback or private peers.
+
+### Scripts and automation
+
+There is no static API token. Use a dedicated account (a `viewer` for read-only scripts) and sign in with a cookie jar:
+
+```bash
+curl -s -c jar -H 'X-Requested-With: pxls' -H 'Content-Type: application/json' \
+  -d '{"username":"script","password":"..."}' http://localhost:3030/api/auth/login
+# use "access_token" from the response as: -H "Authorization: Bearer <token>"
+# when it expires (15 min): curl -s -b jar -c jar -X POST -H 'X-Requested-With: pxls' http://localhost:3030/api/auth/refresh
 ```
-PXLS_AUTH_TOKEN=<the generated value>
+
+Mutating `/api/auth` calls need the `X-Requested-With: pxls` header (CSRF protection).
+
+### Upgrading from `PXLS_AUTH_TOKEN`
+
+Earlier builds used one shared `PXLS_AUTH_TOKEN`. It is gone. Existing data is untouched; the new tables arrive through an automatic database migration.
+
+1. Pull and restart (`docker compose pull && docker compose up -d`). pxls logs a warning if `PXLS_AUTH_TOKEN` is still set; it is ignored. Remove it from `.env`.
+2. Read the setup code from the log (above), open the UI and create your admin account.
+3. Create any other users on the **Users** page, and replace scripts that used the token with the login flow above.
+4. Webhook senders (Radarr, Sonarr and so on) are unaffected: they keep using their per-webhook secret.
+
+If you are behind another reverse proxy that rewrites the `Host` header, add your public origin to `PXLS_ALLOWED_ORIGINS`, otherwise sign-in is rejected by the CSRF check. Serve pxls over HTTPS and forward `X-Forwarded-Proto: https` so the refresh cookie gets the `Secure` flag (or set `PXLS_COOKIE_SECURE=true`).
+
+### Lost the admin password
+
+Stop the backend and remove the accounts so first-run setup returns. This deletes users and their sessions only, not your configuration:
+
+```bash
+docker compose stop backend
+sqlite3 data/pxls.db "DELETE FROM users;"
+docker compose start backend && docker logs pxls-backend 2>&1 | grep -i "setup code"
 ```
 
-Keep the token secret, do not commit `.env`, and use a different value for each deployment. To rotate it, change the value in `.env` and restart the backend (`docker compose up -d`). Everyone then has to sign in again with the new token.
-
-- The web UI asks for the token on first visit and keeps it in your browser's local storage. **Sign out** forgets it.
-- API clients send `Authorization: Bearer <token>`.
-- `/api/health` is open so container health checks work. It only reports status and version.
-- Incoming webhooks use their own secret instead of the API token (see [Webhooks](#webhooks)).
+Incoming webhooks use their own secret instead of a user account (see [Webhooks](#webhooks)).
 
 ## Configuration
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PXLS_AUTH_TOKEN` | required | API token, at least 16 characters |
+| `PXLS_JWT_SECRET` | generated | Optional JWT signing secret, 32+ characters. By default one is generated on first start and stored in the database |
+| `PXLS_COOKIE_SECURE` | auto | Set `true` to always mark the refresh cookie `Secure`. By default it is set when the request arrives with `X-Forwarded-Proto: https` |
 | `TZ` | `UTC` | Timezone for clock pages |
 | `PXLS_ALLOWED_ORIGINS` | empty | Comma-separated browser origins allowed to call the API cross-origin. Leave empty when using the bundled UI, which shares an origin with the API through its proxy |
 | `PXLS_ALLOW_PRIVATE_URLS` | `false` | Let webhook image URLs point at private or LAN addresses (for example a Jellyfin server). Off by default to prevent server-side request forgery |

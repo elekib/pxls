@@ -17,6 +17,7 @@ use tracing::info;
 use crate::config::Config;
 use crate::webhook_enhanced::{EnhancedWebhookConfig, WebhookEvent};
 
+pub mod accounts;
 mod db;
 mod import;
 mod migrations;

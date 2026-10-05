@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import type { Config } from '../types';
+import type { Config, Tab } from '../types';
+import type { User } from '../auth';
 import logoHorizontal from '../assets/logo/pxls_logo.svg';
 
 interface SidebarProps {
   config: Config | null;
-  activeTab: 'device' | 'pages' | 'tools' | 'webhooks' | 'webhook_events';
-  onTabChange: (tab: 'device' | 'pages' | 'tools' | 'webhooks' | 'webhook_events') => void;
+  activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
+  user: User;
   onClose?: () => void;
   onSignOut?: () => void;
 }
 
-export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: SidebarProps) {
+export function Sidebar({ config, activeTab, onTabChange, user, onClose, onSignOut }: SidebarProps) {
   const mac = config?.pixoo_mac || '';
+  const isAdmin = user.role === 'admin';
   const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
@@ -68,15 +71,17 @@ export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: 
           <span className="text-xl mr-3">🧰</span>
           <span>Tools</span>
         </button>
+        {isAdmin && (
         <button
-          className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
-            activeTab === 'webhooks' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''
-          }`}
-          onClick={() => onTabChange('webhooks')}
-        >
-          <span className="text-xl mr-3">🔔</span>
-          <span>Webhooks</span>
-        </button>
+            className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
+              activeTab === 'webhooks' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''
+            }`}
+            onClick={() => onTabChange('webhooks')}
+          >
+            <span className="text-xl mr-3">🔔</span>
+            <span>Webhooks</span>
+          </button>
+        )}
         <button
           className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
             activeTab === 'webhook_events' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''
@@ -85,6 +90,26 @@ export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: 
         >
           <span className="text-xl mr-3">📊</span>
           <span>Event Logs</span>
+        </button>
+        {isAdmin && (
+        <button
+            className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
+              activeTab === 'users' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''
+            }`}
+            onClick={() => onTabChange('users')}
+          >
+            <span className="text-xl mr-3">👥</span>
+            <span>Users</span>
+          </button>
+        )}
+        <button
+          className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
+            activeTab === 'account' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''
+          }`}
+          onClick={() => onTabChange('account')}
+        >
+          <span className="text-xl mr-3">👤</span>
+          <span>Account</span>
         </button>
       </nav>
       
@@ -100,10 +125,13 @@ export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: 
           </div>
           <code className="text-cyan-400 font-mono text-xs break-all">{mac || 'Not set'}</code>
         </div>
+        <div className="mt-3 text-xs text-gray-400 text-center">
+          Signed in as <span className="text-gray-200">{user.username}</span> ({user.role})
+        </div>
         {onSignOut && (
           <button
             onClick={onSignOut}
-            className="mt-3 w-full py-2 text-sm text-gray-400 hover:text-white bg-gray-900 rounded-lg border border-gray-700"
+            className="mt-2 w-full py-2 text-sm text-gray-400 hover:text-white bg-gray-900 rounded-lg border border-gray-700"
           >
             Sign out
           </button>
