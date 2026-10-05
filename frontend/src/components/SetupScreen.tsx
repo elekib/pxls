@@ -15,6 +15,7 @@ export function SetupScreen() {
   const [busy, setBusy] = useState(false);
 
   const mismatch = confirm !== '' && confirm !== password;
+  const tooShort = password !== '' && password.length < 12;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +79,9 @@ export function SetupScreen() {
           placeholder="Repeat password"
           className={inputClass}
         />
+        {tooShort && (
+          <p className="text-sm text-amber-300">Password must be at least 12 characters ({password.length}/12).</p>
+        )}
         {mismatch && <p className="text-sm text-amber-300">Passwords do not match.</p>}
         {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
         <button

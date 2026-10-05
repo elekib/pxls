@@ -100,6 +100,10 @@ export function AccountPage({ user, onNotify, onPasswordChanged }: Props) {
         <input type="password" autoComplete="current-password" placeholder="Current password" value={current} onChange={(e) => setCurrent(e.target.value)} className={inputClass} />
         <input type="password" autoComplete="new-password" placeholder="New password (at least 12 characters)" value={next} onChange={(e) => setNext(e.target.value)} className={inputClass} />
         <input type="password" autoComplete="new-password" placeholder="Repeat new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputClass} />
+        {next !== '' && next.length < 12 && (
+          <p className="text-sm text-amber-300">New password must be at least 12 characters ({next.length}/12).</p>
+        )}
+        {confirm !== '' && confirm !== next && <p className="text-sm text-amber-300">Passwords do not match.</p>}
         <button
           type="submit"
           disabled={saving || !current || next.length < 12 || next !== confirm}

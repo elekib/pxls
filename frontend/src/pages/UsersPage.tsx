@@ -79,6 +79,9 @@ export function UsersPage({ me, onNotify }: Props) {
             Create
           </button>
         </div>
+        {password !== '' && password.length < 12 && (
+          <p className="text-sm text-amber-300">Password must be at least 12 characters ({password.length}/12).</p>
+        )}
         <p className="text-xs text-gray-500">Share the password with the person over a private channel; they can change it on their Account page.</p>
       </form>
 
