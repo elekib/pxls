@@ -1,9 +1,10 @@
 name: CI
 
+# Runs on pull requests, and is called by the image publishing workflows
+# (main and exp/*) so images are only pushed after build and tests pass.
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
@@ -40,7 +41,7 @@ jobs:
         run: cargo test --locked
 
   frontend:
-    name: Frontend (install, build)
+    name: Frontend (install, build, test)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,10 +57,12 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Test
+        run: npm test
 
   # Packages the image to prove it builds. Only runs once build and tests pass.
-  # Pushes to main are packaged and published by the "Publish dev images"
-  # workflow, which also seeds this layer cache (same scope) for new branches.
+  # On main and exp/* the publish workflows package and push instead (after
+  # calling this workflow), and seed this layer cache (same scope) for new branches.
   package:
     name: Package (${{ matrix.image }})
     needs: [backend, frontend]
