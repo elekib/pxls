@@ -57,6 +57,10 @@ npm run build      # type-check and production build
 3. Make sure formatting, lints, tests and the frontend build pass.
 4. Open a pull request describing the change and how you tested it. `main` is protected: CI must pass and the maintainer reviews.
 
+## Database migrations
+
+Persistent data lives in SQLite (`data/pxls.db`). To change the schema, add a new file `backend/src/database/migrations/NNNN_description.sql` with the next unused number. It is embedded at build time and applied once at startup inside a transaction; there is no list to edit. Never edit a migration that has been released. If two branches pick the same number the build fails with a message telling you to renumber one.
+
 ## Architecture notes
 
 See [AGENTS.md](AGENTS.md) for how the rendering loop, native Divoom modes and device config interact, and [docs/protocol.md](docs/protocol.md) for the Bluetooth protocol.

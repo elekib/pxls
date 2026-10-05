@@ -81,7 +81,11 @@ Keep the token secret, do not commit `.env`, and use a different value for each 
 | `PXLS_ALLOW_PRIVATE_URLS` | `false` | Let webhook image URLs point at private or LAN addresses (for example a Jellyfin server). Off by default to prevent server-side request forgery |
 | `PXLS_TAG` | `latest` | Image tag for `docker compose`: `latest`, `dev` or a version such as `0.1.0` |
 
-Device settings, pages and the rest of the app configuration are edited in the web UI and stored in `./data/config.json`, created on first run. Webhook definitions, rules, the event log and uploads live in `./data` too. The `data/` directory and `.env` are git-ignored so they never get committed.
+Device settings, pages and the rest of the app configuration are edited in the web UI. Everything except uploads is stored in one SQLite database, `./data/pxls.db` (with `pxls.db-wal` and `pxls.db-shm` next to it while running), created on first run. Uploaded images live in `./data/uploads`. The `data/` directory and `.env` are git-ignored so they never get committed.
+
+**`pxls.db` holds secrets** (webhook secrets, Beszel credentials, the full config). Keep `./data` private, and back it up. Stop the container and copy `pxls.db` together with its `-wal` and `-shm` files, or take a consistent copy while running with `sqlite3 data/pxls.db ".backup 'pxls-backup.db'"`.
+
+Upgrading from an older version that kept `config.json`, `webhooks.json` and `webhook_events.json` in `./data`: on first start pxls imports them into `pxls.db` and logs that it did. The JSON files are never modified or deleted and are no longer read afterwards, so they are a backup of the pre-upgrade state. Once you are happy, move them out of `./data` (they contain secrets too). If you downgrade, the older version reads those JSON files and will not see changes made after the upgrade.
 
 ## Webhooks
 
