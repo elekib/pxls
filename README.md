@@ -47,9 +47,24 @@ Open http://localhost:3030 and sign in with your token. Then open the **Device**
 
 pxls requires an API token and refuses to start without one. Generate it and put it in `.env`:
 
-```bash
-openssl rand -hex 32     # use the output as PXLS_AUTH_TOKEN
+Any long random string of at least 16 characters works. Pick one of these:
+
+| Tool | Command |
+|---|---|
+| OpenSSL (Linux, macOS) | `openssl rand -hex 32` |
+| Python 3 | `python3 -c "import secrets; print(secrets.token_hex(32))"` |
+| Node.js | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| Linux / macOS shell, no extra tools | `head -c 32 /dev/urandom \| od -An -tx1 \| tr -d ' \n'; echo` |
+| PowerShell (Windows) | `-join ((1..32) \| ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })` |
+| Password manager | Generate a random password of 32+ characters (1Password, Bitwarden, KeePassXC) and store it there as well |
+
+Then set it in `.env`:
+
 ```
+PXLS_AUTH_TOKEN=<the generated value>
+```
+
+Keep the token secret, do not commit `.env`, and use a different value for each deployment. To rotate it, change the value in `.env` and restart the backend (`docker compose up -d`). Everyone then has to sign in again with the new token.
 
 - The web UI asks for the token on first visit and keeps it in your browser's local storage. **Sign out** forgets it.
 - API clients send `Authorization: Bearer <token>`.
