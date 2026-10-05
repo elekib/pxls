@@ -25,9 +25,9 @@ fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<Option<T>> {
     if !path.exists() {
         return Ok(None);
     }
-    let content = fs::read_to_string(path).with_context(|| format!("Failed to read {:?}", path))?;
+    let content = fs::read_to_string(path).with_context(|| format!("Failed to read {path:?}"))?;
     let value = serde_json::from_str(&content)
-        .with_context(|| format!("Failed to parse {:?}; fix or move it and restart", path))?;
+        .with_context(|| format!("Failed to parse {path:?}; fix or move it and restart"))?;
     Ok(Some(value))
 }
 
