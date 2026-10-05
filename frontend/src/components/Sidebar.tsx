@@ -102,6 +102,17 @@ export function Sidebar({ config, activeTab, onTabChange, user, onClose, onSignO
             <span>Users</span>
           </button>
         )}
+        {isAdmin && (
+          <button
+            className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
+              activeTab === 'diagnostics' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''
+            }`}
+            onClick={() => onTabChange('diagnostics')}
+          >
+            <span className="text-xl mr-3">🔬</span>
+            <span>Diagnostics</span>
+          </button>
+        )}
         <button
           className={`flex items-center px-6 py-3 text-gray-300 bg-none border-none w-full cursor-pointer text-base transition-all duration-200 text-left hover:bg-gray-700 hover:text-white ${
             activeTab === 'account' ? 'bg-cyan-600 border-r-4 border-cyan-400 text-white' : ''

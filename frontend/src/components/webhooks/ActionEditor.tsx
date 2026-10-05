@@ -1,6 +1,7 @@
 import { ACTION_TYPES, getActionParamFields, type ParamField } from '../../webhooks/schema';
 import type { Action, ActionType, ParamValue } from '../../webhooks/types';
 import { compactInputClass } from './ui';
+import { sortAlpha } from '../../utils/sort';
 
 interface Props {
   action: Action;
@@ -31,7 +32,7 @@ function ParamInput({ field, value, onChange }: { field: ParamField; value: Para
         <select value={current as string} onChange={(e) => onChange(e.target.value)} className={compactInputClass}>
           <option value="">(inherit default)</option>
           {!known && <option value={current as string}>{String(current)}</option>}
-          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {sortAlpha(options, (o) => o.label).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       );
     }
@@ -57,7 +58,7 @@ export function ActionEditor({ action, onChange, onRemove }: Props) {
     <div className="bg-gray-700 rounded p-3 mb-2">
       <div className="flex gap-2 mb-2">
         <select value={action.action_type} onChange={(e) => setType(e.target.value as ActionType)} className={compactInputClass}>
-          {ACTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          {sortAlpha(ACTION_TYPES, (t) => t.label).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
         <button type="button" onClick={onRemove} className="text-red-400 hover:text-red-300 text-xs px-2">Remove</button>
       </div>

@@ -111,9 +111,9 @@ pub struct LightConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ScoreConfig {
     #[serde(default)]
-    pub red_score: u8, // 0-99
+    pub red_score: u16, // 0-999
     #[serde(default)]
-    pub blue_score: u8, // 0-99
+    pub blue_score: u16, // 0-999
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -256,8 +256,8 @@ pub enum PageType {
         mode: String,
     },
     DivoomScore {
-        red_score: u8,
-        blue_score: u8,
+        red_score: u16,
+        blue_score: u16,
     },
 }
 

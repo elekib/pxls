@@ -1,4 +1,11 @@
 use bluetooth_serial_port::{BtAddr, BtProtocol, BtSocket};
+
+// Packet framing comes from the in-repo device module (the backend is a
+// binary crate, so the file is included directly).
+#[allow(dead_code)]
+#[path = "../src/device/mod.rs"]
+mod device;
+
 use std::io::{self, Read, Write};
 use std::thread;
 use std::time::Duration;
@@ -37,6 +44,7 @@ fn main() {
             "6" => test_tool_commands(&bt_addr),
             "7" => scan_commands(&bt_addr),
             "8" => raw_send(&bt_addr),
+            "9" => probe_modes(&bt_addr),
             "0" => {
                 println!("Exiting...");
                 break;
@@ -58,6 +66,7 @@ fn print_menu() {
     println!("│  6. Tool Commands            - Test tools (timer, etc)      │");
     println!("│  7. Command Scan             - Auto-scan command range      │");
     println!("│  8. Raw Send (No Encode)     - Send exact bytes, no framing │");
+    println!("│  9. Mode Probe               - Sweep 0x45 channel/value     │");
     println!("│  0. Exit                                                   │");
     println!("└─────────────────────────────────────────────────────────────┘");
 }
@@ -226,7 +235,11 @@ fn test_display_commands(bt_addr: &BtAddr) {
 
     let commands = vec![
         (
-            "Set Brightness (0x32)",
+            "Set Brightness (0x74, percent, little-endian framing)",
+            encode_pixoo_cmd(0x74, &[brightness_val.min(100)]),
+        ),
+        (
+            "Set Brightness (0x32, legacy guess)",
             encode_pixoo_cmd(0x32, &[brightness_byte]),
         ),
         (
@@ -247,12 +260,13 @@ fn test_mode_commands(bt_addr: &BtAddr) {
     println!("\n--- Mode Commands ---");
 
     let modes = [
-        ("Clock Mode (0x00)", 0x00u8),
-        ("Light Mode (0x01)", 0x01),
-        ("Effects Mode (0x02)", 0x02),
-        ("Music Mode (0x03)", 0x03),
-        ("User Mode (0x04)", 0x04),
-        ("Scoreboard (0x05)", 0x05),
+        ("Clock (0x00)", 0x00u8),
+        ("Light (0x01)", 0x01),
+        ("Cloud (0x02)", 0x02),
+        ("Effects (0x03)", 0x03),
+        ("Visualization (0x04)", 0x04),
+        ("Custom/user (0x05)", 0x05),
+        ("Scoreboard (0x06)", 0x06),
     ];
 
     for (i, (name, _mode)) in modes.iter().enumerate() {
@@ -271,6 +285,59 @@ fn test_mode_commands(bt_addr: &BtAddr) {
     let payload = encode_pixoo_cmd(0x45, &[mode_val, 0x00]);
 
     send_and_receive(bt_addr, &payload, Duration::from_millis(1000));
+}
+
+/// Sweep `45 <channel> <value>` and record what the display shows. Before each
+/// probe the display is set to solid red (light mode) so a command that is
+/// ignored is obvious: the screen stays red.
+fn probe_modes(bt_addr: &BtAddr) {
+    println!("\n--- Mode Probe ---");
+    let ch = prompt_input("Channel byte (hex) [03]: ");
+    let channel = u8::from_str_radix(ch.trim().trim_start_matches("0x"), 16).unwrap_or(0x03);
+    let lo = prompt_input("First value [0]: ")
+        .trim()
+        .parse::<u8>()
+        .unwrap_or(0);
+    let hi = prompt_input("Last value [15]: ")
+        .trim()
+        .parse::<u8>()
+        .unwrap_or(15);
+    let with_value = prompt_input("Send a value byte? (n = channel only) [y]: ");
+    let with_value = with_value.trim().to_lowercase() != "n";
+
+    let red = encode_pixoo_cmd(
+        0x45,
+        &[0x01, 0xFF, 0x00, 0x00, 0x32, 0x00, 0x01, 0x00, 0x00, 0x00],
+    );
+    let mut log: Vec<(u8, String)> = Vec::new();
+
+    for v in lo..=hi {
+        send_and_receive(bt_addr, &red, Duration::from_millis(300));
+        thread::sleep(Duration::from_millis(800));
+
+        let args: Vec<u8> = if with_value {
+            vec![channel, v]
+        } else {
+            vec![channel]
+        };
+        let payload = encode_pixoo_cmd(0x45, &args);
+        println!("\n45 {channel:02X} {v:02X}: {}", bytes_to_hex(&payload));
+        send_and_receive(bt_addr, &payload, Duration::from_millis(300));
+
+        let seen = prompt_input("What does the display show? (text, 'q' to stop): ");
+        if seen.trim() == "q" {
+            break;
+        }
+        log.push((v, seen.trim().to_string()));
+        if !with_value {
+            break;
+        }
+    }
+
+    println!("\n--- Results for channel 0x{channel:02X} ---");
+    for (v, seen) in log {
+        println!("  value {v:>3} (0x{v:02X}): {seen}");
+    }
 }
 
 fn test_tool_commands(bt_addr: &BtAddr) {
@@ -391,23 +458,16 @@ fn raw_send(bt_addr: &BtAddr) {
     send_and_receive(bt_addr, &data, Duration::from_millis(timeout_ms));
 }
 
-/// Encode a command using pixoo binary protocol
-/// Format: [1, payload_size_high, payload_size_low, cmd, args..., checksum_high, checksum_low, 2]
+/// Encode a command with pxls's framing (little-endian length and checksum).
 fn encode_pixoo_cmd(cmd: u8, args: &[u8]) -> Vec<u8> {
-    let payload_size = args.len() + 3;
-    let mut buf = vec![1, (payload_size >> 8) as u8, payload_size as u8, cmd];
-    buf.extend_from_slice(args);
-    let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
-    buf.push((checksum >> 8) as u8);
-    buf.push(checksum as u8);
-    buf.push(2);
-    buf
+    device::frame::encode(cmd, args)
 }
 
-/// Alternative encoding with big-endian checksum (some devices use this)
+/// Same packet with both 16-bit fields big-endian, the layout older notes in
+/// docs/protocol.md describe. Useful to check which one your device accepts.
 fn encode_pixoo_cmd_be(cmd: u8, args: &[u8]) -> Vec<u8> {
     let payload_size = args.len() + 3;
-    let mut buf = vec![1, payload_size as u8, (payload_size >> 8) as u8, cmd];
+    let mut buf = vec![1, (payload_size >> 8) as u8, payload_size as u8, cmd];
     buf.extend_from_slice(args);
     let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
     buf.push((checksum >> 8) as u8);

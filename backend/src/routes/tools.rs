@@ -39,8 +39,8 @@ pub struct CountdownRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct ScoreboardRequest {
-    pub red_score: u8,
-    pub blue_score: u8,
+    pub red_score: u16,
+    pub blue_score: u16,
 }
 
 #[instrument(skip(state))]

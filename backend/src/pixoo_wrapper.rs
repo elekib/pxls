@@ -1,9 +1,7 @@
-use bluetooth_serial_port::{BtAddr, BtProtocol, BtSocket};
-use pixoo::tool::{CountDownControl, NoiseControl, Seconds, ToolInfo};
-use pixoo::Pixoo;
-use std::io::Write;
+use bluetooth_serial_port::BtAddr;
 
-// Re-export hex from crate root for debug logging
+use crate::device::tool::{CountDownControl, NoiseControl, Seconds};
+use crate::device::{Pixoo, ToolInfo};
 
 pub struct PixooWrapper {
     pixoo: Option<Pixoo>,
@@ -54,7 +52,9 @@ impl PixooWrapper {
         self.pixoo = Some(new_pixoo);
     }
 
-    /// Play buzzer/alarm - try multiple approaches
+    /// Play the buzzer for `total_time` ms. `active_time` and `off_time` are
+    /// accepted for API compatibility; the only buzzer layout we send carries
+    /// the total time (needs device test, see docs/protocol.md).
     pub fn play_buzzer(
         &mut self,
         _active_time: u16,
@@ -63,30 +63,14 @@ impl PixooWrapper {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let bt_addr = self.bt_addr.ok_or("No Bluetooth address available")?;
 
-        let mut socket = BtSocket::new(BtProtocol::RFCOMM)?;
-        socket.connect(bt_addr)?;
+        let mut pixoo = Pixoo::connect(bt_addr)?;
+        tracing::info!(total_time, "Sending buzzer command 0x31");
+        pixoo.play_buzzer(total_time)?;
 
-        // Approach 1: Try command 0x31 with different arg format
-        // Some devices expect just [total_time_low, total_time_high]
-        let args_simple: [u8; 2] = [(total_time & 0xFF) as u8, ((total_time >> 8) & 0xFF) as u8];
-        let payload1 = Self::encode_pixoo_cmd(0x31, &args_simple);
-        tracing::info!(payload = ?payload1, hex = %hex::encode(&payload1), "Sending simple buzzer command 0x31");
-        socket.write_all(&payload1)?;
-        socket.flush()?;
-
-        std::thread::sleep(std::time::Duration::from_millis(100));
-
-        // Approach 2: Try using set_mode (0x45) with alarm/visualizer mode
-        // Mode 0x06 is effects, maybe there's an alarm sub-mode
-        let args_mode: [u8; 2] = [0x06, 0x00]; // Effects mode, sub-mode 0
-        let payload2 = Self::encode_pixoo_cmd(0x45, &args_mode);
-        tracing::info!(payload = ?payload2, hex = %hex::encode(&payload2), "Sending set_mode 0x45 (effects)");
-        socket.write_all(&payload2)?;
-        socket.flush()?;
-
-        // Wait for sound to play
+        // Wait for sound to play, then close the link (also closed on drop).
         std::thread::sleep(std::time::Duration::from_millis(total_time as u64 + 500));
-        tracing::info!("Buzzer attempts complete");
+        pixoo.disconnect();
+        tracing::info!("Buzzer command complete");
 
         Ok(())
     }
@@ -133,8 +117,7 @@ impl PixooWrapper {
         tracing::info!("Countdown command sent successfully");
 
         // Disconnect and let countdown run on device
-        #[allow(clippy::drop_non_drop)]
-        drop(pixoo);
+        pixoo.disconnect();
         tracing::info!("Disconnected, countdown should be running on device");
 
         Ok(())
@@ -156,8 +139,7 @@ impl PixooWrapper {
         pixoo.set_tool_info(ToolInfo::Noise(NoiseControl::Start))?;
 
         // Disconnect and leave tool running
-        #[allow(clippy::drop_non_drop)]
-        drop(pixoo);
+        pixoo.disconnect();
         tracing::info!(
             "Sound detector command sent, leaving pixoo disconnected for reconnection loop"
         );
@@ -175,11 +157,9 @@ impl PixooWrapper {
     /// loop's reconnect would race this connection and override the display.
     pub fn set_scoreboard(
         &mut self,
-        red_score: u8,
-        blue_score: u8,
+        red_score: u16,
+        blue_score: u16,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        use pixoo::tool::ToolInfo;
-
         tracing::info!(
             "Setting scoreboard via tool API: Red={}, Blue={}",
             red_score,
@@ -197,12 +177,11 @@ impl PixooWrapper {
         tracing::info!("Connected, sending scoreboard tool command");
 
         // Use the tool API (0x50) with on=true so the device runs the scoreboard
-        // tool independently. Scores are u8 (0-99) promoted to u16 as the tool API
-        // expects.
+        // tool independently. Scores are 0-999 (clamped by the driver).
         pixoo.set_tool_info(ToolInfo::Score {
             on: true,
-            red_score: red_score as u16,
-            blue_score: blue_score as u16,
+            red_score,
+            blue_score,
         })?;
 
         tracing::info!(
@@ -214,8 +193,7 @@ impl PixooWrapper {
         // Drop the connection — the scoreboard tool runs on the device itself,
         // same as countdown and sound detector. The rendering loop will reconnect
         // but skip rendering while tool_active_until is set.
-        #[allow(clippy::drop_non_drop)]
-        drop(pixoo);
+        pixoo.disconnect();
         tracing::info!("Disconnected, scoreboard should be running on device");
 
         Ok(())
@@ -228,21 +206,5 @@ impl PixooWrapper {
         std::thread::sleep(std::time::Duration::from_millis(500));
         tracing::info!("Scoreboard stopped, connection released");
         Ok(())
-    }
-
-    /// Encode a Pixoo command with the binary protocol
-    /// Format: [1, payload_size_low, payload_size_high, cmd, args..., checksum_low, checksum_high, 2]
-    fn encode_pixoo_cmd(cmd: u8, args: &[u8]) -> Vec<u8> {
-        let payload_size = args.len() + 3;
-        // Use big-endian for size (high byte first) - more common in device protocols
-        let mut buf = vec![1, (payload_size >> 8) as u8, payload_size as u8, cmd];
-        buf.extend_from_slice(args);
-        // Checksum is sum of all bytes from position 1
-        let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
-        // Use big-endian for checksum too
-        buf.push((checksum >> 8) as u8);
-        buf.push(checksum as u8);
-        buf.push(2);
-        buf
     }
 }

@@ -304,12 +304,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bounded-integer"
-version = "0.5.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "102dbef1187b1893e6dfe05a774e79fd52265f49f214f6879c8ff49f52c8188b"
-
-[[package]]
 name = "built"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1674,19 +1668,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
-name = "pixoo"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de1e21b95f52f4498fff9a579b2be32222630cd6cc7e48ae40ca31970a9fb710"
-dependencies = [
- "bluetooth-serial-port",
- "bounded-integer",
- "image",
- "itertools",
- "thiserror",
-]
-
-[[package]]
 name = "pkg-config"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1802,7 +1783,6 @@ dependencies = [
  "jsonwebtoken",
  "once_cell",
  "password-hash",
- "pixoo",
  "reqwest",
  "rusqlite",
  "serde",
