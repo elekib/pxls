@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Config } from '../types';
 import logoHorizontal from '../assets/logo/pxls_horizontal_icon.png';
 
@@ -11,6 +12,16 @@ interface SidebarProps {
 
 export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: SidebarProps) {
   const mac = config?.pixoo_mac || '';
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((h) => {
+        if (h?.version) setVersion(h.git_sha && h.git_sha !== 'unknown' ? `${h.version} (${String(h.git_sha).slice(0, 7)})` : h.version);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <aside className="w-64 h-full bg-gray-800 border-r border-gray-700 flex flex-col">
@@ -97,6 +108,7 @@ export function Sidebar({ config, activeTab, onTabChange, onClose, onSignOut }: 
             Sign out
           </button>
         )}
+        {version && <div className="mt-3 text-center text-xs text-gray-500">pxls {version}</div>}
       </div>
     </aside>
   );
