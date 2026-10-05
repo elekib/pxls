@@ -1,4 +1,11 @@
 use bluetooth_serial_port::{BtAddr, BtProtocol, BtSocket};
+
+// Packet framing comes from the in-repo device module (the backend is a
+// binary crate, so the file is included directly).
+#[allow(dead_code)]
+#[path = "../src/device/mod.rs"]
+mod device;
+
 use std::io::{self, Read, Write};
 use std::thread;
 use std::time::Duration;
@@ -226,7 +233,11 @@ fn test_display_commands(bt_addr: &BtAddr) {
 
     let commands = vec![
         (
-            "Set Brightness (0x32)",
+            "Set Brightness (0x74, percent, little-endian framing)",
+            encode_pixoo_cmd(0x74, &[brightness_val.min(100)]),
+        ),
+        (
+            "Set Brightness (0x32, legacy guess)",
             encode_pixoo_cmd(0x32, &[brightness_byte]),
         ),
         (
@@ -247,12 +258,13 @@ fn test_mode_commands(bt_addr: &BtAddr) {
     println!("\n--- Mode Commands ---");
 
     let modes = [
-        ("Clock Mode (0x00)", 0x00u8),
-        ("Light Mode (0x01)", 0x01),
-        ("Effects Mode (0x02)", 0x02),
-        ("Music Mode (0x03)", 0x03),
-        ("User Mode (0x04)", 0x04),
-        ("Scoreboard (0x05)", 0x05),
+        ("Clock (0x00)", 0x00u8),
+        ("Light (0x01)", 0x01),
+        ("Cloud (0x02)", 0x02),
+        ("Effects (0x03)", 0x03),
+        ("Visualization (0x04)", 0x04),
+        ("Custom/user (0x05)", 0x05),
+        ("Scoreboard (0x06)", 0x06),
     ];
 
     for (i, (name, _mode)) in modes.iter().enumerate() {
@@ -391,23 +403,16 @@ fn raw_send(bt_addr: &BtAddr) {
     send_and_receive(bt_addr, &data, Duration::from_millis(timeout_ms));
 }
 
-/// Encode a command using pixoo binary protocol
-/// Format: [1, payload_size_high, payload_size_low, cmd, args..., checksum_high, checksum_low, 2]
+/// Encode a command with pxls's framing (little-endian length and checksum).
 fn encode_pixoo_cmd(cmd: u8, args: &[u8]) -> Vec<u8> {
-    let payload_size = args.len() + 3;
-    let mut buf = vec![1, (payload_size >> 8) as u8, payload_size as u8, cmd];
-    buf.extend_from_slice(args);
-    let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
-    buf.push((checksum >> 8) as u8);
-    buf.push(checksum as u8);
-    buf.push(2);
-    buf
+    device::frame::encode(cmd, args)
 }
 
-/// Alternative encoding with big-endian checksum (some devices use this)
+/// Same packet with both 16-bit fields big-endian, the layout older notes in
+/// docs/protocol.md describe. Useful to check which one your device accepts.
 fn encode_pixoo_cmd_be(cmd: u8, args: &[u8]) -> Vec<u8> {
     let payload_size = args.len() + 3;
-    let mut buf = vec![1, payload_size as u8, (payload_size >> 8) as u8, cmd];
+    let mut buf = vec![1, (payload_size >> 8) as u8, payload_size as u8, cmd];
     buf.extend_from_slice(args);
     let checksum = buf[1..].iter().map(|n| *n as u16).sum::<u16>();
     buf.push((checksum >> 8) as u8);

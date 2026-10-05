@@ -6,7 +6,6 @@ edition = "2021"
 build = "src/build.rs"
 
 [dependencies]
-pixoo = "0.1.0"
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 sysinfo = "0.33.1"

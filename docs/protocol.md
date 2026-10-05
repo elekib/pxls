@@ -1,327 +1,123 @@
-# Pixoo Bluetooth Protocol Documentation
+# Pixoo Bluetooth Protocol
 
-This document describes the Bluetooth communication protocol used by Divoom Pixoo devices. Understanding this protocol helps you debug issues, test new features, and extend the functionality of your device.
+How pxls talks to legacy Divoom Pixoo (16x16) displays. The implementation lives in `backend/src/device/` and is written from this document, public protocol write-ups and observed app behavior. It does not use or derive from any third-party driver source.
 
-## Table of Contents
+**Status legend.** *Public* = layout documented by a public write-up. *Repo* = layout taken from this repository's earlier notes or the app's own behavior. *Inferred* = our mapping, no document states it. Everything marked *needs device test* has not been confirmed against real hardware; the checklist at the end says how to confirm each one.
 
-- [Protocol Overview](#protocol-overview)
-- [Packet Structure](#packet-structure)
-- [Command Reference](#command-reference)
-  - [Device Commands (0x01-0x1F)](#device-commands)
-  - [Display Commands (0x20-0x3F)](#display-commands)
-  - [Mode Commands (0x40-0x5F)](#mode-commands)
-  - [Tool Commands (0x70-0x7F)](#tool-commands)
-  - [Animation Commands (0x60-0x6F)](#animation-commands)
-- [Testing Commands](#testing-commands)
-- [Troubleshooting](#troubleshooting)
+## Sources
 
----
+- **[Timebox Evo protocol write-up](https://github.com/RomRider/node-divoom-timebox-evo/blob/master/PROTOCOL.md)** (public, no license stated; only facts were used): framing, little-endian fields, checksum, brightness `0x74`, channels `0x45 00/01/03/04/06`, image upload layout.
+- **[Timebox (Mini) protocol write-up](https://github.com/MarcG046/timebox/blob/master/doc/protocol.md)** (public, no license stated): framing, escaping rule (not used, see below), static image command number.
+- **This repository's earlier notes and app code**: tool command `0x72` layouts, scoreboard tool `0x50`, buzzer `0x31`.
 
-## Protocol Overview
+Both public write-ups cover the Timebox family. Pixoo behaviour is assumed to match where noted.
 
-Pixoo devices communicate over Bluetooth RFCOMM (Serial Port Profile). The protocol uses a binary packet format with:
+## Transport
 
-- **Transport**: Bluetooth RFCOMM (virtual serial port)
-- **Baud Rate**: Typically 115200 (handled by Bluetooth stack)
-- **Packet Format**: Binary with header, payload, and checksum
-- **Byte Order**: Big-endian for multi-byte values
+Bluetooth RFCOMM (serial port profile). The driver connects with `bluetooth-serial-port`, writes whole packets and flushes. It does not read responses. Dropping the `Pixoo` value or calling `disconnect()` closes the socket.
 
----
-
-## Packet Structure
-
-Each packet follows this structure:
+## Packet framing
 
 ```
-┌────────┬───────────────┬───────────────┬────────┬───────────┬───────────────┬───────────────┬────────┐
-│  Start │ Payload Size  │    Command    │  Args  │   ...     │   Checksum    │     End       │
-│  (0x01)│  (2 bytes)    │   (1 byte)    │        │           │   (2 bytes)   │    (0x02)     │
-└────────┴───────────────┴───────────────┴────────┴───────────┴───────────────┴───────────────┴────────┘
-   1 byte      2 bytes         1 byte      N bytes              2 bytes           1 byte
+01 | LEN_LO LEN_HI | CMD | ARGS... | SUM_LO SUM_HI | 02
 ```
 
-### Field Details
+| Field | Size | Meaning |
+|-------|------|---------|
+| Start | 1 | `0x01` |
+| Length | 2 | little-endian: `1 (cmd) + args + 2 (checksum)` |
+| Command | 1 | command byte |
+| Args | N | command specific |
+| Checksum | 2 | little-endian 16-bit sum of every byte from Length through the last arg |
+| End | 1 | `0x02` |
 
-| Field | Size | Description |
-|-------|------|-------------|
-| Start | 1 byte | Always `0x01` - packet start marker |
-| Payload Size | 2 bytes | Size of payload (Command + Args), big-endian |
-| Command | 1 byte | Command identifier (see reference below) |
-| Arguments | N bytes | Command-specific arguments |
-| Checksum | 2 bytes | Sum of all bytes from Payload Size to end of Arguments, big-endian |
-| End | 1 byte | Always `0x02` - packet end marker |
+Example, brightness 50%: `01 04 00 74 32 AA 00 02` (`0x04 + 0x74 + 0x32 = 0xAA`).
 
-### Checksum Calculation
+**Correction to earlier notes:** this file used to describe big-endian length and checksum and brightness command `0x32` with a 0-255 range. The public write-ups say little-endian and `0x74` with 0-100. The old example `01 00 04 32 80 00 B6 02` has the same size and checksum value as ours; only the byte order of the two 16-bit fields differs. `command_tester` can still send the big-endian form for comparison.
 
-```rust
-// Pseudo-code for checksum calculation
-let payload_size = args.len() + 3;  // command (1) + args (N) + checksum itself is not included
-let packet_without_checksum = [start, size_hi, size_lo, command, ...args];
-let checksum = sum_of_all_bytes_in(packet_without_checksum[1..]); // exclude start byte
-let checksum_hi = (checksum >> 8) & 0xFF;
-let checksum_lo = checksum & 0xFF;
-```
+**Escaping:** the Timebox Mini write-up says `01`, `02`, `03` bytes inside a packet are escaped (`03 04`, `03 05`, `03 06`). The Evo write-up documents commands with `01` arguments (clock header, light power) without escaping, so pxls sends raw bytes. *Needs device test* (step 6).
 
-### Example Packet
+## Commands
 
-**Set Brightness to 50%:**
-```
-01 00 04 32 80 00 B6 02
-│  │  │  │  │  │  │  │
-│  │  │  │  │  │  │  └── End (0x02)
-│  │  │  │  │  │  └───── Checksum low (0xB6 = 182)
-│  │  │  │  │  └──────── Checksum high (0x00)
-│  │  │  │  └─────────── Brightness value (0x80 = 128 = 50%)
-│  │  │  └────────────── Command (0x32 = Set Brightness)
-│  │  └──────────────── Payload size low (0x04)
-│  └───────────────────── Payload size high (0x00)
-└──────────────────────── Start (0x01)
-```
+| Command | Code | Args | Source | Status |
+|---------|------|------|--------|--------|
+| Brightness | `0x74` | `percent: u8` (0-100) | Public | needs device test on Pixoo |
+| Clock mode | `0x45` | `00 01 TT show_time show_weather show_temp show_date R G B` | Public | needs device test |
+| Light mode | `0x45` | `01 R G B brightness effect power 00 00 00` | Public | needs device test |
+| Effects ("special") | `0x45` | `03 TT` | Public layout, Inferred mapping | needs device test |
+| Visualization ("music") | `0x45` | `04 TT` | Public layout, Inferred mapping | needs device test |
+| User mode | `0x45` | `05 00` | Inferred | needs device test |
+| Scoreboard mode | `0x45` | `06 00 red_lo red_hi blue_lo blue_hi` | Public | needs device test |
+| Image | `0x44` | see below | Public (Timebox family) | needs device test |
+| Time format | unknown | n/a | none | **not sent** |
+| Buzzer | `0x31` | `total_ms: u16` little-endian | Repo (previous behavior) | needs device test |
+| Stopwatch tool | `0x72` | `00 action` (1 start, 0 stop) | Repo | needs device test |
+| Noise meter tool | `0x72` | `02 action` | Repo | needs device test |
+| Countdown tool | `0x72` | `03 action minutes seconds` | Repo | needs device test |
+| Scoreboard tool | `0x50` | `on red_lo red_hi blue_lo blue_hi` | Repo (app behavior) | needs device test |
 
-Checksum calculation: `0x00 + 0x04 + 0x32 + 0x80 = 0xB6` (182)
+Notes:
 
----
+- **Clock `TT`:** 0 digital, 1 rainbow, 2 box, 3 analog 1, 4 inverted, 5 analog 2. Byte 3 of the clock args (`01`) is "fixed" in the write-up; it might be a 24h flag. The app's `show_divoom` flag has no known byte and is ignored.
+- **Light effect:** 0 normal, 1 rainbow ("love" in the write-up), 2 plants, 3 fly ("no mosquito"), 4 sleep.
+- **Music `TT`:** 0 bottom bars, 1 center bars, 2 side bars, 3 face 1, 4 face 2, 5 face 3, 6 frog face, 7 matrix, 8 falling blocks, 9 fireworks, 10 dancing boy, 11 dancing girl. The order is our own; the write-up only says "see image".
+- **Time format:** no command is documented anywhere we looked. `Pixoo::set_time_format` sends nothing until `CMD_TIME_FORMAT` in `backend/src/device/mod.rs` is set after a device test. The 12/24h setting therefore has no effect for now.
+- **Buzzer:** an earlier implementation also sent `0x45 06 00` after the buzzer. The scoreboard channel is `06`, so that was removed. Other buzzer layouts (4 and 6 byte, big-endian) were tried historically; the 2-byte little-endian form is what pxls sent before and is kept.
+- **Stopwatch pause/reset** are not documented and not implemented.
+- **Tool layouts:** the old notes' example packets for tools had lengths that did not match their arguments; the argument lists above are used, framed as in the table above.
+- **Scoreboard:** mode `0x45 06` and tool `0x50` are different things. The app uses the tool for `/api/tools/scoreboard`, because the device keeps running it on its own.
 
-## Command Reference
+### Image upload (`0x44`)
 
-### Device Commands (0x01-0x1F)
+Args: `00 0A 0A 04 | AA LEN_LO LEN_HI 00 00 00 NN PALETTE PIXELS`
 
-| Command | Code | Arguments | Description |
-|---------|------|-----------|-------------|
-| Device Info | `0x01` | None | Get device information |
-| Get Settings | `0x21` | None | Get device settings |
-| Get Temp/Weather | `0x24` | None | Get temperature and weather data |
+- `NN` palette size (`00` means 256), `PALETTE` is `NN` RGB triples in order of first use.
+- `PIXELS`: one palette index per pixel, row by row from the top left, `ceil(log2(NN))` bits each (minimum 1), filled least-significant bit first, last byte zero padded.
+- `LEN` is assumed to be the whole frame length from `AA` through the last pixel byte (the write-up says only "image data length"). *Assumption, needs device test.*
+- Sent as one packet, no chunking. Non-16x16 images are resized (nearest neighbour).
 
-**Example - Get Device Info:**
-```
-Request:  01 00 03 01 00 04 02
-Response: [device info data]
-```
+## Connection lifecycle
 
----
+- `Pixoo::connect(addr)` opens the RFCOMM socket. `Pixoo::disconnect()` closes it explicitly and is idempotent. Dropping a `Pixoo` closes it too. Sends after disconnect fail with "not connected".
+- The previous driver had no `Drop`, so the `drop(pixoo)` calls after countdown, sound detector and scoreboard never closed anything. Now they do. Whether the display keeps running those tools after the link closes is *unconfirmed* (device test step 3).
+- The render loop's cadence is unchanged: no heartbeat in native mode, native modes reapplied every ~10 s.
 
-### Display Commands (0x20-0x3F)
-
-| Command | Code | Arguments | Description |
-|---------|------|-----------|-------------|
-| Get Brightness | `0x44` | None | Get current brightness |
-| Set Brightness | `0x32` | `brightness: u8` | Set brightness (0-255) |
-| Set RGB | `0x46` | `r: u8, g: u8, b: u8` | Set solid color |
-| Buzzer | `0x31` | `active: u16, off: u16, total: u16` | Play buzzer |
-
-**Set Brightness Examples:**
-```
-25%:   01 00 04 32 40 00 76 02  (brightness = 64)
-50%:   01 00 04 32 80 00 B6 02  (brightness = 128)
-75%:   01 00 04 32 C0 00 F6 02  (brightness = 192)
-100%:  01 00 04 32 FF 00 35 03  (brightness = 255)
-```
-
-**Buzzer Command:**
-```
-01 00 08 31 <active_hi> <active_lo> <off_hi> <off_lo> <total_hi> <total_lo> <checksum> 02
-
-Example - 500ms active, 0ms off, 1000ms total:
-01 00 08 31 01 F4 00 00 03 E8 05 C5 02
-```
-
-**Buzzer Troubleshooting Guide:**
-
-Different Pixoo firmware versions expect different buzzer formats. If the buzzer isn't working, try these formats in order:
-
-| Format | Args | Example Packet | When to Use |
-|--------|------|----------------|-------------|
-| **Minimal (2-byte)** | `total_time: u16` | `01 00 04 31 00 64 00 99 02` | Try first - some devices only need total time |
-| **Standard (4-byte)** | `active, off: u16` | `01 00 06 31 01 F4 00 00 01 FA 02` | active=500ms, off=0 |
-| **Full (6-byte)** | `active, off, total: u16` | `01 00 08 31 01 F4 00 00 01 F4 03 EE 02` | Most common spec-compliant format |
-| **Little-endian** | Same as above but LE | `01 00 08 31 F4 01 00 00 F4 01 EF 03 02` | Some early firmware uses LE |
-
-**Testing Steps:**
-1. First verify device responds to other commands (like Get Brightness 0x44)
-2. Try the Minimal format - many newer devices only need total duration
-3. If no sound, try Standard 4-byte format
-4. Check if device requires User Mode (0x04) active for buzzer
-5. Use the `command_tester` utility option 3 for automated testing
-
-**Common Issues:**
-- **No sound but ACK received**: Buzzer may be disabled in settings or device is muted
-- **No response at all**: Device may not support buzzer or requires different encoding
-- **Partial beep**: Arguments may be in wrong byte order (try swapping hi/lo)
-
-**Byte Order Notes:**
-- `01 F4` = 500ms (big-endian: 0x01=1, 0xF4=244, 1*256+244=500)
-- `F4 01` = 62644ms (little-endian - likely wrong for buzzer)
-
-Use the Raw Send mode (option 8) in the tester to try exact packets without encoding.
-
----
-
-### Mode Commands (0x40-0x5F)
-
-| Command | Code | Arguments | Description |
-|---------|------|-----------|-------------|
-| Set Mode | `0x45` | `mode: u8, sub_mode: u8` | Change device mode |
-
-**Mode Values:**
-| Mode | Value | Description |
-|------|-------|-------------|
-| Clock | `0x00` | Clock display with optional date/weather |
-| Light | `0x01` | Solid color light |
-| Effects | `0x02` | Visual effects |
-| Music | `0x03` | Music visualizer |
-| User | `0x04` | User-defined image/animation |
-| Score | `0x05` | Scoreboard display |
-
-**Example - Set Clock Mode:**
-```
-01 00 05 45 00 00 00 4B 02
-            │  │
-            │  └── Sub-mode (clock style)
-            └───── Mode: Clock (0x00)
-```
-
-**Example - Set Light Mode (blue):**
-```
-01 00 08 45 01 00 00 00 00 FF 00 59 02
-                  │  │  │
-                  │  │  └── Blue (0x00)
-                  │  └───── Green (0x00)
-                  └──────── Red (0xFF)
-```
-
----
-
-### Tool Commands (0x70-0x7F)
-
-| Command | Code | Arguments | Description |
-|---------|------|-----------|-------------|
-| Set Tool | `0x72` | `tool: u8, action: u8, ...` | Control tools |
-
-**Tool Types:**
-| Tool | Value | Actions |
-|------|-------|---------|
-| Stopwatch | `0x00` | `0x01` = Start, `0x00` = Stop |
-| Noise Meter | `0x02` | `0x01` = Start, `0x00` = Stop |
-| Countdown | `0x03` | `0x01` = Start, `0x00` = Stop |
-
-**Countdown Arguments:**
-```
-[0x03, 0x01, minutes, seconds]
-```
-
-**Example - Start 5-minute countdown:**
-```
-01 00 06 72 03 01 05 00 00 81 02
-                  │  │
-                  │  └── Seconds (0)
-                  └───── Minutes (5)
-```
-
-**Example - Start Noise Meter:**
-```
-01 00 04 72 02 01 00 7B 02
-            │  │
-            │  └── Start action
-            └───── Tool: Noise Meter
-```
-
----
-
-### Animation Commands (0x60-0x6F)
-
-| Command | Code | Arguments | Description |
-|---------|------|-----------|-------------|
-| Get Animation | `0x61` | None | Get current animation info |
-| Send Image | `0x44` | Complex | Send static image (see notes) |
-| Send Animation | `0x45` | Complex | Send animation frames |
-
-**Note:** Image/animation commands are complex and typically handled by the `pixoo` crate. They involve:
-- Chunking data into multiple packets
-- Encoding pixel data in specific formats
-- Handling acknowledgement responses
-
----
-
-## Testing Commands
-
-Use the `command_tester` utility to experiment:
+## Testing
 
 ```bash
 cd backend
+cargo test device         # golden byte tests with a mock transport
 cargo run --example command_tester
+cargo run --example library_tool_test
 ```
 
-### Recommended Testing Workflow
-
-1. **Start with simple commands**: Test `0x44` (get brightness) - it's read-only and safe
-2. **Verify connectivity**: If you get no responses, check your MAC address and Bluetooth pairing
-3. **Test incrementally**: Start with one command type before moving to complex ones
-4. **Document results**: Not all commands work on all firmware versions
-
-### Quick Test Commands
+Quick raw test (documented brightness, 50%):
 
 ```bash
-# Set brightness to 50% (safe test)
-echo -ne '\x01\x00\x04\x32\x80\x00\xB6\x02' > /dev/rfcomm0
-
-# Get current brightness (read-only)
-echo -ne '\x01\x00\x03\x44\x00\x48\x02' > /dev/rfcomm0
+echo -ne '\x01\x04\x00\x74\x32\xAA\x00\x02' > /dev/rfcomm0
 ```
 
----
+## Device test checklist
+
+Run on the server with a real Pixoo and note the model and firmware. Tick each item or record what the display did.
+
+1. **Connect and brightness.** Connect from the UI, set brightness 10, 50, 100. Display should change. If nothing happens, run `command_tester` brightness: it sends the `0x74` and the old `0x32` forms. If only a big-endian packet works, framing is wrong and everything else is moot.
+2. **Native modes.** Apply clock (each of 6 designs, with weather/temp/date on and off), light (color, brightness, 5 effects, on/off), special (4 modes), music (12 modes), user, score. Record which work. Watch for the clock, blank, clock flicker.
+3. **Tools survive disconnect.** Start a 1 minute countdown, then check the display keeps counting after the log says "Disconnected". Repeat for sound detector and scoreboard tool. If the tool stops when the link closes, delay the close.
+4. **Time format.** Find the command (try the official app with a sniffer, or `command_tester` scan), then set `CMD_TIME_FORMAT`.
+5. **Buzzer.** Trigger it. Silence means the layout is wrong; try the variants in `command_tester`.
+6. **Escaping.** Set brightness to 1 (argument `0x01`). If the display ignores it or misbehaves, the device needs escaped packets.
+7. **Images.** Push each page type (text, image, scroll). Check colors, orientation and no garbage. If the image is shifted or the device ignores it, `LEN` semantics are the first suspect.
+8. **Clock byte 3.** Compare 12h vs 24h display with the app set to each; see if that byte is a 24h flag.
+9. **Responses.** The driver never reads. Leave the server running for a few hours with the render loop active and confirm no stalls (unread device replies could fill the socket buffer).
+10. **Reconnect.** Power cycle the display; confirm the loop reconnects.
 
 ## Troubleshooting
 
-### No Response from Device
-
-1. **Check MAC address**: Verify with `bluetoothctl devices`
-2. **Pairing**: Ensure device is paired: `bluetoothctl pair XX:XX:XX:XX:XX:XX`
-3. **Connection**: RFCOMM channel is typically 1 or 4
-4. **Sleep mode**: Device may be sleeping - press any button to wake
-
-### Checksum Errors
-
-- Verify you're using big-endian byte order
-- Double-check that size = command (1) + args (N) + checksum (2) positions
-- Some firmware versions may use little-endian - try both
-
-### Partial Command Support
-
-Different Pixoo models support different commands:
-
-| Model | Clock | Light | Music | Buzzer | Tools |
-|-------|-------|-------|-------|--------|-------|
-| Pixoo-64 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Pixoo-Max | ✓ | ✓ | ✓ | ? | ? |
-| Pixoo | ✓ | ✓ | ✓ | ? | Partial |
-
-### Firmware Differences
-
-- **Big-endian vs Little-endian**: Some versions swap byte order
-- **Checksum method**: Most sum bytes 1..N-3, but some may differ
-- **Response format**: Not all commands return responses
-
-### Debug Tips
-
-1. **Enable tracing**: Set `RUST_LOG=trace` when running tests
-2. **Use hex dumps**: Log all bytes sent/received
-3. **Test one change at a time**: Isolate variables
-4. **Compare with official app**: Use packet sniffer to capture official app traffic
-
----
-
-## References
-
-- [pixoo crate documentation](https://docs.rs/pixoo/)
-- Bluetooth Serial Profile (SPP) specification
-- Divoom official app (for reverse engineering)
-
----
+- **No response:** check the MAC (`bluetoothctl devices`), pairing, and that the display is awake.
+- **Connection errors** containing "transport endpoint", "not connected" or "107" make the render loop reconnect.
+- Enable `RUST_LOG=pxls_backend::device=trace` to log every packet in hex.
 
 ## Contributing
 
-If you discover new commands or variations, please document them here with:
-- Command byte value
-- Argument format
-- Tested device model
-- Firmware version (if known)
+If you confirm or correct a command, update the table with the command byte, arguments, device model and firmware.

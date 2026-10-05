@@ -23,6 +23,11 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `command_tester` and `library_tool_test` moved to `backend/examples/`.
 - Config, webhooks and the webhook event log are stored in a SQLite database, `data/pxls.db`, instead of `config.json`, `webhooks.json` and `webhook_events.json`. Existing JSON files are imported automatically on first start and left in place as a backup. API behavior is unchanged. `pxls.db` contains secrets: back it up and keep `data/` private.
 - Every `/api` route except `/api/health` and `/api/webhook/:name` now requires a user access token, and viewers are limited to read-only routes. The webhook receiver still uses its per-webhook secret.
+- Replaced the third-party `pixoo` crate (GPL-3.0) with pxls's own clean-room Bluetooth driver in `backend/src/device/`, built behind a small transport trait and covered by golden-byte tests. No command has been verified on a real Pixoo yet; see the device test checklist in `docs/protocol.md`.
+- Packets now use little-endian length and checksum and brightness command `0x74` (0-100), as in public Timebox protocol write-ups. `docs/protocol.md` was corrected accordingly.
+- The Bluetooth link is now closed on drop and by an explicit `disconnect()`. Before, the `drop(pixoo)` calls after countdown, sound detector and scoreboard did nothing.
+- The 12/24 hour setting is not sent to the device until its command is confirmed. The buzzer no longer also switches to the scoreboard channel. The timer tool supports start and stop only.
+- `command_tester` and `library_tool_test` use the new driver.
 
 ### Security
 - Uploads are validated by content, size and dimensions, stored under sanitized names and served only from the uploads directory.

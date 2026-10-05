@@ -1,4 +1,4 @@
-use pixoo::{mode::TimeFormat, Brightness, Pixoo};
+use crate::device::{Brightness, Pixoo, TimeFormat};
 use tracing::{error, info, instrument, warn};
 
 use crate::config::DeviceConfig;
@@ -9,26 +9,9 @@ pub fn apply_device_config(
     pixoo: &mut Pixoo,
     device_config: &DeviceConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Apply brightness (0-100, convert to library's expected range 0-255)
-    let brightness_value = (device_config.brightness as f32 / 100.0 * 255.0) as u8;
-    info!(
-        brightness = device_config.brightness,
-        brightness_value, "Setting brightness"
-    );
-
-    let brightness = match Brightness::new(brightness_value) {
-        Some(b) => b,
-        None => {
-            warn!(brightness_value, "Invalid brightness value, trying 50");
-            Brightness::new(50).unwrap_or_else(|| {
-                warn!("Invalid brightness value 50, trying 25");
-                Brightness::new(25).unwrap_or_else(|| {
-                    warn!("Using minimum brightness 1");
-                    Brightness::new(1).unwrap()
-                })
-            })
-        }
-    };
+    // Apply brightness (0-100 percent, the device's native range)
+    let brightness = Brightness::from_percent(device_config.brightness);
+    info!(brightness = device_config.brightness, "Setting brightness");
 
     if let Err(e) = pixoo.set_brightness(brightness) {
         error!(error = %e, "Failed to set brightness");

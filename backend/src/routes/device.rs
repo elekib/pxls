@@ -12,9 +12,9 @@ use std::sync::atomic::Ordering;
 use tracing::{error, info, instrument};
 
 use crate::config::DeviceConfig;
+use crate::device::Pixoo;
 use crate::rendering::device_config::apply_device_config;
 use crate::AppState;
-use pixoo::Pixoo;
 
 #[derive(Debug, Deserialize)]
 pub struct ConnectRequest {

@@ -1,17 +1,23 @@
 use bluetooth_serial_port::BtAddr;
-use pixoo::tool::{CountDownControl, NoiseControl, TimerControl, ToolInfo};
-use pixoo::{Brightness, Pixoo};
+// The driver is pxls's own `device` module, included directly because the
+// backend is a binary crate.
+#[allow(dead_code)]
+#[path = "../src/device/mod.rs"]
+mod device;
+
+use device::tool::{CountDownControl, NoiseControl, Seconds, TimerControl};
+use device::{Brightness, Pixoo, ToolInfo};
 use std::io::{self, Write};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
-// Proof of Concept: Testing pixoo library's set_tool_info API
-// This tests the library's native tool methods vs raw commands
+// Exercises the tool commands of the in-repo device module against a real display.
+// Every command here is marked "needs device test" in docs/protocol.md.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║    Pixoo Library Tool API POC Tester                         ║");
-    println!("║    Tests set_tool_info() with proper library types           ║");
+    println!("║    pxls device module tool tester                           ║");
+    println!("║    Tests set_tool_info() with the device module             ║");
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
 
@@ -44,8 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "5" => test_brightness_toggle(&mut pixoo)?,
             "0" => {
                 println!("\nDisconnecting...");
-                #[allow(clippy::drop_non_drop)]
-                drop(pixoo);
+                pixoo.disconnect();
                 println!("Done!");
                 break;
             }
@@ -58,10 +63,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn print_menu() {
     println!("\n┌─────────────────────────────────────────────────────────────┐");
-    println!("│  LIBRARY API TESTS (uses set_tool_info)                     │");
+    println!("│  DEVICE MODULE TESTS (uses set_tool_info)                   │");
     println!("├─────────────────────────────────────────────────────────────┤");
     println!("│  1. Noise Meter (Start/Stop)                                 │");
-    println!("│  2. Timer (Start/Pause/Resume/Reset)                       │");
+    println!("│  2. Timer (Start/Stop)                                         │");
     println!("│  3. Scoreboard (interactive scoring)                        │");
     println!("│  4. Countdown (configurable)                                 │");
     println!("│  5. Brightness Toggle (test basic function)                 │");
@@ -95,19 +100,9 @@ fn test_timer(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
 
     thread::sleep(Duration::from_secs(3));
 
-    println!("Pausing timer...");
-    pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Pause))?;
-    println!("✓ Timer(Pause) sent");
-    thread::sleep(Duration::from_secs(2));
-
-    println!("Resuming timer...");
-    pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Start))?;
-    println!("✓ Timer(Start) sent - should resume");
-    thread::sleep(Duration::from_secs(2));
-
-    println!("Resetting timer...");
-    pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Reset))?;
-    println!("✓ Timer(Reset) sent");
+    println!("Stopping timer...");
+    pixoo.set_tool_info(ToolInfo::Timer(TimerControl::Stop))?;
+    println!("✓ Timer(Stop) sent");
 
     println!("\nTimer test complete.");
     Ok(())
@@ -152,8 +147,8 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
     let mins = prompt("Minutes [0]: ").trim().parse::<u8>().unwrap_or(0);
     let secs = prompt("Seconds [10]: ").trim().parse::<u8>().unwrap_or(10);
 
-    // Validate seconds using library's type
-    let seconds = match pixoo::tool::Seconds::new(secs) {
+    // Validate seconds (0-59)
+    let seconds = match Seconds::new(secs) {
         Some(s) => s,
         None => {
             println!("Invalid seconds value (must be 0-59)");
@@ -180,7 +175,7 @@ fn test_countdown(pixoo: &mut Pixoo) -> Result<(), Box<dyn std::error::Error>> {
         pixoo.set_tool_info(ToolInfo::CountDown {
             control: CountDownControl::Cancel,
             minutes: 0,
-            seconds: pixoo::tool::Seconds::new(0).unwrap(),
+            seconds: Seconds::new(0).unwrap(),
         })?;
         println!("✓ CountDown(Cancel) sent");
     } else {

@@ -9,6 +9,7 @@ mod actions;
 mod auth;
 mod config;
 mod database;
+mod device;
 mod font;
 mod image_guard;
 mod modes;
