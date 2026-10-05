@@ -13,8 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Pipeline: install deps -> build -> test -> package docker image.
   backend:
-    name: Backend (fmt, clippy, test)
+    name: Backend (install, build, test)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,14 +28,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: backend
-      - name: Install system libraries
+      - name: Install deps
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libbluetooth-dev libdbus-1-dev libssl-dev
-      - run: cargo fmt --check
-      - run: cargo clippy --locked --all-targets -- -D warnings
-      - run: cargo test --locked
+      - name: Build
+        run: cargo build --locked --all-targets
+      - name: Lint
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --locked
 
   frontend:
-    name: Frontend (type-check, build)
+    name: Frontend (install, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,11 +52,18 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
+      - name: Install deps
+        run: npm ci
+      - name: Build
+        run: npm run build
 
-  docker:
-    name: Docker build (${{ matrix.image }})
+  # Packages the image to prove it builds. Only runs once build and tests pass.
+  # Pushes to main are packaged and published by the "Publish dev images"
+  # workflow, which also seeds this layer cache (same scope) for new branches.
+  package:
+    name: Package (${{ matrix.image }})
+    needs: [backend, frontend]
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -63,8 +76,8 @@ jobs:
         with:
           context: ./${{ matrix.image }}
           push: false
-          cache-from: type=gha,scope=ci-${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=ci-${{ matrix.image }}
+          cache-from: type=gha,scope=${{ matrix.image }}-amd64
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-amd64
 
   secrets:
     name: Secret scan
