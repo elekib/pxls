@@ -85,7 +85,7 @@ jobs:
           tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" gitleaks
       - name: Scan history and working tree
         run: |
-          "$RUNNER_TEMP/gitleaks" git . --no-banner --redact --verbose
+          "$RUNNER_TEMP/gitleaks" git . --no-banner --redact --verbose --log-opts=HEAD
           "$RUNNER_TEMP/gitleaks" dir . --no-banner --redact --verbose
 
   dco:

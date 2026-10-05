@@ -1,0 +1,10 @@
+title = "pxls gitleaks config"
+
+[extend]
+useDefault = true
+
+# Test fixtures use obviously fake values prefixed with "fixture-"
+# (for example "fixture-secret-column-77"). Never use real secrets in tests.
+[[allowlists]]
+description = "Fake secrets used as test fixtures"
+regexes = ['''fixture-[A-Za-z0-9-]+''']
