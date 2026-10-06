@@ -36,6 +36,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Buzzer: the Active Time and Off Time inputs were removed from the Tools page, because the driver only sends the total time.
 
 ### Fixed
+- Diagnostics page: a **Restore display** button (`POST /api/debug/release`) ends the probe pause and puts the display back to the configured mode, so a probe no longer leaves it stuck on red.
 - Tools page: the status no longer flips to Disconnected after a scoreboard click, the sound detector is no longer shown as "Countdown Active", and the scoreboard no longer shows a 24 hour countdown.
 - Tools page: Bluetooth work for the tool routes runs off the async worker threads and no longer holds the device lock while sleeping, so status polls do not stall.
 - Tools page: the Device Status card is gone. Connection stays in the side nav status, and the running tool's card shows its time and a Stop button.

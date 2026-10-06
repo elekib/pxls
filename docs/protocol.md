@@ -103,7 +103,7 @@ echo -ne '\x01\x04\x00\x74\x32\xAA\x00\x02' > /dev/rfcomm0
 
 ## Diagnostics page (admin only)
 
-Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart the backend; admins then get a **Diagnostics** tab. It sends a raw command (framing and checksum added) through the connected device, can show solid red first so ignored commands are obvious, steps through a value range, and keeps a log with notes you can copy. After each send the display loop is paused for two minutes. The endpoint (`POST /api/debug/send`) is admin only and returns 403 while the flag is off. Turn the flag off again when you are done.
+Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart the backend; admins then get a **Diagnostics** tab. It sends a raw command (framing and checksum added) through the connected device, can show solid red first so ignored commands are obvious, steps through a value range, and keeps a log with notes you can copy. After each send the display loop is paused for two minutes. The endpoint (`POST /api/debug/send`) is admin only and returns 403 while the flag is off. **Restore display** (`POST /api/debug/release`, same rules) ends the pause and re-applies your configured mode on the open link, for when a probe leaves the display stuck (for example on the red screen). Turn the flag off again when you are done.
 
 ## Device test checklist
 

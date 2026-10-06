@@ -134,6 +134,56 @@ pub async fn send(
     }
 }
 
+/// Undo a probe: stop holding the render loop off and put the display back to
+/// the configured mode on the open link. The loop also re-applies it on its
+/// next tick, so a link that dropped is covered by the usual reconnect.
+pub async fn release(State(state): State<AppState>) -> (StatusCode, Json<serde_json::Value>) {
+    if !enabled() {
+        return error(
+            StatusCode::FORBIDDEN,
+            "Diagnostics are disabled. Set PXLS_ENABLE_DEBUG=1 and restart the backend.",
+        );
+    }
+    if let Ok(mut tool) = state.tool.lock() {
+        tool.end();
+    }
+    let device_config = state.config.lock().unwrap().device_config.clone();
+    let pixoo = state.pixoo.clone();
+    let result = tokio::task::spawn_blocking(move || match pixoo.lock() {
+        Ok(mut wrapper) => wrapper.with_link(|p| {
+            crate::pixoo_wrapper::end_tool(
+                p,
+                crate::tool_state::ToolKind::Diagnostics,
+                false,
+                &device_config,
+            )
+        }),
+        Err(_) => Err(anyhow::anyhow!("Failed to access Pixoo connection")),
+    })
+    .await;
+    match result {
+        Ok(Ok(())) => {
+            info!(target: "pxls::security", "diagnostics released, display restored");
+            (StatusCode::OK, Json(json!({ "success": true })))
+        }
+        Ok(Err(e)) => {
+            state
+                .should_reconnect
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            error(
+                StatusCode::BAD_GATEWAY,
+                &format!(
+                    "Released the hold, but could not restore the display: {e}. Reconnecting."
+                ),
+            )
+        }
+        Err(e) => error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &format!("restore failed: {e}"),
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -151,6 +201,14 @@ mod tests {
     fn rejects_bad_hex() {
         assert!(parse_hex("4").is_err());
         assert!(parse_hex("zz").is_err());
+    }
+
+    #[test]
+    fn releasing_requires_admin() {
+        assert_eq!(
+            crate::auth::required_role(&Method::POST, "/api/debug/release"),
+            crate::database::accounts::Role::Admin
+        );
     }
 
     #[test]
