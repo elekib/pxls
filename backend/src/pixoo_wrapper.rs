@@ -1,11 +1,111 @@
-use bluetooth_serial_port::BtAddr;
+use anyhow::{anyhow, Result};
 
+use crate::config::DeviceConfig;
 use crate::device::tool::{CountDownControl, NoiseControl, Seconds};
-use crate::device::{Pixoo, ToolInfo};
+use crate::device::transport::Transport;
+use crate::device::{DeviceError, LightMode, Pixoo, ToolInfo};
+use crate::rendering::device_config::apply_device_config;
+use crate::tool_state::ToolKind;
+
+/// What to do with the Bluetooth link after a tool command is sent.
+///
+/// `KeepOpen` is the default: the device is driven the same way as from the
+/// Device config page, on the already-open link. `Close` is the fallback if a
+/// device needs the link released for a tool to keep running; select it with
+/// `PXLS_TOOL_CLOSE_LINK=1` (the render loop then reconnects when the tool ends).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ToolLink {
+    KeepOpen,
+    Close,
+}
+
+impl ToolLink {
+    pub fn from_env() -> Self {
+        match std::env::var("PXLS_TOOL_CLOSE_LINK").as_deref() {
+            Ok("1") | Ok("true") => Self::Close,
+            _ => Self::KeepOpen,
+        }
+    }
+}
+
+/// Play the buzzer for `total_ms` on the open link (a second connection to the
+/// device is refused while the first is open). The layout carries only the
+/// total time. Needs device test, see docs/protocol.md.
+pub fn play_buzzer<T: Transport>(pixoo: &mut Pixoo<T>, total_ms: u16) -> Result<()> {
+    pixoo.play_buzzer(total_ms)?;
+    Ok(())
+}
+
+/// Start a countdown. Needs device test.
+pub fn start_countdown<T: Transport>(
+    pixoo: &mut Pixoo<T>,
+    minutes: u8,
+    seconds: u8,
+    link: ToolLink,
+) -> Result<()> {
+    let seconds =
+        Seconds::new(seconds).ok_or_else(|| anyhow!("Invalid seconds value: {seconds} (0-59)"))?;
+    pixoo.set_tool_info(ToolInfo::CountDown {
+        control: CountDownControl::Start,
+        minutes,
+        seconds,
+    })?;
+    release(pixoo, link);
+    Ok(())
+}
+
+/// Start the noise meter. Needs device test.
+pub fn start_sound_detector<T: Transport>(pixoo: &mut Pixoo<T>, link: ToolLink) -> Result<()> {
+    pixoo.set_tool_info(ToolInfo::Noise(NoiseControl::Start))?;
+    release(pixoo, link);
+    Ok(())
+}
+
+/// Update the scoreboard with one mode packet (`0x45 06`, the same command the
+/// Device config page uses). The link stays open. Needs device test.
+pub fn set_score<T: Transport>(
+    pixoo: &mut Pixoo<T>,
+    red_score: u16,
+    blue_score: u16,
+) -> Result<()> {
+    pixoo.set_mode(LightMode::Score {
+        red_score,
+        blue_score,
+    })?;
+    Ok(())
+}
+
+/// Return the display to the configured mode after a tool ended. `user_stop`
+/// also sends the tool's own stop command first; a timer that ran out needs
+/// no stop. Needs device test.
+pub fn end_tool<T: Transport>(
+    pixoo: &mut Pixoo<T>,
+    kind: ToolKind,
+    user_stop: bool,
+    device_config: &DeviceConfig,
+) -> Result<()> {
+    if user_stop {
+        match kind {
+            ToolKind::Countdown => pixoo.set_tool_info(ToolInfo::CountDown {
+                control: CountDownControl::Cancel,
+                minutes: 0,
+                seconds: Seconds::new(0).expect("0 is a valid second"),
+            })?,
+            ToolKind::SoundDetector => pixoo.set_tool_info(ToolInfo::Noise(NoiseControl::Stop))?,
+            ToolKind::Scoreboard | ToolKind::Diagnostics => {}
+        }
+    }
+    apply_device_config(pixoo, device_config).map_err(|e| anyhow!("{e}"))
+}
+
+fn release<T: Transport>(pixoo: &mut Pixoo<T>, link: ToolLink) {
+    if link == ToolLink::Close {
+        pixoo.disconnect();
+    }
+}
 
 pub struct PixooWrapper {
     pixoo: Option<Pixoo>,
-    bt_addr: Option<BtAddr>,
 }
 
 impl Default for PixooWrapper {
@@ -16,28 +116,7 @@ impl Default for PixooWrapper {
 
 impl PixooWrapper {
     pub fn new() -> Self {
-        Self {
-            pixoo: None,
-            bt_addr: None,
-        }
-    }
-
-    pub fn with_pixoo(pixoo: Pixoo, bt_addr: BtAddr) -> Self {
-        Self {
-            pixoo: Some(pixoo),
-            bt_addr: Some(bt_addr),
-        }
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            pixoo: None,
-            bt_addr: None,
-        }
-    }
-
-    pub fn set_bt_addr(&mut self, addr: BtAddr) {
-        self.bt_addr = Some(addr);
+        Self { pixoo: None }
     }
 
     pub fn get(&self) -> Option<&Pixoo> {
@@ -52,159 +131,137 @@ impl PixooWrapper {
         self.pixoo = Some(new_pixoo);
     }
 
-    /// Play the buzzer for `total_time` ms. `active_time` and `off_time` are
-    /// accepted for API compatibility; the only buzzer layout we send carries
-    /// the total time (needs device test, see docs/protocol.md).
-    pub fn play_buzzer(
-        &mut self,
-        _active_time: u16,
-        _off_time: u16,
-        total_time: u16,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let bt_addr = self.bt_addr.ok_or("No Bluetooth address available")?;
+    /// Run `f` on the open link. A device error or a closed link drops it so
+    /// the render loop reconnects. Nothing here sleeps; callers hold the lock
+    /// only for the packet writes.
+    pub fn with_link<R>(&mut self, f: impl FnOnce(&mut Pixoo) -> Result<R>) -> Result<R> {
+        let pixoo = self
+            .pixoo
+            .as_mut()
+            .ok_or_else(|| anyhow!("Not connected to a device"))?;
+        let result = f(pixoo);
+        let dead = !pixoo.is_connected()
+            || result
+                .as_ref()
+                .err()
+                .is_some_and(|e| e.downcast_ref::<DeviceError>().is_some());
+        if dead {
+            self.pixoo = None;
+        }
+        result
+    }
+}
 
-        let mut pixoo = Pixoo::connect(bt_addr)?;
-        tracing::info!(total_time, "Sending buzzer command 0x31");
-        pixoo.play_buzzer(total_time)?;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::device::frame;
+    use crate::device::transport::mock::MockTransport;
 
-        // Wait for sound to play, then close the link (also closed on drop).
-        std::thread::sleep(std::time::Duration::from_millis(total_time as u64 + 500));
-        pixoo.disconnect();
-        tracing::info!("Buzzer command complete");
-
-        Ok(())
+    fn packet(cmd: u8, args: &[u8]) -> Vec<u8> {
+        frame::encode(cmd, args)
     }
 
-    /// Start countdown timer using library API
-    pub fn start_countdown(
-        &mut self,
-        minutes: u8,
-        seconds: u8,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let bt_addr = self.bt_addr.ok_or("No Bluetooth address available")?;
-
-        // Clear current connection so rendering loop stops
-        self.pixoo = None;
-        std::thread::sleep(std::time::Duration::from_millis(500));
-
-        tracing::info!(
-            "Starting countdown {}m {}s via library API",
-            minutes,
-            seconds
-        );
-
-        // Connect with timeout
-        tracing::info!("Connecting to Pixoo...");
-        let mut pixoo = Pixoo::connect(bt_addr)?;
-        tracing::info!("Connected successfully");
-
-        // Create Seconds type for seconds parameter
-        let seconds_val = Seconds::new(seconds)
-            .ok_or_else(|| format!("Invalid seconds value: {seconds} (must be 0-59)"))?;
-
-        tracing::info!(
-            "Calling set_tool_info with CountDown {{ control: Start, minutes: {}, seconds: {} }}",
-            minutes,
-            seconds
-        );
-
-        pixoo.set_tool_info(ToolInfo::CountDown {
-            control: CountDownControl::Start,
-            minutes,
-            seconds: seconds_val,
-        })?;
-
-        tracing::info!("Countdown command sent successfully");
-
-        // Disconnect and let countdown run on device
-        pixoo.disconnect();
-        tracing::info!("Disconnected, countdown should be running on device");
-
-        Ok(())
+    fn pixoo() -> (
+        Pixoo<MockTransport>,
+        std::sync::Arc<std::sync::Mutex<crate::device::transport::mock::Log>>,
+    ) {
+        let (t, log) = MockTransport::new();
+        (Pixoo::with_transport(t), log)
     }
 
-    /// Start sound detector (noise meter)
-    pub fn start_sound_detector(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let bt_addr = self.bt_addr.ok_or("No Bluetooth address available")?;
-
-        // Clear current connection so rendering loop stops
-        self.pixoo = None;
-        std::thread::sleep(std::time::Duration::from_millis(500));
-
-        // Use the library's proper API for tools
-        tracing::info!("Connecting to start sound detector...");
-        let mut pixoo = Pixoo::connect(bt_addr)?;
-
-        tracing::info!("Starting noise meter via set_tool_info");
-        pixoo.set_tool_info(ToolInfo::Noise(NoiseControl::Start))?;
-
-        // Disconnect and leave tool running
-        pixoo.disconnect();
-        tracing::info!(
-            "Sound detector command sent, leaving pixoo disconnected for reconnection loop"
-        );
-
-        Ok(())
+    #[test]
+    fn buzzer_goes_out_on_the_open_link() {
+        let (mut p, log) = pixoo();
+        play_buzzer(&mut p, 1000).unwrap();
+        let log = log.lock().unwrap();
+        assert_eq!(log.packets, vec![packet(0x31, &[0xE8, 0x03])]);
+        assert_eq!(log.closes, 0);
     }
 
-    /// Set scoreboard display using the tool API (command 0x50)
-    ///
-    /// The scoreboard tool is distinct from the scoreboard *mode* (LightMode::Score,
-    /// command 0x45 mode 6). The tool version is what the Divoom app uses: it has an
-    /// `on` flag and 16-bit scores, and the device runs it independently once started
-    /// — no need to hold the Bluetooth connection open. Using LightMode::Score here
-    /// previously caused garbage/random numbers on screen because the rendering
-    /// loop's reconnect would race this connection and override the display.
-    pub fn set_scoreboard(
-        &mut self,
-        red_score: u16,
-        blue_score: u16,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        tracing::info!(
-            "Setting scoreboard via tool API: Red={}, Blue={}",
-            red_score,
-            blue_score
-        );
-
-        let bt_addr = self.bt_addr.ok_or("No Bluetooth address available")?;
-
-        // Clear current connection so rendering loop stops interfering
-        self.pixoo = None;
-        std::thread::sleep(std::time::Duration::from_millis(500));
-
-        tracing::info!("Connecting to Pixoo...");
-        let mut pixoo = Pixoo::connect(bt_addr)?;
-        tracing::info!("Connected, sending scoreboard tool command");
-
-        // Use the tool API (0x50) with on=true so the device runs the scoreboard
-        // tool independently. Scores are 0-999 (clamped by the driver).
-        pixoo.set_tool_info(ToolInfo::Score {
-            on: true,
-            red_score,
-            blue_score,
-        })?;
-
-        tracing::info!(
-            "Scoreboard tool command sent: Red={}, Blue={}",
-            red_score,
-            blue_score
-        );
-
-        // Drop the connection — the scoreboard tool runs on the device itself,
-        // same as countdown and sound detector. The rendering loop will reconnect
-        // but skip rendering while tool_active_until is set.
-        pixoo.disconnect();
-        tracing::info!("Disconnected, scoreboard should be running on device");
-
-        Ok(())
+    #[test]
+    fn countdown_sends_one_packet_and_keeps_link_open() {
+        let (mut p, log) = pixoo();
+        start_countdown(&mut p, 5, 30, ToolLink::KeepOpen).unwrap();
+        let log = log.lock().unwrap();
+        assert_eq!(log.packets, vec![packet(0x72, &[0x03, 1, 5, 30])]);
+        assert_eq!(log.closes, 0);
+        assert!(p.is_connected());
     }
 
-    /// Stop scoreboard and release connection
-    pub fn stop_scoreboard(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        tracing::info!("Stopping scoreboard and releasing connection");
-        self.pixoo = None;
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        tracing::info!("Scoreboard stopped, connection released");
-        Ok(())
+    #[test]
+    fn countdown_rejects_bad_seconds_without_sending() {
+        let (mut p, log) = pixoo();
+        assert!(start_countdown(&mut p, 1, 60, ToolLink::KeepOpen).is_err());
+        assert!(log.lock().unwrap().packets.is_empty());
+    }
+
+    #[test]
+    fn sound_detector_sends_one_packet_and_keeps_link_open() {
+        let (mut p, log) = pixoo();
+        start_sound_detector(&mut p, ToolLink::KeepOpen).unwrap();
+        let log = log.lock().unwrap();
+        assert_eq!(log.packets, vec![packet(0x72, &[0x02, 1])]);
+        assert_eq!(log.closes, 0);
+    }
+
+    #[test]
+    fn fallback_link_mode_closes_after_sending() {
+        let (mut p, log) = pixoo();
+        start_sound_detector(&mut p, ToolLink::Close).unwrap();
+        assert_eq!(log.lock().unwrap().packets.len(), 1);
+        assert_eq!(log.lock().unwrap().closes, 1);
+        assert!(!p.is_connected());
+    }
+
+    #[test]
+    fn score_update_is_exactly_one_mode_packet() {
+        let (mut p, log) = pixoo();
+        set_score(&mut p, 12, 345).unwrap();
+        let log = log.lock().unwrap();
+        // 45 06 00 red(le16) blue(le16), not the 0x50 tool command.
+        assert_eq!(
+            log.packets,
+            vec![packet(0x45, &[0x06, 0x00, 12, 0, 0x59, 0x01])]
+        );
+        assert_eq!(log.closes, 0);
+    }
+
+    #[test]
+    fn ending_a_tool_reapplies_config_on_the_same_link() {
+        let (mut p, log) = pixoo();
+        let cfg = DeviceConfig::default();
+        end_tool(&mut p, ToolKind::Countdown, false, &cfg).unwrap();
+        {
+            let log = log.lock().unwrap();
+            assert!(!log.packets.is_empty());
+            // Brightness is always part of apply_device_config.
+            assert_eq!(log.packets[0][3], 0x74);
+            assert_eq!(log.closes, 0);
+        }
+        assert!(p.is_connected());
+    }
+
+    #[test]
+    fn user_stop_sends_the_tool_stop_before_the_config() {
+        let (mut p, log) = pixoo();
+        end_tool(&mut p, ToolKind::Countdown, true, &DeviceConfig::default()).unwrap();
+        let log = log.lock().unwrap();
+        assert_eq!(log.packets[0], packet(0x72, &[0x03, 0, 0, 0]));
+        assert_eq!(log.packets[1][3], 0x74);
+        assert_eq!(log.closes, 0);
+    }
+
+    #[test]
+    fn timer_expiry_sends_no_stop_packet() {
+        let (mut p, log) = pixoo();
+        end_tool(
+            &mut p,
+            ToolKind::SoundDetector,
+            false,
+            &DeviceConfig::default(),
+        )
+        .unwrap();
+        assert_eq!(log.lock().unwrap().packets[0][3], 0x74);
     }
 }

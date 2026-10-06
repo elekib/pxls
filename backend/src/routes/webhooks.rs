@@ -324,7 +324,6 @@ mod tests {
     use axum::{routing::post, Router};
     use base64::Engine;
     use std::sync::{atomic::AtomicBool, Arc, Mutex};
-    use std::time::Instant;
 
     const SECRET: &str = "0123456789abcdef0123456789abcdef";
 
@@ -357,8 +356,7 @@ mod tests {
             pixoo: pixoo.clone(),
             should_reconnect: Arc::new(AtomicBool::new(false)),
             manual_disconnect: Arc::new(AtomicBool::new(false)),
-            tool_active_until: Arc::new(Mutex::new(Instant::now())),
-            active_tool_type: Arc::new(Mutex::new(None)),
+            tool: Arc::new(Mutex::new(crate::tool_state::ToolTimer::default())),
             notification_manager: notification_manager.clone(),
             webhook_image_processor: processor.clone(),
             webhook_database: Arc::new(WebhookDatabase::new(dir.to_str().unwrap())),

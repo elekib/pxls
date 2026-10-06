@@ -299,17 +299,22 @@ impl ActionExecutor {
             _ => (500, 0, 1000),
         };
 
-        let active_time = Self::param_u64(action, "active_time_ms").unwrap_or(preset_active) as u16;
-        let off_time = Self::param_u64(action, "off_time_ms").unwrap_or(preset_off) as u16;
+        // The device layout only carries the total time, so the active/off
+        // parameters are accepted but unused.
+        let _ = (preset_active, preset_off);
         let total_time = Self::param_u64(action, "total_time_ms").unwrap_or(preset_total) as u16;
 
-        let mut wrapper = self
-            .pixoo
-            .lock()
-            .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
-        wrapper
-            .play_buzzer(active_time, off_time, total_time)
-            .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
+        // Sent on the open link; a second Bluetooth connection is refused.
+        let pixoo = self.pixoo.clone();
+        tokio::task::spawn_blocking(move || {
+            let mut wrapper = pixoo
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
+            wrapper.with_link(|p| crate::pixoo_wrapper::play_buzzer(p, total_time))
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?
+        .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
 
         info!(
             "Play sound action: type={}, total={}ms",

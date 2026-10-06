@@ -2,12 +2,12 @@
 //!
 //! Disabled unless `PXLS_ENABLE_DEBUG=1`. Every POST is admin only through the
 //! method rule in `auth::required_role`. While probing, the render loop is held
-//! off (via `tool_active_until`) so it does not overwrite what you are looking at.
+//! off (via the shared tool timer) so it does not overwrite what you are looking at.
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::Deserialize;
 use serde_json::json;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tracing::{info, warn};
 
 use crate::device::{frame, mode::Brightness, LightMode};
@@ -91,8 +91,11 @@ pub async fn send(
         .hold_secs
         .unwrap_or(DEFAULT_HOLD_SECS)
         .min(MAX_HOLD_SECS);
-    if let Ok(mut until) = state.tool_active_until.lock() {
-        *until = Instant::now() + Duration::from_secs(hold);
+    if let Ok(mut tool) = state.tool.lock() {
+        tool.begin(
+            crate::tool_state::ToolKind::Diagnostics,
+            Some(Duration::from_secs(hold)),
+        );
     }
 
     let packet = frame::encode(cmd, &args);
@@ -131,6 +134,56 @@ pub async fn send(
     }
 }
 
+/// Undo a probe: stop holding the render loop off and put the display back to
+/// the configured mode on the open link. The loop also re-applies it on its
+/// next tick, so a link that dropped is covered by the usual reconnect.
+pub async fn release(State(state): State<AppState>) -> (StatusCode, Json<serde_json::Value>) {
+    if !enabled() {
+        return error(
+            StatusCode::FORBIDDEN,
+            "Diagnostics are disabled. Set PXLS_ENABLE_DEBUG=1 and restart the backend.",
+        );
+    }
+    if let Ok(mut tool) = state.tool.lock() {
+        tool.end();
+    }
+    let device_config = state.config.lock().unwrap().device_config.clone();
+    let pixoo = state.pixoo.clone();
+    let result = tokio::task::spawn_blocking(move || match pixoo.lock() {
+        Ok(mut wrapper) => wrapper.with_link(|p| {
+            crate::pixoo_wrapper::end_tool(
+                p,
+                crate::tool_state::ToolKind::Diagnostics,
+                false,
+                &device_config,
+            )
+        }),
+        Err(_) => Err(anyhow::anyhow!("Failed to access Pixoo connection")),
+    })
+    .await;
+    match result {
+        Ok(Ok(())) => {
+            info!(target: "pxls::security", "diagnostics released, display restored");
+            (StatusCode::OK, Json(json!({ "success": true })))
+        }
+        Ok(Err(e)) => {
+            state
+                .should_reconnect
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            error(
+                StatusCode::BAD_GATEWAY,
+                &format!(
+                    "Released the hold, but could not restore the display: {e}. Reconnecting."
+                ),
+            )
+        }
+        Err(e) => error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &format!("restore failed: {e}"),
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,6 +201,14 @@ mod tests {
     fn rejects_bad_hex() {
         assert!(parse_hex("4").is_err());
         assert!(parse_hex("zz").is_err());
+    }
+
+    #[test]
+    fn releasing_requires_admin() {
+        assert_eq!(
+            crate::auth::required_role(&Method::POST, "/api/debug/release"),
+            crate::database::accounts::Role::Admin
+        );
     }
 
     #[test]

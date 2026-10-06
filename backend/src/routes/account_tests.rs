@@ -6,7 +6,6 @@ use serde_json::{json, Value};
 use std::net::SocketAddr;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
 use crate::accounts::test_support::{self, PASSWORD};
 use crate::accounts::{now_secs, AuthState, ACCESS_TTL_SECS};
@@ -40,8 +39,7 @@ async fn app() -> App {
         pixoo: pixoo.clone(),
         should_reconnect: Arc::new(AtomicBool::new(false)),
         manual_disconnect: Arc::new(AtomicBool::new(false)),
-        tool_active_until: Arc::new(Mutex::new(Instant::now())),
-        active_tool_type: Arc::new(Mutex::new(None)),
+        tool: Arc::new(Mutex::new(crate::tool_state::ToolTimer::default())),
         notification_manager: nm.clone(),
         webhook_image_processor: processor.clone(),
         webhook_database: Arc::new(WebhookDatabase::new(dir.0.to_str().unwrap())),
