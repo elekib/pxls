@@ -1,3 +1,4 @@
+use crate::device::transport::Transport;
 use crate::device::{Brightness, LightMode, Pixoo, TimeFormat};
 use tracing::info;
 
@@ -15,8 +16,8 @@ pub fn is_divoom_page_type(page_type: &PageType) -> bool {
     )
 }
 
-pub fn apply_divoom_mode_from_config(
-    pixoo: &mut Pixoo,
+pub fn apply_divoom_mode_from_config<T: Transport>(
+    pixoo: &mut Pixoo<T>,
     device_config: &DeviceConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match device_config.light_mode.as_str() {
@@ -132,8 +133,8 @@ pub fn apply_divoom_mode_from_config(
     Ok(())
 }
 
-pub fn apply_divoom_mode(
-    pixoo: &mut Pixoo,
+pub fn apply_divoom_mode<T: Transport>(
+    pixoo: &mut Pixoo<T>,
     page: &CustomPage,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match &page.page_type {

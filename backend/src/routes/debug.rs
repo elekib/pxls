@@ -2,12 +2,12 @@
 //!
 //! Disabled unless `PXLS_ENABLE_DEBUG=1`. Every POST is admin only through the
 //! method rule in `auth::required_role`. While probing, the render loop is held
-//! off (via `tool_active_until`) so it does not overwrite what you are looking at.
+//! off (via the shared tool timer) so it does not overwrite what you are looking at.
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::Deserialize;
 use serde_json::json;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tracing::{info, warn};
 
 use crate::device::{frame, mode::Brightness, LightMode};
@@ -91,8 +91,11 @@ pub async fn send(
         .hold_secs
         .unwrap_or(DEFAULT_HOLD_SECS)
         .min(MAX_HOLD_SECS);
-    if let Ok(mut until) = state.tool_active_until.lock() {
-        *until = Instant::now() + Duration::from_secs(hold);
+    if let Ok(mut tool) = state.tool.lock() {
+        tool.begin(
+            crate::tool_state::ToolKind::Diagnostics,
+            Some(Duration::from_secs(hold)),
+        );
     }
 
     let packet = frame::encode(cmd, &args);

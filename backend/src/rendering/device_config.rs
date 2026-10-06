@@ -1,3 +1,4 @@
+use crate::device::transport::Transport;
 use crate::device::{Brightness, Pixoo, TimeFormat};
 use tracing::{error, info, instrument, warn};
 
@@ -5,8 +6,8 @@ use crate::config::DeviceConfig;
 use crate::modes::divoom::apply_divoom_mode_from_config;
 
 #[instrument(skip(pixoo))]
-pub fn apply_device_config(
-    pixoo: &mut Pixoo,
+pub fn apply_device_config<T: Transport>(
+    pixoo: &mut Pixoo<T>,
     device_config: &DeviceConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Apply brightness (0-100 percent, the device's native range)

@@ -29,6 +29,16 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `command_tester` and `library_tool_test` use the new driver.
 - Scoreboard scores accept 0-999 (were 0-99) in the config, `/api/tools/scoreboard` and the web UI.
 
+- Tools page: countdown, sound detector and scoreboard now run on the already-open Bluetooth link, the same way Device config drives the display, instead of closing the link and reconnecting. The scoreboard sends mode `0x45 06` (the `0x50` tool command made the display show a logo and is no longer used by the app). Ending or stopping a tool re-applies the device config on the same link at once. Set `PXLS_TOOL_CLOSE_LINK=1` to go back to closing the link after a tool (with a fixed 2 s reconnect retry). None of this is confirmed on a real device yet.
+- `GET /api/connection-status` now returns `tool_type` (`countdown`, `sound_detector`, `scoreboard`, or null) and `tool_remaining_secs` (null when there is no timer); `tool_active_until` was removed.
+- Saving Device config while a tool runs no longer interrupts it; the config applies when the tool ends.
+- Buzzer: the Active Time and Off Time inputs were removed from the Tools page, because the driver only sends the total time.
+
+### Fixed
+- Tools page: the status no longer flips to Disconnected after a scoreboard click, the sound detector is no longer shown as "Countdown Active", and the scoreboard no longer shows a 24 hour countdown.
+- Tools page: Bluetooth work for the tool routes runs off the async worker threads and no longer holds the device lock while sleeping, so status polls do not stall.
+- Tools page: the countdown presets editor is part of the Countdown card with its own Save, the buzzer has its own Save, and rapid scoreboard +/- clicks send only the latest value.
+
 ### Security
 - Uploads are validated by content, size and dimensions, stored under sanitized names and served only from the uploads directory.
 - Webhook image downloads block private, loopback and link-local addresses by default and re-check every redirect.

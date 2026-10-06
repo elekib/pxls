@@ -299,16 +299,24 @@ impl ActionExecutor {
             _ => (500, 0, 1000),
         };
 
-        let active_time = Self::param_u64(action, "active_time_ms").unwrap_or(preset_active) as u16;
-        let off_time = Self::param_u64(action, "off_time_ms").unwrap_or(preset_off) as u16;
+        // The device layout only carries the total time, so the active/off
+        // parameters are accepted but unused.
+        let _ = (preset_active, preset_off);
         let total_time = Self::param_u64(action, "total_time_ms").unwrap_or(preset_total) as u16;
 
-        let mut wrapper = self
+        // The buzzer sleeps for the sound's length: release the Pixoo lock first
+        // and keep the wait off the async worker.
+        let addr = self
             .pixoo
             .lock()
-            .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
-        wrapper
-            .play_buzzer(active_time, off_time, total_time)
+            .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?
+            .bt_addr()
+            .ok_or_else(|| {
+                anyhow::anyhow!("Failed to play buzzer: No Bluetooth address available")
+            })?;
+        tokio::task::spawn_blocking(move || crate::pixoo_wrapper::play_buzzer(addr, total_time))
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?
             .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
 
         info!(

@@ -28,16 +28,26 @@ pub async fn connect_device(
 ) -> Response {
     match BtAddr::from_str(&req.mac) {
         Ok(bt_addr) => {
-            match Pixoo::connect(bt_addr) {
-                Ok(mut new_pixoo) => {
-                    // Apply device configuration after connection
-                    let device_config = {
-                        let cfg = state.config.lock().unwrap();
-                        cfg.device_config.clone()
-                    };
-
+            // Bluetooth connect blocks, so keep it off the async worker threads.
+            let device_config = {
+                let cfg = state.config.lock().unwrap();
+                cfg.device_config.clone()
+            };
+            let connected = tokio::task::spawn_blocking(move || {
+                Pixoo::connect(bt_addr).map(|mut new_pixoo| {
                     if let Err(e) = apply_device_config(&mut new_pixoo, &device_config) {
                         error!(error = %e, "Failed to apply device configuration during connection");
+                    }
+                    new_pixoo
+                })
+            })
+            .await
+            .unwrap_or_else(|e| Err(crate::device::DeviceError::Connect(e.to_string())));
+            match connected {
+                Ok(new_pixoo) => {
+                    // A fresh link has no tool running on it.
+                    if let Ok(mut tool) = state.tool.lock() {
+                        tool.end();
                     }
 
                     match state.pixoo.lock() {
@@ -126,25 +136,21 @@ pub async fn connection_status(State(state): State<AppState>) -> Response {
 
     let manual_disconnect = state.manual_disconnect.load(Ordering::SeqCst);
 
-    // Get tool active status
-    let (tool_active_until, tool_type) = {
-        let tool_until = state.tool_active_until.lock().unwrap();
-        let active_tool = state.active_tool_type.lock().unwrap();
-        let until = if std::time::Instant::now() < *tool_until {
-            let duration = tool_until.duration_since(std::time::Instant::now());
-            let sys_time = std::time::SystemTime::now() + duration;
-            Some(sys_time)
-        } else {
-            None
-        };
-        (until, active_tool.clone())
+    // Tool state: kind of the running tool (null when none or expired) and the
+    // seconds left (null for tools without a timer, such as the scoreboard).
+    let (tool_type, tool_remaining_secs) = {
+        let tool = state.tool.lock().unwrap();
+        (
+            tool.kind().map(|k| k.as_str()),
+            tool.remaining().map(|d| d.as_secs_f64().ceil() as u64),
+        )
     };
 
     let status = json!({
         "connected": is_connected,
         "manual_disconnect": manual_disconnect,
-        "tool_active_until": tool_active_until.map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339()),
-        "tool_type": tool_type
+        "tool_type": tool_type,
+        "tool_remaining_secs": tool_remaining_secs
     });
 
     Response::builder()
@@ -165,6 +171,23 @@ pub async fn update_device_config(
             cfg.device_config = device_config.clone();
             match cfg.save() {
                 Ok(_) => {
+                    // A running tool owns the display; the render loop re-applies
+                    // the saved config when it ends.
+                    let tool_running = state.tool.lock().map(|t| t.is_active()).unwrap_or(false);
+                    if tool_running {
+                        return Response::builder()
+                            .status(StatusCode::OK)
+                            .header(header::CONTENT_TYPE, "application/json")
+                            .body(
+                                json!({
+                                    "success": true,
+                                    "message": "Device configuration saved; it will apply when the running tool ends"
+                                })
+                                .to_string()
+                                .into(),
+                            )
+                            .unwrap();
+                    }
                     // Apply device configuration if connected
                     if let Ok(mut wrapper) = state.pixoo.lock() {
                         if let Some(pixoo) = wrapper.get_mut() {

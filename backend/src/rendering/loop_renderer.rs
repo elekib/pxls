@@ -16,15 +16,16 @@ use crate::config::Config;
 use crate::modes::divoom::{apply_divoom_mode, apply_divoom_mode_from_config, is_divoom_page_type};
 use crate::notification::NotificationManager;
 use crate::pages::PageRenderer;
-use crate::pixoo_wrapper::PixooWrapper;
+use crate::pixoo_wrapper::{self, PixooWrapper, ToolLink};
 use crate::token_manager::TokenManager;
+use crate::tool_state::ToolTimer;
 
 pub fn rendering_loop(
     pixoo: Arc<Mutex<PixooWrapper>>,
     config: Arc<Mutex<Config>>,
     should_reconnect: Arc<AtomicBool>,
     manual_disconnect: Arc<AtomicBool>,
-    tool_active_until: Arc<Mutex<Instant>>,
+    tool: Arc<Mutex<ToolTimer>>,
     notification_manager: NotificationManager,
     token_manager: Arc<TokenManager>,
 ) {
@@ -43,6 +44,8 @@ pub fn rendering_loop(
     // spam set_mode every refresh tick (the device renders native modes itself).
     let mut last_divoom_page_index: Option<usize> = None;
     let mut last_divoom_page_apply: Option<Instant> = None;
+    // Whether a tool was running on the previous tick, to notice when it ends.
+    let mut prev_tool_active = false;
 
     loop {
         sys.refresh_all();
@@ -55,7 +58,7 @@ pub fn rendering_loop(
                 should_reconnect.store(false, Ordering::SeqCst);
             } else {
                 info!("Reconnect signal received, reconnecting to device");
-                try_reconnect(&pixoo, &config, &tool_active_until);
+                try_reconnect(&pixoo, &config, &tool);
                 should_reconnect.store(false, Ordering::SeqCst);
             }
         }
@@ -82,16 +85,36 @@ pub fn rendering_loop(
             wrapper.get().is_some()
         };
 
+        let (expired_tool, tool_active) = {
+            let mut t = tool.lock().unwrap();
+            (t.poll_expired(), t.is_active())
+        };
+        if prev_tool_active && !tool_active {
+            // A tool ended (timer ran out or Stop): forget when native modes
+            // were last applied so the display returns on this tick, not after
+            // the next ~10 s keep-alive.
+            last_native_mode_applied = None;
+            last_divoom_page_index = None;
+            last_divoom_page_apply = None;
+        }
+        prev_tool_active = tool_active;
+        if let (Some(kind), true) = (expired_tool, has_connection) {
+            // Same link, no reconnect: switch the display back right away.
+            let device_config = config.lock().unwrap().device_config.clone();
+            if let Ok(mut wrapper) = pixoo.lock() {
+                match wrapper.with_link(|p| pixoo_wrapper::end_tool(p, kind, false, &device_config))
+                {
+                    Ok(()) => info!(tool = kind.as_str(), "Tool finished, display restored"),
+                    Err(e) => warn!(error = %e, "Failed to restore display after tool"),
+                }
+            }
+        }
+
         if !has_connection {
             if is_manual_disconnect {
                 thread::sleep(Duration::from_secs(5));
                 continue;
             }
-
-            let tool_active = {
-                let tool_until = tool_active_until.lock().unwrap();
-                Instant::now() < *tool_until
-            };
 
             if tool_active {
                 thread::sleep(Duration::from_secs(1));
@@ -99,18 +122,13 @@ pub fn rendering_loop(
             }
 
             warn!("No connection detected, attempting to reconnect");
-            try_reconnect(&pixoo, &config, &tool_active_until);
+            try_reconnect(&pixoo, &config, &tool);
             thread::sleep(Duration::from_secs(5));
             continue;
         }
 
-        // Check if a tool is currently active (scoreboard, countdown, etc.)
-        // If so, skip all rendering to avoid overriding the tool display
-        let tool_active = {
-            let tool_until = tool_active_until.lock().unwrap();
-            Instant::now() < *tool_until
-        };
-
+        // A tool is running (scoreboard, countdown, etc.): skip all rendering to
+        // avoid overriding the tool display.
         if tool_active {
             // Tool is active - just update heartbeat timer and sleep
             // Don't send any commands that might override the tool display
@@ -201,12 +219,12 @@ pub fn rendering_loop(
                                     {
                                         warn!("Connection error applying Divoom page, forcing reconnect");
                                         *wrapper = PixooWrapper::new();
-                                        try_reconnect(&pixoo, &config, &tool_active_until);
+                                        try_reconnect(&pixoo, &config, &tool);
                                         consecutive_failures = 0;
                                     } else if consecutive_failures >= 3 {
                                         warn!("Multiple Divoom page failures, forcing reconnect");
                                         *wrapper = PixooWrapper::new();
-                                        try_reconnect(&pixoo, &config, &tool_active_until);
+                                        try_reconnect(&pixoo, &config, &tool);
                                         consecutive_failures = 0;
                                     }
                                 }
@@ -235,11 +253,11 @@ pub fn rendering_loop(
                                    error_str.contains("transport endpoint") ||
                                    error_str.contains("not connected") {
                                     warn!("Connection lost during image push, triggering reconnect");
-                                    try_reconnect(&pixoo, &config, &tool_active_until);
+                                    try_reconnect(&pixoo, &config, &tool);
                                     consecutive_failures = 0;
                                 } else if consecutive_failures >= 5 {
                                     warn!("Multiple image push failures, forcing reconnect");
-                                    try_reconnect(&pixoo, &config, &tool_active_until);
+                                    try_reconnect(&pixoo, &config, &tool);
                                     consecutive_failures = 0;
                                 }
                                 Err(e)
@@ -292,12 +310,12 @@ pub fn rendering_loop(
                                         "Connection error applying native mode, forcing reconnect"
                                     );
                                     *wrapper = PixooWrapper::new();
-                                    try_reconnect(&pixoo, &config, &tool_active_until);
+                                    try_reconnect(&pixoo, &config, &tool);
                                     consecutive_failures = 0;
                                 } else if consecutive_failures >= 3 {
                                     warn!("Multiple native mode failures, forcing reconnect");
                                     *wrapper = PixooWrapper::new();
-                                    try_reconnect(&pixoo, &config, &tool_active_until);
+                                    try_reconnect(&pixoo, &config, &tool);
                                     consecutive_failures = 0;
                                 }
                             }
@@ -318,7 +336,7 @@ pub fn rendering_loop(
 pub fn try_reconnect(
     pixoo: &Arc<Mutex<PixooWrapper>>,
     config: &Arc<Mutex<Config>>,
-    tool_active_until: &Arc<Mutex<Instant>>,
+    tool: &Arc<Mutex<ToolTimer>>,
 ) {
     let (mac_str, device_config) = {
         let cfg = config.lock().unwrap();
@@ -330,13 +348,12 @@ pub fn try_reconnect(
         return;
     }
 
-    // Check if a tool was recently active (within last 5 seconds)
-    let tool_recently_active = {
-        let tool_until = tool_active_until.lock().unwrap();
-        let now = Instant::now();
-        // Tool was active if now < until, or if it finished within last 5 seconds
-        now < *tool_until || now.duration_since(*tool_until) < Duration::from_secs(5)
-    };
+    // Only a tool that is still running keeps us from applying the config; one
+    // that just ended should get its display back at once.
+    let tool_recently_active = tool.lock().unwrap().is_active();
+    // With the close-the-link fallback the device may need a moment after a tool,
+    // so retry on a short fixed delay instead of backing off.
+    let fixed_retry = ToolLink::from_env() == ToolLink::Close;
 
     info!(mac = %mac_str, tool_recently_active, "Attempting to reconnect to device");
 
@@ -376,8 +393,11 @@ pub fn try_reconnect(
                         }
 
                         if attempt < 8 {
-                            let delay =
-                                Duration::from_secs(std::cmp::min(2_u64.pow(attempt as u32), 30));
+                            let delay = if fixed_retry {
+                                Duration::from_secs(2)
+                            } else {
+                                Duration::from_secs(std::cmp::min(2_u64.pow(attempt as u32), 30))
+                            };
                             debug!(?delay, "Waiting before next reconnect attempt");
                             thread::sleep(delay);
                         }
