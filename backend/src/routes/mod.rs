@@ -63,6 +63,7 @@ fn api_routes() -> Router<AppState> {
         .route("/api/stop-tool", post(self::tools::stop_tool))
         .route("/api/debug/status", get(self::debug::status))
         .route("/api/debug/send", post(self::debug::send))
+        .route("/api/debug/release", post(self::debug::release))
         .route("/api/webhook/:name", post(self::webhooks::handle_webhook))
         .route(
             "/api/webhook-events",

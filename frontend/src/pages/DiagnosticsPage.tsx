@@ -56,6 +56,18 @@ export function DiagnosticsPage({ onNotify }: Props) {
     }
   };
 
+  const restore = async () => {
+    setBusy(true);
+    try {
+      await accountRequest('/api/debug/release', 'POST', {});
+      onNotify('Display restored to your configured mode');
+    } catch (e) {
+      onNotify(e instanceof Error ? e.message : 'Restore failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const step = async (v: number) => {
     if (await send(cmd, `${channel} ${hexByte(v)}`)) setValue(v);
   };
@@ -84,6 +96,15 @@ export function DiagnosticsPage({ onNotify }: Props) {
           Sends raw commands to the connected device (framing and checksum are added for you). Unknown commands may do
           unexpected things. While you probe, the display loop is paused for two minutes after each send.
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 bg-gray-800 rounded-lg p-4">
+        <button className={btn} disabled={busy} onClick={() => void restore()}>
+          Restore display
+        </button>
+        <span className="text-xs text-gray-400">
+          Ends the pause and puts the display back to your configured mode, for when a probe leaves it stuck.
+        </span>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-gray-300">
