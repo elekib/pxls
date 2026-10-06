@@ -189,7 +189,13 @@ export const typeLabels: Record<string, string> = {
   'CustomScript': '📜 Script',
   'ImageUpload': '🖼️ Image',
   'CustomPixels': '🎨 Pixels',
-  'CustomText': '📝 Text'
+  'CustomText': '📝 Text',
+  'DivoomEnvironment': '⌚ Divoom Clock',
+  'DivoomLight': '💡 Divoom Light',
+  'DivoomSpecial': '✨ Divoom Special',
+  'DivoomMusic': '🎵 Divoom Music',
+  'DivoomUser': '🖼️ Divoom GIFs',
+  'DivoomScore': '🏆 Divoom Score'
 };
 
 // Same-origin: nginx proxies /api to the backend in production, and the Vite dev

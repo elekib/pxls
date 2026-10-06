@@ -4,6 +4,16 @@ import { useState, useEffect, type ChangeEvent, type FocusEvent } from 'react';
 import type { Config, CustomPage, ScriptInput, Pixel } from '../types';
 import { API_URL, typeLabels } from '../types';
 import { BeszelLogin } from '../components/BeszelLogin';
+import { DivoomPageFields } from '../components/DivoomPageFields';
+import {
+  buildDivoomPayload,
+  defaultDivoomData,
+  divoomTypeLabels,
+  DIVOOM_TYPES,
+  isDivoomType,
+  loadDivoomData,
+  type DivoomData,
+} from '../utils/divoomPage';
 
 interface PagesPageProps {
   config: Config | null;
@@ -25,6 +35,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   const [pageName, setPageName] = useState('');
   const [pageType, setPageType] = useState('ClockWeather');
   const [pageEnabled, setPageEnabled] = useState(true);
+  const [divoomData, setDivoomData] = useState<DivoomData>({});
   
   // Page type specific state
   const [clockColor, setClockColor] = useState('#00FFFF');
@@ -92,6 +103,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
       setPageEnabled(page.enabled);
       
       const data = page.page_type;
+      if (isDivoomType(data.type)) setDivoomData(loadDivoomData(data.type, data));
       setClockColor('#' + (data.clock_color || '00FFFF'));
       setDateColor('#' + (data.date_color || 'FFFF00'));
       setWeatherColor('#' + (data.weather_color || 'FFA500'));
@@ -204,9 +216,11 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   const handleSavePage = async () => {
     if (!config) return;
     
-    const pageTypeData = { type: pageType } as unknown as CustomPage['page_type'];
+    let pageTypeData = { type: pageType } as unknown as CustomPage['page_type'];
     
-    if (pageType === 'ClockWeather') {
+    if (isDivoomType(pageType)) {
+      pageTypeData = buildDivoomPayload(pageType, divoomData) as unknown as CustomPage['page_type'];
+    } else if (pageType === 'ClockWeather') {
       Object.assign(pageTypeData, {
         clock_color: clockColor.substring(1),
         date_color: dateColor.substring(1),
@@ -671,7 +685,10 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               
               <div className="mb-4">
                 <label className="block text-gray-400 text-sm mb-2">Page Type</label>
-                <select value={pageType} onChange={(e) => setPageType(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                <select value={pageType} onChange={(e) => {
+                  setPageType(e.target.value);
+                  if (isDivoomType(e.target.value)) setDivoomData(defaultDivoomData(e.target.value));
+                }} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
                   <option value="ClockWeather">Clock & Weather</option>
                   <option value="CustomScript">Custom Script</option>
                   <option value="CustomText">Custom Text</option>
@@ -680,9 +697,16 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <option value="CustomPixels">Pixel Drawing</option>
                   <option value="SystemStats">System Stats (Dashdot/Beszel)</option>
                   <option value="Temps">Temps (CPU)</option>
+                  <optgroup label="Divoom native (device-rendered)">
+                    {DIVOOM_TYPES.map((t) => <option key={t} value={t}>{divoomTypeLabels[t]}</option>)}
+                  </optgroup>
                 </select>
               </div>
               
+              {isDivoomType(pageType) && (
+                <DivoomPageFields type={pageType} data={divoomData} onChange={setDivoomData} />
+              )}
+
               {/* Clock/Weather Options */}
               {pageType === 'ClockWeather' && (
                 <div className="mt-4">
