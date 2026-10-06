@@ -38,6 +38,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Fixed
 - Tools page: the status no longer flips to Disconnected after a scoreboard click, the sound detector is no longer shown as "Countdown Active", and the scoreboard no longer shows a 24 hour countdown.
 - Tools page: Bluetooth work for the tool routes runs off the async worker threads and no longer holds the device lock while sleeping, so status polls do not stall.
+- Tools page: the Device Status card is gone. Connection shows as a dot beside the title, and the running tool's card shows its time and a Stop button.
 - Tools page: the countdown presets editor is part of the Countdown card with its own Save, the buzzer has its own Save, and rapid scoreboard +/- clicks send only the latest value.
 
 ### Security

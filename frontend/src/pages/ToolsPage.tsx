@@ -9,6 +9,7 @@ import {
   parseToolStatus,
   toolLabel,
   type ConnectionStatusResponse,
+  type ToolKind,
   type ToolStatus,
 } from '../utils/toolStatus';
 
@@ -262,64 +263,47 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
     setPresets(prev => prev.filter((_, i) => i !== index));
   };
 
-  const toolIdle = !toolStatus.active;
-  const canStart = isConnected && toolIdle;
+  const isRunning = (kind: ToolKind) => toolStatus.kind === kind;
+  const cardClass = (kind: ToolKind, border: string) =>
+    `bg-gray-800 rounded-lg p-6 mb-6 border-l-4 ${isRunning(kind) ? 'border-yellow-500 ring-1 ring-yellow-600/60' : border}`;
+  // Shown at the top of the running tool's card, so Stop sits next to its timer.
+  const runningBanner = (kind: ToolKind) =>
+    isRunning(kind) && (
+      <div className="flex items-center justify-between gap-3 bg-yellow-900/30 border border-yellow-600 rounded-lg px-4 py-3 mb-4">
+        <div>
+          <p className="text-yellow-400 font-semibold">{toolLabel(kind)}</p>
+          {remainingSeconds !== null && (
+            <p className="text-gray-400 text-sm">
+              Time remaining: <span className="text-yellow-300 font-mono text-lg">{formatTime(remainingSeconds)}</span>
+            </p>
+          )}
+        </div>
+        <button
+          onClick={handleStopTool}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all"
+        >
+          Stop
+        </button>
+      </div>
+    );
+  const canStart = isConnected && !toolStatus.active;
   const startButton = (enabled: boolean, color: string) =>
     enabled ? `${color} text-white` : 'bg-gray-700 text-gray-500 cursor-not-allowed';
 
   return (
     <div className="max-w-[900px]">
-      <h2 className="text-[30px] font-bold text-cyan-400 mb-6">Tools</h2>
-
-      {/* Status Section */}
-      {/* Sticks to the top while a tool runs so Stop is always in reach. */}
-      <div className={`bg-gray-800 rounded-lg p-6 mb-6 border-l-4 ${
-        toolStatus.active ? 'border-yellow-500 sticky top-0 z-10 shadow-lg' : isConnected ? 'border-green-500' : 'border-red-500'
-      }`}>
-        <h3 className="text-xl font-semibold mb-4 text-gray-200">Device Status</h3>
-
-        <div className="flex items-center gap-3 mb-4">
-          <span className={`inline-block w-3 h-3 rounded-full ${
-            isConnected ? 'bg-green-500' : 'bg-red-500'
-          }`}></span>
-          <span className="text-white font-medium">
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </span>
-        </div>
-
-        {toolStatus.active && (
-          <div className="bg-yellow-900/30 border border-yellow-600 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">
-                  {toolStatus.kind === 'countdown' ? '⏱️' : toolStatus.kind === 'sound_detector' ? '🎤' : '🏆'}
-                </span>
-                <div>
-                  <p className="text-yellow-400 font-semibold">{toolLabel(toolStatus.kind)}</p>
-                  {remainingSeconds !== null && (
-                    <p className="text-gray-400 text-sm">
-                      Time remaining: <span className="text-yellow-300 font-mono text-lg">{formatTime(remainingSeconds)}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={handleStopTool}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all"
-              >
-                Stop
-              </button>
-            </div>
-            <p className="text-gray-500 text-sm mt-2">
-              Device is running a native tool. The display returns when it finishes or you click Stop.
-            </p>
-          </div>
-        )}
+      <div className="flex items-center gap-4 mb-6">
+        <h2 className="text-[30px] font-bold text-cyan-400">Tools</h2>
+        <span className="flex items-center gap-2 text-sm text-gray-400">
+          <span className={`inline-block w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+          {isConnected ? 'Connected' : 'Disconnected'}
+        </span>
       </div>
 
       {/* Countdown Section */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-blue-600">
+      <div className={cardClass('countdown', 'border-blue-600')}>
         <h3 className="text-xl font-semibold mb-4 text-blue-300">Countdown Timer</h3>
+        {runningBanner('countdown')}
 
         {/* Presets: start, edit and save in one place */}
         <div className="mb-6">
@@ -460,10 +444,11 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
       </div>
 
       {/* Scoreboard */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-red-600">
+      <div className={cardClass('scoreboard', 'border-red-600')}>
         <h3 className="text-xl font-semibold mb-4 text-red-300">Scoreboard</h3>
+        {runningBanner('scoreboard')}
         <p className="text-gray-400 text-sm mb-4">
-          Display a scoreboard with Red vs Blue scores. Click "Start Scoreboard" to activate, then use +/- to update scores.
+          Display a scoreboard with Red vs Blue scores. Click "Start Scoreboard" to activate, then use +/- to update scores. Use Stop above to end it.
         </p>
 
         {/* Score Controls */}
@@ -519,20 +504,13 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {toolStatus.kind !== 'scoreboard' ? (
+          {!isRunning('scoreboard') && (
             <button
               onClick={handleStartScoreboard}
               disabled={!canStart}
               className={`flex-1 py-3 rounded-lg font-semibold transition-all ${startButton(canStart, 'bg-red-600 hover:bg-red-700')}`}
             >
               🏆 Start Scoreboard
-            </button>
-          ) : (
-            <button
-              onClick={handleStopTool}
-              className="flex-1 py-3 rounded-lg font-semibold bg-gray-600 hover:bg-gray-700 text-white transition-all"
-            >
-              ⏹ Stop Scoreboard
             </button>
           )}
           <button
@@ -544,17 +522,12 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
           </button>
         </div>
 
-        {/* Status Indicator */}
-        {toolStatus.kind === 'scoreboard' && (
-          <div className="mt-4 p-3 bg-green-900/50 border border-green-700 rounded-lg">
-            <p className="text-green-400 text-sm font-semibold">✅ Scoreboard Active</p>
-          </div>
-        )}
       </div>
 
       {/* Sound Detector */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-green-600">
+      <div className={cardClass('sound_detector', 'border-green-600')}>
         <h3 className="text-xl font-semibold mb-4 text-green-300">Sound Detector</h3>
+        {runningBanner('sound_detector')}
         <p className="text-gray-400 text-sm mb-4">
           Display a real-time noise meter on the Pixoo. Runs for 5 minutes or until stopped.
         </p>
