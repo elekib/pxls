@@ -292,13 +292,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   return (
     <div className="max-w-[900px]">
-      <div className="flex items-center gap-4 mb-6">
-        <h2 className="text-[30px] font-bold text-cyan-400">Tools</h2>
-        <span className="flex items-center gap-2 text-sm text-gray-400">
-          <span className={`inline-block w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </span>
-      </div>
+      <h2 className="text-[30px] font-bold text-cyan-400 mb-6">Tools</h2>
 
       {/* Countdown Section */}
       <div className={cardClass('countdown', 'border-blue-600')}>
