@@ -5,6 +5,7 @@ import {
   hexToRgb,
   isDivoomType,
   loadDivoomData,
+  parseDuration,
   rgbToHex,
 } from './divoomPage';
 
@@ -46,5 +47,17 @@ describe('divoom payloads', () => {
     const a = defaultDivoomData('DivoomEnvironment');
     (a.color as number[])[0] = 0;
     expect(defaultDivoomData('DivoomEnvironment').color).toEqual([255, 255, 255]);
+  });
+});
+
+describe('parseDuration', () => {
+  it('treats blank, zero and junk as unset', () => {
+    expect(parseDuration('')).toBeUndefined();
+    expect(parseDuration('0')).toBeUndefined();
+    expect(parseDuration('abc')).toBeUndefined();
+  });
+
+  it('parses positive seconds', () => {
+    expect(parseDuration('60')).toBe(60);
   });
 });

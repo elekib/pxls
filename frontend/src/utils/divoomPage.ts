@@ -77,3 +77,10 @@ export function hexToRgb(hex: string): Rgb {
   const h = hex.replace('#', '');
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) || 0) as Rgb;
 }
+
+// Per-page display time from the editor's text box: blank or 0 means "use the
+// global rotation time", so it is sent as undefined and omitted from the JSON.
+export function parseDuration(text: string): number | undefined {
+  const secs = parseInt(text, 10);
+  return Number.isFinite(secs) && secs > 0 ? secs : undefined;
+}

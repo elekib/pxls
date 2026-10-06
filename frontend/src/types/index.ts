@@ -98,6 +98,8 @@ export interface CustomPage {
   name: string;
   enabled: boolean;
   page_type: PageTypeData;
+  /** Seconds this page stays up; unset uses the global rotation time. */
+  duration_secs?: number;
 }
 
 export interface PageTypeData {

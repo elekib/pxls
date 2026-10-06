@@ -41,6 +41,11 @@ pub struct CustomPage {
     pub name: String,
     pub enabled: bool,
     pub page_type: PageType,
+    /// How long this page stays up before the rotation moves on. Falls back to
+    /// the global `rotation_time_secs` when unset (or 0). Useful for pages the
+    /// device animates itself, such as a User GIFs page with many GIFs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_secs: Option<u64>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -336,6 +341,7 @@ impl Default for Config {
             custom_pages: vec![CustomPage {
                 name: "Clock & Weather".to_string(),
                 enabled: true,
+                duration_secs: None,
                 page_type: PageType::ClockWeather {
                     clock_color: "00FFFF".to_string(),
                     date_color: "FFFF00".to_string(),
@@ -461,5 +467,31 @@ impl Config {
         } else {
             [255, 255, 255]
         }
+    }
+}
+
+#[cfg(test)]
+mod custom_page_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn duration_is_optional_and_omitted_when_unset() {
+        let old: CustomPage = serde_json::from_value(json!({
+            "name": "n", "enabled": true, "page_type": {"type": "DivoomUser", "mode": "default"}
+        }))
+        .unwrap();
+        assert_eq!(old.duration_secs, None);
+        assert!(serde_json::to_value(&old)
+            .unwrap()
+            .get("duration_secs")
+            .is_none());
+
+        let timed: CustomPage = serde_json::from_value(json!({
+            "name": "n", "enabled": true, "duration_secs": 60,
+            "page_type": {"type": "DivoomUser", "mode": "default"}
+        }))
+        .unwrap();
+        assert_eq!(timed.duration_secs, Some(60));
     }
 }

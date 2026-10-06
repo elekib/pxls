@@ -154,13 +154,17 @@ pub fn rendering_loop(
 
         // Handle different display modes
         if device_mode == "custom" && !enabled_pages.is_empty() {
-            let should_advance = last_page_switch.elapsed().as_secs() >= rotation_time;
+            // Each page may override the global rotation time for how long it stays up.
+            current_page_index %= enabled_pages.len();
+            let display_secs = enabled_pages[current_page_index]
+                .duration_secs
+                .filter(|secs| *secs > 0)
+                .unwrap_or(rotation_time);
 
-            if should_advance {
+            if last_page_switch.elapsed().as_secs() >= display_secs {
                 current_page_index = (current_page_index + 1) % enabled_pages.len();
                 last_page_switch = Instant::now();
             }
-            current_page_index %= enabled_pages.len();
             let page = &enabled_pages[current_page_index];
 
             if is_divoom_page_type(&page.page_type) {
