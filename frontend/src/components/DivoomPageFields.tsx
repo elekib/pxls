@@ -48,7 +48,9 @@ export function DivoomPageFields({ type, data, onChange }: Props) {
   const num = (key: string) => String(data[key] ?? 0);
   const clamp = (v: string, max: number) => Math.min(max, Math.max(0, parseInt(v, 10) || 0));
 
-  const colorField = (
+  // A function, not an element: only Clock and Light have a colour, and building
+  // this eagerly would read data.color for every type and throw.
+  const colorField = () => (
     <div className="mb-4">
       <label className="block text-gray-400 text-sm mb-2">Color</label>
       <input
@@ -90,13 +92,13 @@ export function DivoomPageFields({ type, data, onChange }: Props) {
               </label>
             ))}
           </div>
-          {colorField}
+          {colorField()}
         </>
       )}
 
       {type === 'DivoomLight' && (
         <>
-          {colorField}
+          {colorField()}
           <div className="mb-4">
             <label className="block text-gray-400 text-sm mb-2">Brightness ({num('brightness')}%)</label>
             <input type="range" min={0} max={100} value={num('brightness')} onChange={(e) => set({ brightness: clamp(e.target.value, 100) })} className="w-full" />
