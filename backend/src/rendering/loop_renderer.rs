@@ -374,7 +374,6 @@ pub fn try_reconnect(
 
                         if let Ok(mut wrapper) = pixoo.lock() {
                             wrapper.replace(new_pixoo);
-                            wrapper.set_bt_addr(bt_addr);
 
                             info!(mac = %mac_str, attempt, "Successfully reconnected to device");
                             return;

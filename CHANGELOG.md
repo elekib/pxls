@@ -32,6 +32,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Tools page: countdown, sound detector and scoreboard now run on the already-open Bluetooth link, the same way Device config drives the display, instead of closing the link and reconnecting. The scoreboard sends mode `0x45 06` (the `0x50` tool command made the display show a logo and is no longer used by the app). Ending or stopping a tool re-applies the device config on the same link at once. Set `PXLS_TOOL_CLOSE_LINK=1` to go back to closing the link after a tool (with a fixed 2 s reconnect retry). None of this is confirmed on a real device yet.
 - `GET /api/connection-status` now returns `tool_type` (`countdown`, `sound_detector`, `scoreboard`, or null) and `tool_remaining_secs` (null when there is no timer); `tool_active_until` was removed.
 - Saving Device config while a tool runs no longer interrupts it; the config applies when the tool ends.
+- Buzzer (Tools page and the webhook play-sound action) is sent on the open link instead of a second Bluetooth connection, which likely failed. Needs device test.
 - Buzzer: the Active Time and Off Time inputs were removed from the Tools page, because the driver only sends the total time.
 
 ### Fixed

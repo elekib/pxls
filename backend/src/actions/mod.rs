@@ -304,20 +304,17 @@ impl ActionExecutor {
         let _ = (preset_active, preset_off);
         let total_time = Self::param_u64(action, "total_time_ms").unwrap_or(preset_total) as u16;
 
-        // The buzzer sleeps for the sound's length: release the Pixoo lock first
-        // and keep the wait off the async worker.
-        let addr = self
-            .pixoo
-            .lock()
-            .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?
-            .bt_addr()
-            .ok_or_else(|| {
-                anyhow::anyhow!("Failed to play buzzer: No Bluetooth address available")
-            })?;
-        tokio::task::spawn_blocking(move || crate::pixoo_wrapper::play_buzzer(addr, total_time))
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?
-            .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
+        // Sent on the open link; a second Bluetooth connection is refused.
+        let pixoo = self.pixoo.clone();
+        tokio::task::spawn_blocking(move || {
+            let mut wrapper = pixoo
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
+            wrapper.with_link(|p| crate::pixoo_wrapper::play_buzzer(p, total_time))
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?
+        .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
 
         info!(
             "Play sound action: type={}, total={}ms",

@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use bluetooth_serial_port::BtAddr;
 
 use crate::config::DeviceConfig;
 use crate::device::tool::{CountDownControl, NoiseControl, Seconds};
@@ -27,6 +26,14 @@ impl ToolLink {
             _ => Self::KeepOpen,
         }
     }
+}
+
+/// Play the buzzer for `total_ms` on the open link (a second connection to the
+/// device is refused while the first is open). The layout carries only the
+/// total time. Needs device test, see docs/protocol.md.
+pub fn play_buzzer<T: Transport>(pixoo: &mut Pixoo<T>, total_ms: u16) -> Result<()> {
+    pixoo.play_buzzer(total_ms)?;
+    Ok(())
 }
 
 /// Start a countdown. Needs device test.
@@ -99,7 +106,6 @@ fn release<T: Transport>(pixoo: &mut Pixoo<T>, link: ToolLink) {
 
 pub struct PixooWrapper {
     pixoo: Option<Pixoo>,
-    bt_addr: Option<BtAddr>,
 }
 
 impl Default for PixooWrapper {
@@ -110,28 +116,7 @@ impl Default for PixooWrapper {
 
 impl PixooWrapper {
     pub fn new() -> Self {
-        Self {
-            pixoo: None,
-            bt_addr: None,
-        }
-    }
-
-    pub fn with_pixoo(pixoo: Pixoo, bt_addr: BtAddr) -> Self {
-        Self {
-            pixoo: Some(pixoo),
-            bt_addr: Some(bt_addr),
-        }
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            pixoo: None,
-            bt_addr: None,
-        }
-    }
-
-    pub fn set_bt_addr(&mut self, addr: BtAddr) {
-        self.bt_addr = Some(addr);
+        Self { pixoo: None }
     }
 
     pub fn get(&self) -> Option<&Pixoo> {
@@ -165,23 +150,6 @@ impl PixooWrapper {
         }
         result
     }
-
-    pub fn bt_addr(&self) -> Option<BtAddr> {
-        self.bt_addr
-    }
-}
-
-/// Play the buzzer for `total_time` ms on its own short connection. Blocks for
-/// the sound's length, so call it from `spawn_blocking` without holding the
-/// Pixoo lock. The layout carries only the total time (needs device test, see
-/// docs/protocol.md).
-pub fn play_buzzer(bt_addr: BtAddr, total_time: u16) -> Result<()> {
-    let mut pixoo = Pixoo::connect(bt_addr)?;
-    tracing::info!(total_time, "Sending buzzer command 0x31");
-    pixoo.play_buzzer(total_time)?;
-    std::thread::sleep(std::time::Duration::from_millis(total_time as u64 + 500));
-    pixoo.disconnect();
-    Ok(())
 }
 
 #[cfg(test)]
@@ -200,6 +168,15 @@ mod tests {
     ) {
         let (t, log) = MockTransport::new();
         (Pixoo::with_transport(t), log)
+    }
+
+    #[test]
+    fn buzzer_goes_out_on_the_open_link() {
+        let (mut p, log) = pixoo();
+        play_buzzer(&mut p, 1000).unwrap();
+        let log = log.lock().unwrap();
+        assert_eq!(log.packets, vec![packet(0x31, &[0xE8, 0x03])]);
+        assert_eq!(log.closes, 0);
     }
 
     #[test]

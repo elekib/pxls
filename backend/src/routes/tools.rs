@@ -188,17 +188,15 @@ pub async fn play_buzzer(
     State(state): State<AppState>,
     Json(req): Json<BuzzerRequest>,
 ) -> Response {
-    // The buzzer uses its own short connection; read the address and release
-    // the lock before the call, which sleeps for the sound's length.
-    let addr = state.pixoo.lock().ok().and_then(|w| w.bt_addr());
-    let Some(addr) = addr else {
-        return fail(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to send buzzer command: No Bluetooth address available".into(),
-        );
-    };
+    // Sent on the open link; a second Bluetooth connection is refused.
     let total_time = req.total_time as u16;
-    match blocking(move || pixoo_wrapper::play_buzzer(addr, total_time)).await {
+    let pixoo = state.pixoo.clone();
+    let result = blocking(move || match pixoo.lock() {
+        Ok(mut wrapper) => wrapper.with_link(|p| pixoo_wrapper::play_buzzer(p, total_time)),
+        Err(_) => Err(anyhow::anyhow!("Failed to access Pixoo connection")),
+    })
+    .await;
+    match result {
         Ok(Ok(())) => {
             info!("Buzzer activated successfully");
             ok(json!({ "success": true, "message": "Buzzer activated", "duration_ms": total_time }))

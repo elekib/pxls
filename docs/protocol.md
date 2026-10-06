@@ -62,7 +62,7 @@ Notes:
 - **Light effect:** 0 normal, 1 rainbow ("love" in the write-up), 2 plants, 3 fly ("no mosquito"), 4 sleep.
 - **Music `TT`** (observed on a real Pixoo, not documented): 0 bottom bars, 1 face 3, 2 center bars, 3 face 1, 4 matrix, 5 frog face, 6 side bars, 7 face 2, 8 falling blocks, 9 dancing boy, 10 fireworks, 11 dancing girl.
 - **Time format:** no command is documented anywhere we looked. `Pixoo::set_time_format` sends nothing until `CMD_TIME_FORMAT` in `backend/src/device/mod.rs` is set after a device test. The 12/24h setting therefore has no effect for now.
-- **Buzzer:** an earlier implementation also sent `0x45 06 00` after the buzzer. The scoreboard channel is `06`, so that was removed. Other buzzer layouts (4 and 6 byte, big-endian) were tried historically; the 2-byte little-endian form is what pxls sent before and is kept.
+- **Buzzer:** an earlier implementation also sent `0x45 06 00` after the buzzer. The scoreboard channel is `06`, so that was removed. Other buzzer layouts (4 and 6 byte, big-endian) were tried historically; the 2-byte little-endian form is what pxls sent before and is kept. The buzzer is now sent on the already-open link: it used to open a second connection, which a Pixoo likely refuses while the first is open (the Tools page showed an error). Needs device test.
 - **Stopwatch pause/reset** are not documented and not implemented.
 - **Tool layouts:** the old notes' example packets for tools had lengths that did not match their arguments; the argument lists above are used, framed as in the table above.
 - **Score range:** 0-999 (the driver clamps larger values), confirmed by the public write-up and a device observation that 99 was too low.

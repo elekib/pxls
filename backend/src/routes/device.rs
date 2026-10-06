@@ -53,7 +53,6 @@ pub async fn connect_device(
                     match state.pixoo.lock() {
                         Ok(mut wrapper) => {
                             wrapper.replace(new_pixoo);
-                            wrapper.set_bt_addr(bt_addr);
 
                             if let Ok(mut cfg) = state.config.lock() {
                                 cfg.pixoo_mac = req.mac.clone();

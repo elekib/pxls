@@ -272,8 +272,9 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
       <h2 className="text-[30px] font-bold text-cyan-400 mb-6">Tools</h2>
 
       {/* Status Section */}
+      {/* Sticks to the top while a tool runs so Stop is always in reach. */}
       <div className={`bg-gray-800 rounded-lg p-6 mb-6 border-l-4 ${
-        toolStatus.active ? 'border-yellow-500' : isConnected ? 'border-green-500' : 'border-red-500'
+        toolStatus.active ? 'border-yellow-500 sticky top-0 z-10 shadow-lg' : isConnected ? 'border-green-500' : 'border-red-500'
       }`}>
         <h3 className="text-xl font-semibold mb-4 text-gray-200">Device Status</h3>
 
