@@ -4,8 +4,9 @@
 import { getDb } from "@/lib/db/sqlite";
 import { deviceConfig, normalizeConfig, pickKnown, type Config, type DeviceConfig } from "@/lib/config/model";
 import { loadConfig, preserveSecrets, publicConfig, saveConfig } from "@/lib/config/store";
-import { getEngine } from "@/lib/engine/engine";
-import { applyDeviceConfig } from "@/lib/engine/modes";
+import { getEngine, getTokens } from "@/lib/engine/engine";
+import { clearSystemCache } from "@/lib/render/beszel";
+import { applyDeviceConfig, nativeMode } from "@/lib/engine/modes";
 
 export const MAC_RE = /^[0-9A-F]{2}(:[0-9A-F]{2}){5}$/i;
 
@@ -21,8 +22,12 @@ export function updateConfig(raw: unknown): Config {
   const stored = loadConfig(db);
   const sentAuth = !!raw && typeof raw === "object" && "beszel_auth" in raw;
   const incoming = normalizeConfig(pickKnown(raw as Record<string, unknown>));
-  preserveSecrets(incoming, stored, sentAuth);
+  const authChanged = preserveSecrets(incoming, stored, sentAuth);
   saveConfig(db, incoming);
+  if (authChanged) {
+    getTokens().invalidate();
+    clearSystemCache();
+  }
   // A new MAC takes effect right away, unless the user disconnected on purpose.
   const engine = getEngine();
   if (incoming.pixoo_mac !== stored.pixoo_mac && incoming.pixoo_mac && !engine.getStatus().manualDisconnect) {
@@ -38,6 +43,7 @@ export async function saveDeviceConfig(raw: unknown): Promise<Outcome> {
   const parsed = deviceConfig.safeParse(raw);
   if (!parsed.success) return { ok: false, status: 400, error: "Invalid device configuration" };
   const dc: DeviceConfig = parsed.data;
+  dc.light_config.brightness = dc.brightness; // one brightness for both
   const db = getDb();
   const cfg = loadConfig(db);
   cfg.device_config = dc;
@@ -52,6 +58,53 @@ export async function saveDeviceConfig(raw: unknown): Promise<Outcome> {
     return { ok: true, message: "Device configuration updated and applied" };
   } catch (e) {
     return { ok: false, status: 500, error: `Failed to apply device configuration: ${(e as Error).message}` };
+  }
+}
+
+/**
+ * Set brightness now and save it. One brightness drives both the device and
+ * Light mode (whose command carries its own brightness), so the two never
+ * disagree.
+ */
+export async function applyBrightness(percent: number): Promise<Outcome> {
+  if (!Number.isFinite(percent)) return { ok: false, status: 400, error: "Invalid brightness" };
+  const pct = Math.max(0, Math.min(100, Math.round(percent)));
+  const db = getDb();
+  const cfg = loadConfig(db);
+  cfg.device_config.brightness = pct;
+  cfg.device_config.light_config.brightness = pct;
+  saveConfig(db, cfg);
+
+  const engine = getEngine();
+  if (engine.getStatus().device !== "connected") return { ok: true, message: "Brightness saved (no device connected)" };
+  try {
+    await engine.run(async (p) => {
+      await p.setBrightness(pct);
+      if (cfg.device_config.light_mode === "light") await p.setMode(nativeMode(cfg.device_config)!);
+    });
+    return { ok: true, message: `Brightness ${pct}%` };
+  } catch (e) {
+    return { ok: false, status: 500, error: `Failed to set brightness: ${(e as Error).message}` };
+  }
+}
+
+/** Save the Score mode scores; update the display if Score mode is on. */
+export async function applyScores(red: number, blue: number): Promise<Outcome> {
+  if (!Number.isFinite(red) || !Number.isFinite(blue)) return { ok: false, status: 400, error: "Invalid score" };
+  const clamp = (n: number) => Math.max(0, Math.min(999, Math.trunc(n)));
+  const db = getDb();
+  const cfg = loadConfig(db);
+  cfg.device_config.score_config = { red_score: clamp(red), blue_score: clamp(blue) };
+  saveConfig(db, cfg);
+  const engine = getEngine();
+  if (cfg.device_config.light_mode !== "score" || engine.getStatus().device !== "connected") {
+    return { ok: true, message: "Scores saved" };
+  }
+  try {
+    await engine.run((p) => p.setMode(nativeMode(cfg.device_config)!));
+    return { ok: true, message: "Scores updated" };
+  } catch (e) {
+    return { ok: false, status: 500, error: `Failed to update scores: ${(e as Error).message}` };
   }
 }
 

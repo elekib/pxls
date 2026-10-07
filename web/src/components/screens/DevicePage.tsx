@@ -4,8 +4,8 @@
 // data loaded on the server and changes sent through server actions.
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, type ChangeEvent, type FocusEvent } from "react";
-import { connect, disconnect, saveDevice, setTimezone as saveTimezone } from "@/app/actions/device";
+import { useState, useEffect, useRef } from "react";
+import { connect, disconnect, saveDevice, setBrightness, setScores, setTimezone as saveTimezone } from "@/app/actions/device";
 import { useToast } from "@/components/Toast";
 import type { DeviceConfig } from "@/lib/config/model";
 
@@ -23,8 +23,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
   const [timezone, setTimezone] = useState(config.timezone || '');
   const [isConnected, setIsConnected] = useState(connected);
   const [isManualDisconnect, setIsManualDisconnect] = useState(manualDisconnect);
-  const [redScoreStr, setRedScoreStr] = useState(String(config.device_config.score_config.red_score || 0));
-  const [blueScoreStr, setBlueScoreStr] = useState(String(config.device_config.score_config.blue_score || 0));
 
   const [deviceConfig, setDeviceConfig] = useState<DeviceConfig>({
     brightness: config.device_config.brightness || 50,
@@ -72,8 +70,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
     setTimezone(config.timezone || '');
     if (config.device_config) {
       setDeviceConfig(config.device_config);
-      setRedScoreStr(String(config.device_config.score_config.red_score || 0));
-      setBlueScoreStr(String(config.device_config.score_config.blue_score || 0));
     }
   }, [config.timezone, config.device_config]);
 
@@ -125,6 +121,54 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
     } else {
       onNotify(result.error || 'Failed', 'error');
     }
+  };
+
+  // Brightness is live: it applies while dragging (debounced) and saves itself.
+  const brightnessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBrightness = (value: number) => {
+    setDeviceConfig(prev => ({ ...prev, brightness: value, light_config: { ...prev.light_config, brightness: value } }));
+    if (brightnessTimer.current) clearTimeout(brightnessTimer.current);
+    brightnessTimer.current = setTimeout(async () => {
+      const result = await setBrightness(value);
+      if (result.error) onNotify(result.error, 'error');
+    }, 150);
+  };
+
+  // Scores update like the Tools page scoreboard: local at once, the latest
+  // value sent once clicks pause.
+  const scoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Latest scores, so rapid clicks build on each other instead of on the last render.
+  const scores = useRef(deviceConfig.score_config);
+  useEffect(() => {
+    scores.current = config.device_config.score_config;
+  }, [config.device_config]);
+  const clampScore = (n: number) => Math.max(0, Math.min(999, Math.trunc(n) || 0));
+  // While typing, a box may be briefly empty; it shows this text until blur.
+  const [scoreText, setScoreText] = useState<{ red: string | null; blue: string | null }>({ red: null, blue: null });
+
+  const commitScores = (next: { red_score: number; blue_score: number }) => {
+    scores.current = next;
+    setDeviceConfig(prev => ({ ...prev, score_config: next }));
+    if (scoreTimer.current) clearTimeout(scoreTimer.current);
+    scoreTimer.current = setTimeout(async () => {
+      const result = await setScores(next.red_score, next.blue_score);
+      if (result.error) onNotify(result.error, 'error');
+    }, 150);
+  };
+
+  const updateScore = (team: 'red' | 'blue' | 'reset', delta: number) => {
+    setScoreText({ red: null, blue: null });
+    const cur = scores.current;
+    commitScores(team === 'reset'
+      ? { red_score: 0, blue_score: 0 }
+      : { ...cur, [`${team}_score`]: clampScore(cur[`${team}_score`] + delta) });
+  };
+
+  /** Typed score: digits only, capped at 999, sent like a click. */
+  const typeScore = (team: 'red' | 'blue', text: string) => {
+    if (!/^\d{0,3}$/.test(text)) return;
+    setScoreText(prev => ({ ...prev, [team]: text }));
+    if (text !== '') commitScores({ ...scores.current, [`${team}_score`]: clampScore(Number(text)) });
   };
 
   const handleSaveTimezone = async () => {
@@ -196,6 +240,25 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         </div>
       </div>
 
+      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-yellow-500">
+        <h3 className="text-xl font-semibold mb-4 text-yellow-300">Brightness</h3>
+        <label className="block text-gray-400 text-sm mb-2">Brightness ({deviceConfig.brightness}%)</label>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={deviceConfig.brightness}
+          onChange={(e) => handleBrightness(parseInt(e.target.value))}
+          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+        />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>0%</span>
+          <span>50%</span>
+          <span>100%</span>
+        </div>
+        <p className="text-gray-500 text-sm mt-2">Applies to the device as you drag and is saved automatically. In Light mode it also sets the light&apos;s brightness.</p>
+      </div>
+
       <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-purple-600">
         <h3 className="text-xl font-semibold mb-4 text-purple-300">Timezone</h3>
         <div className="mb-4">
@@ -214,24 +277,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
       <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-orange-600">
         <h3 className="text-xl font-semibold mb-4 text-orange-300">Device Configuration</h3>
         
-        <div className="mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Brightness ({deviceConfig.brightness}%)</label>
-          <input 
-            type="range" 
-            min="0" 
-            max="100" 
-            value={deviceConfig.brightness}
-            onChange={(e) => setDeviceConfig(prev => ({ ...prev, brightness: parseInt(e.target.value) }))}
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
-          </div>
-          <p className="text-gray-500 text-sm mt-2">Adjust device brightness (0-100%)</p>
-        </div>
-
         <div className="mb-6">
           <label className="block text-gray-400 text-sm mb-2">Display Mode</label>
           <select 
@@ -323,7 +368,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     }))}
                     className="mr-2"
                   />
-                  <span className="text-white">Show Divoom Logo</span>
+                  <span className="text-white">Show Cloud Channel</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -409,21 +454,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                   }));
                 }}
                 className="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Brightness ({deviceConfig.light_config.brightness}%)</label>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                value={deviceConfig.light_config.brightness}
-                onChange={(e) => setDeviceConfig(prev => ({
-                  ...prev,
-                  light_config: { ...prev.light_config, brightness: parseInt(e.target.value) }
-                }))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
               />
             </div>
 
@@ -522,69 +552,77 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
           <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-blue-600">
             <h3 className="text-xl font-semibold mb-4 text-blue-300">Score Mode Configuration</h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Red Score (0-999)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={redScoreStr}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const val = e.target.value;
-                    if (val === '' || /^\d+$/.test(val)) {
-                      setRedScoreStr(val);
-                      const num = parseInt(val) || 0;
-                      setDeviceConfig(prev => ({
-                        ...prev,
-                        score_config: { ...prev.score_config, red_score: Math.min(999, Math.max(0, num)) }
-                      }));
-                    }
-                  }}
-                  onBlur={(e: FocusEvent<HTMLInputElement>) => {
-                    const num = parseInt(e.target.value) || 0;
-                    const clamped = Math.min(999, Math.max(0, num));
-                    setDeviceConfig(prev => ({
-                      ...prev,
-                      score_config: { ...prev.score_config, red_score: clamped }
-                    }));
-                    setRedScoreStr(String(clamped));
-                  }}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-blue-400"
-                />
+            {/* Same controls as the Tools page scoreboard. */}
+            <div className="grid grid-cols-2 gap-6 mb-4">
+              {/* Red Team */}
+              <div className="bg-gray-900 rounded-lg p-4">
+                <label className="block text-red-400 text-sm mb-2 font-semibold">🔴 Red Team</label>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => updateScore('red', -1)}
+                    className="w-12 h-12 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    aria-label="Red score"
+                    value={scoreText.red ?? String(deviceConfig.score_config.red_score)}
+                    onChange={(e) => typeScore('red', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    onBlur={() => setScoreText(prev => ({ ...prev, red: null }))}
+                    className="w-20 h-16 text-center bg-gray-800 rounded-lg text-3xl font-bold text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                  <button
+                    onClick={() => updateScore('red', 1)}
+                    className="w-12 h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Blue Score (0-999)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={blueScoreStr}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const val = e.target.value;
-                    if (val === '' || /^\d+$/.test(val)) {
-                      setBlueScoreStr(val);
-                      const num = parseInt(val) || 0;
-                      setDeviceConfig(prev => ({
-                        ...prev,
-                        score_config: { ...prev.score_config, blue_score: Math.min(999, Math.max(0, num)) }
-                      }));
-                    }
-                  }}
-                  onBlur={(e: FocusEvent<HTMLInputElement>) => {
-                    const num = parseInt(e.target.value) || 0;
-                    const clamped = Math.min(999, Math.max(0, num));
-                    setDeviceConfig(prev => ({
-                      ...prev,
-                      score_config: { ...prev.score_config, blue_score: clamped }
-                    }));
-                    setBlueScoreStr(String(clamped));
-                  }}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-blue-400"
-                />
+
+              {/* Blue Team */}
+              <div className="bg-gray-900 rounded-lg p-4">
+                <label className="block text-blue-400 text-sm mb-2 font-semibold">🔵 Blue Team</label>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => updateScore('blue', -1)}
+                    className="w-12 h-12 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    aria-label="Blue score"
+                    value={scoreText.blue ?? String(deviceConfig.score_config.blue_score)}
+                    onChange={(e) => typeScore('blue', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    onBlur={() => setScoreText(prev => ({ ...prev, blue: null }))}
+                    className="w-20 h-16 text-center bg-gray-800 rounded-lg text-3xl font-bold text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => updateScore('blue', 1)}
+                    className="w-12 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
-            <p className="text-gray-400 text-sm">Keep track of game scores</p>
+            <div className="flex gap-3 mb-4">
+              <button
+                onClick={() => updateScore('reset', 0)}
+                className="px-4 py-3 rounded-lg font-semibold transition-all bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                Reset
+              </button>
+            </div>
+            <p className="text-gray-400 text-sm">Keep track of game scores. Click +/- or type a score (0-999); changes save automatically and show right away while Score mode is on.</p>
           </div>
         )}
 

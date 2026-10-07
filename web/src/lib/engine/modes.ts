@@ -53,8 +53,10 @@ export function nativeMode(dc: DeviceConfig): LightMode | null {
       };
     }
     case "light": {
+      // One brightness: the device setting also drives Light mode (Rust used a
+      // separate light_config.brightness, so two sliders disagreed).
       const l = dc.light_config;
-      return { kind: "light", color: l.color, brightness: l.brightness, effect: effect(l.effect_mode), on: l.on };
+      return { kind: "light", color: l.color, brightness: dc.brightness, effect: effect(l.effect_mode), on: l.on };
     }
     case "user":
       return { kind: "user" };
@@ -64,6 +66,41 @@ export function nativeMode(dc: DeviceConfig): LightMode | null {
       return { kind: "music", mode: MUSIC_MODES[dc.music_config.mode] ?? mode.MusicMode.BottomBars };
     case "score":
       return { kind: "score", red: dc.score_config.red_score, blue: dc.score_config.blue_score };
+    default:
+      return null;
+  }
+}
+
+/** The native mode for a Divoom page in the custom rotation (Rust apply_divoom_mode). */
+export function pageMode(p: { type: string } & Record<string, unknown>): LightMode | null {
+  switch (p.type) {
+    case "DivoomEnvironment":
+      return {
+        kind: "env",
+        timeFormat: p.time_format === "24h" ? "24h" : "12h",
+        clockDesign: CLOCK_DESIGNS[String(p.clock_design)] ?? mode.ClockDesign.Digital,
+        showDivoom: !!p.show_divoom,
+        showWeather: !!p.show_weather,
+        showTemp: !!p.show_temp,
+        showDate: !!p.show_date,
+        color: (Array.isArray(p.color) ? p.color : [0, 0, 0]) as [number, number, number],
+      };
+    case "DivoomLight":
+      return {
+        kind: "light",
+        color: (Array.isArray(p.color) ? p.color : [0, 0, 0]) as [number, number, number],
+        brightness: Number(p.brightness) || 0,
+        effect: effect(Number(p.effect_mode)),
+        on: !!p.on,
+      };
+    case "DivoomSpecial":
+      return { kind: "special", mode: SPECIAL_MODES[String(p.mode)] ?? 0 };
+    case "DivoomMusic":
+      return { kind: "music", mode: MUSIC_MODES[String(p.mode)] ?? mode.MusicMode.BottomBars };
+    case "DivoomUser":
+      return { kind: "user" };
+    case "DivoomScore":
+      return { kind: "score", red: Number(p.red_score) || 0, blue: Number(p.blue_score) || 0 };
     default:
       return null;
   }

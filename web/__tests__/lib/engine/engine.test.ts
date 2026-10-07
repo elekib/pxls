@@ -5,7 +5,7 @@ import { Engine, type Connector, type EngineHooks } from "@/lib/engine/engine";
 
 const config = { mac: null, channel: 1, rfcommDev: 0, debug: false };
 
-function setup(opts: { mac?: string | null; connector?: Connector; hooks?: Partial<EngineHooks>; tickMs?: number } = {}) {
+function setup(opts: { mac?: string | null; connector?: Connector; hooks?: Partial<EngineHooks> } = {}) {
   const transports: MemoryTransport[] = [];
   const hangups: ((e?: Error) => void)[] = [];
   const macs: string[] = [];
@@ -19,7 +19,7 @@ function setup(opts: { mac?: string | null; connector?: Connector; hooks?: Parti
       macs.push(m);
       return t;
     });
-  const engine = new Engine(config, connect, { getMac: () => mac, ...opts.hooks }, 10, opts.tickMs ?? 60_000);
+  const engine = new Engine(config, connect, { getMac: () => mac, ...opts.hooks }, 10);
   return { engine, transports, hangups, macs, setMac: (m: string | null) => (mac = m) };
 }
 
@@ -115,12 +115,16 @@ describe("Engine", () => {
     await engine.stop();
   });
 
-  it("runs the keep-alive tick while connected", async () => {
-    const onTick = vi.fn(async (p: Pixoo) => p.setMode({ kind: "user" }));
-    const { engine, transports } = setup({ hooks: { onTick }, tickMs: 15 });
+  it("drops and reconnects on forceReconnect, but not after a manual disconnect", async () => {
+    const { engine, transports } = setup();
     engine.start();
-    await vi.waitFor(() => expect(onTick.mock.calls.length).toBeGreaterThanOrEqual(2));
-    expect(transports[0]!.packets.every((p) => p[3] === 0x45)).toBe(true);
+    await vi.waitFor(() => expect(engine.getStatus().device).toBe("connected"));
+    engine.forceReconnect();
+    await vi.waitFor(() => expect(transports).toHaveLength(2));
+    await engine.disconnect();
+    engine.forceReconnect();
+    await new Promise((r) => setTimeout(r, 30));
+    expect(transports).toHaveLength(2);
     await engine.stop();
   });
 

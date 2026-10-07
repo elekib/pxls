@@ -2,7 +2,8 @@
 
 // The original UI's notification banner (top right, 3 s), as a context.
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { FORBIDDEN_EVENT } from "@/ui/api";
 
 type Notify = (message: string, type?: "success" | "error") => void;
 
@@ -19,6 +20,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setNotification(null), 3000);
   }, []);
+
+  useEffect(() => {
+    const onForbidden = () => notify("Your account is read-only. Ask an admin for changes.", "error");
+    window.addEventListener(FORBIDDEN_EVENT, onForbidden);
+    return () => window.removeEventListener(FORBIDDEN_EVENT, onForbidden);
+  }, [notify]);
 
   return (
     <ToastContext.Provider value={notify}>

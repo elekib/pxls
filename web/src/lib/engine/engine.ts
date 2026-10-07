@@ -6,19 +6,21 @@
 // unless the user disconnected on purpose (to use the Divoom app).
 //
 // The MAC comes from the saved config (set with Connect in the UI), falling
-// back to PIXOO_MAC. On every connect the device config is applied; every
-// TICK_MS the tick hook runs (native-mode keep-alive, later the render loop).
+// back to PIXOO_MAC. On every connect the device config is applied. What the
+// display shows is driven by the render loop (lib/render/loop.ts).
 
 import { getDb } from "@/lib/db/sqlite";
 import { loadConfig } from "@/lib/config/store";
 import { Pixoo } from "@/lib/device/pixoo";
 import { RfcommTransport } from "@/lib/device/rfcomm";
 import type { Transport } from "@/lib/device/types";
+import { TokenManager } from "@/lib/render/beszel";
+import { renderPage } from "@/lib/render";
+import { RenderLoop } from "@/lib/render/loop";
 import { readConfig, type EngineConfig } from "./config";
-import { applyDeviceConfig, nativeMode } from "./modes";
+import { applyDeviceConfig } from "./modes";
 
 export const RETRY_MS = 2000;
-export const TICK_MS = 10_000;
 
 export type DeviceStatus = "disabled" | "connecting" | "connected" | "disconnected" | "error";
 
@@ -36,7 +38,6 @@ export type Connector = (mac: string, onHangup: (e?: Error) => void) => Promise<
 export interface EngineHooks {
   getMac: () => string | null;
   onConnected?: (pixoo: Pixoo) => Promise<void>;
-  onTick?: (pixoo: Pixoo) => Promise<void>;
 }
 
 const log = (msg: string) => console.log(`[engine] ${msg}`);
@@ -46,7 +47,6 @@ export class Engine {
   private status: Omit<EngineStatus, "mac" | "manualDisconnect"> = { device: "disabled", error: null, connectedAt: null };
   private queue: Promise<unknown> = Promise.resolve();
   private retry: NodeJS.Timeout | null = null;
-  private ticker: NodeJS.Timeout | null = null;
   private stopped = true;
   private manual = false;
   /** Bumped on every (re)connect so a stale attempt cannot install its link. */
@@ -59,21 +59,16 @@ export class Engine {
     private readonly connector: Connector,
     private readonly hooks: EngineHooks,
     private readonly retryMs = RETRY_MS,
-    private readonly tickMs = TICK_MS,
   ) {}
 
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
-    this.ticker = setInterval(() => void this.tick(), this.tickMs);
-    this.ticker.unref?.();
     void this.connect();
   }
 
   async stop(): Promise<void> {
     this.stopped = true;
-    if (this.ticker) clearInterval(this.ticker);
-    this.ticker = null;
     this.clearRetry();
     await this.drop(null);
     this.status = { device: "disabled", error: null, connectedAt: null };
@@ -158,9 +153,10 @@ export class Engine {
     }
   }
 
-  private async tick(): Promise<void> {
-    if (!this.pixoo || !this.hooks.onTick) return;
-    await this.run((p) => this.hooks.onTick!(p)).catch((e) => log(`tick failed: ${message(e)}`));
+  /** Drop the link and reconnect (the render loop gives up on a stuck device). */
+  forceReconnect(): void {
+    if (this.manual || this.stopped) return;
+    void this.drop(new Error("forced reconnect"));
   }
 
   private async drop(cause: unknown): Promise<void> {
@@ -200,9 +196,11 @@ function message(e: unknown): string {
 
 declare global {
   var __pxlsEngine: Engine | undefined;
+  var __pxlsTokens: TokenManager | undefined;
+  var __pxlsLoop: RenderLoop | undefined;
 }
 
-/** The process-wide engine. Survives dev-mode module reloads. */
+/** The process-wide engine and its render loop. Survives dev-mode reloads. */
 export function getEngine(): Engine {
   if (!globalThis.__pxlsEngine) {
     const config = readConfig();
@@ -213,17 +211,29 @@ export function getEngine(): Engine {
       {
         getMac: () => settings().pixoo_mac.trim() || config.mac,
         onConnected: (p) => applyDeviceConfig(p, settings().device_config),
-        // Native modes are re-applied as keep-alive. Never send a set_color
-        // heartbeat here: it overwrites the native display (clock, blank, clock).
-        onTick: async (p) => {
-          const m = nativeMode(settings().device_config);
-          if (m) await p.setMode(m);
-        },
       },
     );
+    const tokens = new TokenManager(settings);
+    const loop = new RenderLoop({
+      engine,
+      config: settings,
+      render: (page) => renderPage(page, { timeZone: settings().timezone, tokens }),
+    });
+    globalThis.__pxlsTokens = tokens;
+    globalThis.__pxlsLoop = loop;
     // Close the link cleanly when the container stops.
-    process.once("SIGTERM", () => void engine.stop());
+    process.once("SIGTERM", () => {
+      loop.stop();
+      void engine.stop();
+    });
     globalThis.__pxlsEngine = engine;
+    loop.start();
   }
   return globalThis.__pxlsEngine;
+}
+
+/** The Beszel token manager shared by the pages and the Beszel API. */
+export function getTokens(): TokenManager {
+  getEngine();
+  return globalThis.__pxlsTokens!;
 }

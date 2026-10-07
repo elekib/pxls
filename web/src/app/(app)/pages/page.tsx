@@ -1,7 +1,12 @@
-import { Pending } from "@/components/screens/Pending";
+import { PagesView } from "@/components/screens/PagesView";
 import { requireUser } from "@/lib/auth/session";
+import { getConfig, publicConfig } from "@/lib/device/service";
+import type { Config } from "@/ui/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   await requireUser();
-  return <Pending title="Pages" phase={3} />;
+  // The browser-safe config (secrets removed), like GET /api/config.
+  return <PagesView config={publicConfig(getConfig()) as unknown as Config} />;
 }
