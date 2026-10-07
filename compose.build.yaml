@@ -1,14 +1,10 @@
-# Build the images from this checkout instead of pulling them:
+# Build the image from this checkout instead of pulling it:
 #   docker compose -f compose.yaml -f compose.build.yaml up --build -d
 services:
-  backend:
-    image: pxls-backend:local
+  pxls:
+    image: pxls:local
     build:
-      context: ./backend
+      context: ./web
       args:
         VERSION: ${PXLS_VERSION:-dev}
         GIT_SHA: ${PXLS_GIT_SHA:-local}
-  frontend:
-    image: pxls-frontend:local
-    build:
-      context: ./frontend

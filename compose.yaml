@@ -1,28 +1,19 @@
-# Run pxls from the published images:
-#   cp .env.example .env   # set TZ
+# Run pxls from the published image:
+#   cp .env.example .env   # set PIXOO_MAC and TZ
 #   docker compose up -d
 # To build from source instead, add the build overlay (see compose.build.yaml).
 services:
-  backend:
-    image: ghcr.io/elekib/pxls-backend:${PXLS_TAG:-latest}
-    container_name: pxls-backend
+  pxls:
+    image: ghcr.io/elekib/pxls:${PXLS_TAG:-latest}
+    container_name: pxls
+    # Bluetooth sockets only work in the host network namespace.
     network_mode: host
     privileged: true
     env_file:
       - .env
+    environment:
+      PORT: ${PXLS_PORT:-3500}
     volumes:
-      - /var/run/dbus:/var/run/dbus
       - /dev:/dev
       - ./data:/app/data
     restart: unless-stopped
-  frontend:
-    image: ghcr.io/elekib/pxls-frontend:${PXLS_TAG:-latest}
-    container_name: pxls-frontend
-    ports:
-      - 3030:80
-    # The backend runs on the host network; this name resolves to the Docker host on Linux too.
-    extra_hosts:
-      - host.docker.internal:host-gateway
-    restart: unless-stopped
-    depends_on:
-      - backend

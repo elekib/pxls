@@ -6,23 +6,22 @@ Guide for contributors and coding agents working on pxls.
 
 - Never commit `data/` or `.env`. They hold credentials, event logs and personal media.
 - Keep "Pixoo" descriptive only (Divoom trademark). The project name is pxls.
-- Preserve secret handling: `config.rs` redacts secrets in `Debug`, and `routes/config.rs` strips them from API responses.
+- Preserve secret handling when porting config: the Rust `config.rs` redacts secrets in `Debug`, and `routes/config.rs` strips them from API responses. Do the same in the Node app (never log secrets, never return them from the API).
 - Device behavior needs a real Pixoo over Bluetooth. Say so in a PR if you could not test it.
 
 ## Build and run
 
-- Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). Builds run inside Docker.
-- Frontend (Vite/React) is served on port 3030 and proxies `/api` to the backend.
-- Backend API: http://localhost:3400 (requires a user access token: `Authorization: Bearer <JWT>` from `POST /api/auth/login`; first-run setup code is in the log). Logs: `docker logs -f pxls-backend`.
+- pxls is a single Next.js app in `web/` (UI, API and display engine in one process). The Rust `backend/` and Vite `frontend/` live on `main` (0.1.x) as the porting reference.
+- Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). App on port 3500 (`PXLS_PORT`). Logs: `docker logs -f pxls`.
+- Local checks in `web/`: `npm run typecheck`, `npm test`, `npm run build` (Node 22+).
 
 ## Architecture
 
-- `backend/src/rendering/loop_renderer.rs`: main display loop.
-  - Custom mode (`light_mode == "custom"`): rotates through `custom_pages`, rendering images and pushing them. Divoom-native page types are applied via `apply_divoom_mode`, and only reapplied on page change or about every 10s as keep-alive.
-  - Native Divoom mode (env/light/special/music/user/score): applies the mode via `apply_divoom_mode_from_config` and periodically reapplies it as refresh and keep-alive.
+- `web/src/instrumentation.ts` starts the engine once when the server starts.
+- `web/src/lib/engine/engine.ts`: process-wide `Engine` (`getEngine()`). Owns the Bluetooth link, reconnects every 2 s, and serializes device work through `run()`. Never write to the device outside `run()`.
+- `web/src/lib/device/`: `Pixoo` device API and transports. `rfcomm.ts` binds `/dev/rfcommN` and writes in raw TTY mode (no native addons). `memory.ts` is for tests.
+- `web/src/lib/protocol/`: packet encoders with golden-byte tests ported from the Rust driver. Keep them byte-identical unless a device test says otherwise (see `docs/protocol.md`).
 - Do not send a `set_color` heartbeat in native mode. It overwrites the native display and causes a clock, blank, clock flicker.
-- `backend/src/modes/divoom.rs`: `apply_divoom_mode_from_config` (device level) and `apply_divoom_mode` (per page).
-- `backend/src/rendering/device_config.rs`: `apply_device_config` runs on connect and save, applying brightness, time format and the selected native mode immediately.
 
 ## Sign-off
 

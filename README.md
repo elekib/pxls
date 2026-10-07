@@ -6,6 +6,8 @@
 
 Open-source dashboard for custom messaging and integrations on legacy Divoom Pixoo Bluetooth devices (16x16).
 
+> **Branch `exp/next-app`: Next.js rewrite in progress (0.2.0).** pxls is being rebuilt as a single Next.js app in `web/`. This branch only has the device link and test controls so far; accounts, pages, webhooks and the rest of this README describe the Rust 0.1.x stack on `main`. See [docs/next-app.md](docs/next-app.md).
+
 > pxls is an unofficial community project. It is not affiliated with, endorsed by, or sponsored by Divoom. "Pixoo" and "Divoom" are trademarks of their respective owners and are used here only to describe compatible hardware.
 
 ## What it does
