@@ -1,46 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: var(--color-cyan-500);
+}
+
 :root {
-  color-scheme: light dark;
-  --bg: #f7f7f8;
-  --fg: #18181b;
-  --muted: #71717a;
-  --card: #ffffff;
-  --border: #e4e4e7;
-  --accent: #2563eb;
-  --ok: #16a34a;
-  --warn: #d97706;
-  --bad: #dc2626;
+  color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b0d;
-    --fg: #f4f4f5;
-    --muted: #a1a1aa;
-    --card: #17171a;
-    --border: #27272a;
-    --accent: #60a5fa;
-  }
-}
-
-* { box-sizing: border-box; }
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  @apply bg-gray-900 text-gray-100 antialiased;
 }
-main { max-width: 640px; margin: 0 auto; padding: 32px 16px; }
-h1 { font-size: 22px; margin: 0 0 4px; }
-h2 { font-size: 15px; margin: 0 0 12px; }
-.muted { color: var(--muted); }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-button, select {
-  font: inherit; padding: 6px 12px; border-radius: 8px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--card); color: var(--fg);
+
+@utility card {
+  @apply rounded-xl border border-gray-700 bg-gray-800 p-5;
 }
-button:hover, select:hover { border-color: var(--accent); }
-button:disabled, select:disabled { opacity: 0.5; cursor: wait; }
-input[type="range"] { flex: 1; min-width: 120px; }
-code { font-size: 13px; }
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gray-600 bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-100 transition hover:border-cyan-500 hover:bg-gray-600 disabled:cursor-wait disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn border-cyan-600 bg-cyan-600 text-white hover:bg-cyan-500;
+}
+@utility btn-danger {
+  @apply btn border-red-700 bg-red-900/40 text-red-200 hover:border-red-500 hover:bg-red-800/60;
+}
+@utility input {
+  @apply w-full rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-cyan-500 focus:outline-none;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium text-gray-300;
+}

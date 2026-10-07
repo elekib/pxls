@@ -1,12 +1,14 @@
-// Admin test endpoint, off unless PXLS_ENABLE_DEBUG=1. No accounts exist yet
-// in the Node app, so the flag is the only gate: keep it off outside testing.
+// Admin device test endpoint, off unless PXLS_ENABLE_DEBUG=1.
 
+import { requireApi } from "@/lib/auth/api";
 import { getEngine } from "@/lib/engine/engine";
 import { apply, command } from "@/lib/engine/commands";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  const me = await requireApi(req);
+  if (me instanceof Response) return me;
   const engine = getEngine();
   if (!engine.config.debug) return Response.json({ error: "debug is disabled" }, { status: 403 });
   // JSON only: other sites cannot send it cross-origin without a CORS

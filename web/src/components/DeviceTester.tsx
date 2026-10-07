@@ -25,7 +25,7 @@ export function DeviceTester() {
     try {
       const res = await fetch("/api/debug/device", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-requested-with": "pxls" },
         body: JSON.stringify(cmd),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -37,33 +37,33 @@ export function DeviceTester() {
   }
 
   return (
-    <section className="card">
-      <h2>Device test</h2>
-      <div className="row">
+    <section className="card space-y-3">
+      <h2 className="font-semibold">Device test</h2>
+      <div className="flex flex-wrap items-center gap-2">
         <span>Brightness</span>
-        <input type="range" min={0} max={100} value={brightness} onChange={(e) => setBrightness(+e.target.value)} />
-        <button disabled={busy} onClick={() => send({ action: "brightness", value: brightness })}>
+        <input className="min-w-32 flex-1 accent-cyan-500" type="range" min={0} max={100} value={brightness} onChange={(e) => setBrightness(+e.target.value)} />
+        <button className="btn" disabled={busy} onClick={() => send({ action: "brightness", value: brightness })}>
           Set {brightness}
         </button>
       </div>
-      <div className="row" style={{ marginTop: 12 }}>
+      <div className="flex flex-wrap items-center gap-2">
         {COLORS.map(([name, rgb]) => (
-          <button key={name} disabled={busy} onClick={() => send({ action: "color", rgb })}>
+          <button className="btn" key={name} disabled={busy} onClick={() => send({ action: "color", rgb })}>
             {name}
           </button>
         ))}
       </div>
-      <div className="row" style={{ marginTop: 12 }}>
-        <button disabled={busy} onClick={() => send({ action: "clock", design: 0, rgb: [255, 255, 255] })}>
+      <div className="flex flex-wrap items-center gap-2">
+        <button className="btn" disabled={busy} onClick={() => send({ action: "clock", design: 0, rgb: [255, 255, 255] })}>
           Clock
         </button>
-        <button disabled={busy} onClick={() => send({ action: "score", red: 12, blue: 34 })}>
+        <button className="btn" disabled={busy} onClick={() => send({ action: "score", red: 12, blue: 34 })}>
           Score 12:34
         </button>
-        <button disabled={busy} onClick={() => send({ action: "buzzer", ms: 500 })}>
+        <button className="btn" disabled={busy} onClick={() => send({ action: "buzzer", ms: 500 })}>
           Buzzer
         </button>
-        <select disabled={busy} defaultValue="" onChange={(e) => e.target.value && send({ action: "music", mode: +e.target.value })}>
+        <select className="input w-auto" disabled={busy} defaultValue="" onChange={(e) => e.target.value && send({ action: "music", mode: +e.target.value })}>
           <option value="" disabled>
             Music mode…
           </option>
@@ -75,7 +75,7 @@ export function DeviceTester() {
         </select>
       </div>
       {log.length > 0 && (
-        <pre className="muted" style={{ marginTop: 12, whiteSpace: "pre-wrap" }}>
+        <pre className="whitespace-pre-wrap text-sm text-gray-400">
           {log.join("\n")}
         </pre>
       )}
