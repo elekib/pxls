@@ -14,7 +14,7 @@ import {
 } from "@/lib/auth/service";
 import { AccountsStore } from "@/lib/auth/store";
 
-const SECRET = "0123456789abcdef0123456789abcdef";
+const SECRET = "fixture-jwt-signing-key-for-tests-01";
 const PASSWORD = "a long test passphrase";
 
 function service() {
@@ -69,7 +69,7 @@ describe("tokens", () => {
     const me = await auth.authenticate(t.value.accessToken);
     expect(me?.user.username).toBe("bob");
 
-    const other = new AuthService(auth.store, "fedcba9876543210fedcba9876543210");
+    const other = new AuthService(auth.store, "fixture-jwt-signing-key-for-tests-02");
     expect(await other.authenticate(t.value.accessToken)).toBeNull();
 
     const [h, , s] = t.value.accessToken.split(".");

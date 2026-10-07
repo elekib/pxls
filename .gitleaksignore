@@ -1,0 +1,5 @@
+# Findings already in history that are not secrets. New test values must use
+# the "fixture-" prefix instead (see .gitleaks.toml).
+# Fake JWT keys in web/__tests__/lib/auth/service.test.ts (commit a9eda26).
+a9eda2668e517528804205cb8c36ee87e7b0907c:web/__tests__/lib/auth/service.test.ts:generic-api-key:17
+a9eda2668e517528804205cb8c36ee87e7b0907c:web/__tests__/lib/auth/service.test.ts:generic-api-key:72
