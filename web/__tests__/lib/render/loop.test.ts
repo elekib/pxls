@@ -101,3 +101,28 @@ describe("RenderLoop", () => {
     expect(s.reconnects()).toBe(1);
   });
 });
+
+describe("RenderLoop with tools", () => {
+  it("stays quiet while paused and re-applies the native mode right after", async () => {
+    let paused = true;
+    const t = new MemoryTransport();
+    const pixoo = new Pixoo(t);
+    const config = normalizeConfig({ device_config: { light_mode: "user" } });
+    const loop = new RenderLoop({
+      engine: {
+        run: (fn) => fn(pixoo),
+        getStatus: () => ({ device: "connected", error: null, connectedAt: null, mac: null, manualDisconnect: false }),
+        forceReconnect: () => {},
+      },
+      config: () => config,
+      render: async () => new Canvas(),
+      pause: async () => paused,
+      now: () => 0,
+    });
+    await loop.tick();
+    expect(t.packets).toHaveLength(0);
+    paused = false;
+    await loop.tick();
+    expect(t.packets).toHaveLength(1); // no 10 s wait after a tool
+  });
+});

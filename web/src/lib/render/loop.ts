@@ -84,11 +84,11 @@ export class RenderLoop {
   async tick(): Promise<number> {
     const cfg = this.deps.config();
     const interval = Math.max(MIN_INTERVAL_MS, cfg.refresh_interval_ms || 1000);
-    if (this.deps.engine.getStatus().device !== "connected") return interval;
     if (this.deps.pause && (await this.deps.pause())) {
       this.resetNative();
       return interval;
     }
+    if (this.deps.engine.getStatus().device !== "connected") return interval;
 
     const pages = enabledPages(cfg.custom_pages);
     const dc = cfg.device_config;

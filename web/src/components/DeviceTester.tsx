@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Command } from "@/lib/engine/commands";
 
@@ -15,7 +14,6 @@ const MUSIC = ["Bottom bars", "Face 3", "Center bars", "Face 1", "Matrix", "Frog
   "Falling blocks", "Dancing boy", "Fireworks", "Dancing girl"];
 
 export function DeviceTester() {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [brightness, setBrightness] = useState(50);
   const [log, setLog] = useState<string[]>([]);
@@ -32,13 +30,15 @@ export function DeviceTester() {
       setLog((l) => [`${cmd.action}: ${res.ok ? "ok" : body.error ?? res.status}`, ...l].slice(0, 8));
     } finally {
       setBusy(false);
-      router.refresh();
     }
   }
 
   return (
-    <section className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-cyan-600 space-y-3">
-      <h3 className="text-xl font-semibold mb-4 text-cyan-300">Device test</h3>
+    <section className="bg-gray-800 rounded-lg p-4 space-y-3">
+      <div>
+        <h3 className="font-semibold">Quick tests</h3>
+        <p className="text-sm text-gray-400">Known-good commands for checking the device. Each one holds the display like a raw send; use Restore display above to go back.</p>
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <span>Brightness</span>
         <input className="min-w-32 flex-1 accent-cyan-500" type="range" min={0} max={100} value={brightness} onChange={(e) => setBrightness(+e.target.value)} />

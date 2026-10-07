@@ -43,11 +43,19 @@ const gifCache = new Map<string, Gif>();
 const gifStart = new Map<string, number>();
 
 async function loadGif(file: string): Promise<Gif> {
-  const img = sharp(file, { animated: true });
-  const meta = await img.metadata();
-  const pages = meta.pages ?? 1;
-  const { data } = await img.resize(SIZE, SIZE * pages, { fit: "fill", kernel: "lanczos3" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  // For animated input sharp sizes each frame: 16x16 here means every frame,
+  // and the output is the frames stacked vertically (pageHeight 16).
+  const { data, info } = await sharp(file, { animated: true })
+    .resize(SIZE, SIZE, { fit: "fill", kernel: "lanczos3" })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const meta = await sharp(file, { animated: true }).metadata();
   const frameBytes = SIZE * SIZE * 3;
+  const pages = Math.max(1, Math.floor(info.height / (info.pageHeight ?? SIZE)));
+  if (info.width !== SIZE || (info.pageHeight ?? SIZE) !== SIZE || data.length < pages * frameBytes) {
+    throw new Error(`unexpected GIF frame layout ${info.width}x${info.pageHeight ?? info.height}`);
+  }
   const frames = Array.from({ length: pages }, (_, i) => Canvas.from(data.subarray(i * frameBytes, (i + 1) * frameBytes)));
   // GIF delays are in ms here; 0 means "as fast as possible", shown as 100 ms
   // (Rust divided real delays by ten, playing every GIF ten times too fast).

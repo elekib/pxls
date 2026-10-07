@@ -13,3 +13,15 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   if (response.status === 403) window.dispatchEvent(new Event(FORBIDDEN_EVENT));
   return response;
 }
+
+/** JSON helper with the original UI's signature. Throws Error with the server's message. */
+export async function accountRequest<T = Record<string, unknown>>(path: string, method = "GET", body?: unknown): Promise<T> {
+  const response = await apiFetch(path, {
+    method,
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((data as { error?: string }).error || response.statusText);
+  return data as T;
+}

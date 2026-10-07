@@ -44,7 +44,7 @@ Goal: everything the Rust 0.1.x app does, rebuilt Next-native (server components
 | 1 ✅ | Database (same file, WAL, migrations 0001/0002), first-run setup code, login, sessions, lockout, Account page, Users page (admin), role checks, `/api/auth/*` and `/api/users/*` for scripts | `database/`, `accounts.rs`, `auth.rs`, `routes/account.rs`, `routes/users.rs` |
 | 2 ✅ | Config and Device page: connect/disconnect, brightness, time format, native modes, `apply_device_config` on connect and save, secret redaction | `config.rs`, `routes/config.rs`, `routes/device.rs`, `rendering/device_config.rs`, `modes/divoom.rs` |
 | 3 ✅ | Render loop and Pages page: custom page rotation, native-mode keep-alive (no `set_color` heartbeat), font and renderer, page types (clock/weather, system/GPU stats, temps, Beszel, text, pixels, script, image upload), uploads with `image_guard` | `rendering/`, `renderer.rs`, `font.rs`, `pages/`, `routes/upload.rs`, `routes/beszel.rs`, `image_guard.rs` |
-| 4 | Tools page: countdown, sound detector, scoreboard, buzzer, stop, tool state | `routes/tools.rs`, `tool_state.rs`, `pixoo_wrapper.rs` |
+| 4 ✅ | Tools page: countdown, sound detector, scoreboard, buzzer, stop, tool state | `routes/tools.rs`, `tool_state.rs`, `pixoo_wrapper.rs` |
 | 5 | Webhooks: receiver with per-webhook secret, rules, conditions, actions, payload tester, notifications, image processing with `net_guard`, events log and replay | `webhook_enhanced.rs`, `routes/webhook*.rs`, `routes/enhanced_webhooks.rs`, `actions/`, `notification/`, `webhook_image_processor.rs`, `net_guard.rs` |
 | 6 | Diagnostics page (admin, flag gated), mobile nav, polish, docs, then release 0.2.0 | `routes/debug.rs`, `frontend/src/components/` |
 

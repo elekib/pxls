@@ -17,6 +17,8 @@ import type { Transport } from "@/lib/device/types";
 import { TokenManager } from "@/lib/render/beszel";
 import { renderPage } from "@/lib/render";
 import { RenderLoop } from "@/lib/render/loop";
+import { endTool } from "@/lib/tools/service";
+import { ToolTimer } from "@/lib/tools/state";
 import { readConfig, type EngineConfig } from "./config";
 import { applyDeviceConfig } from "./modes";
 
@@ -38,6 +40,8 @@ export type Connector = (mac: string, onHangup: (e?: Error) => void) => Promise<
 export interface EngineHooks {
   getMac: () => string | null;
   onConnected?: (pixoo: Pixoo) => Promise<void>;
+  /** Don't reconnect yet (a tool is running and owns the display). */
+  holdReconnect?: () => boolean;
 }
 
 const log = (msg: string) => console.log(`[engine] ${msg}`);
@@ -125,6 +129,10 @@ export class Engine {
 
   private async connect(): Promise<void> {
     if (this.stopped || this.manual) return;
+    if (!this.trying && this.hooks.holdReconnect?.()) {
+      this.schedule();
+      return;
+    }
     const mac = this.trying ?? this.hooks.getMac();
     if (!mac) {
       this.status = { device: "disabled", error: null, connectedAt: null };
@@ -197,6 +205,7 @@ function message(e: unknown): string {
 declare global {
   var __pxlsEngine: Engine | undefined;
   var __pxlsTokens: TokenManager | undefined;
+  var __pxlsTools: ToolTimer | undefined;
   var __pxlsLoop: RenderLoop | undefined;
 }
 
@@ -205,12 +214,17 @@ export function getEngine(): Engine {
   if (!globalThis.__pxlsEngine) {
     const config = readConfig();
     const settings = () => loadConfig(getDb());
+    const tools = new ToolTimer();
     const engine = new Engine(
       config,
       (mac, onHangup) => RfcommTransport.connect({ mac, channel: config.channel, dev: config.rfcommDev, onHangup }),
       {
         getMac: () => settings().pixoo_mac.trim() || config.mac,
-        onConnected: (p) => applyDeviceConfig(p, settings().device_config),
+        // A running tool owns the display: don't overwrite it on reconnect.
+        onConnected: async (p) => {
+          if (!tools.isActive()) await applyDeviceConfig(p, settings().device_config);
+        },
+        holdReconnect: () => tools.isActive(),
       },
     );
     const tokens = new TokenManager(settings);
@@ -218,7 +232,20 @@ export function getEngine(): Engine {
       engine,
       config: settings,
       render: (page) => renderPage(page, { timeZone: settings().timezone, tokens }),
+      // Tools pause rendering. When a timed tool runs out, put the display back
+      // at once on the same link (no reconnect), then rendering resumes.
+      pause: async () => {
+        const expired = tools.pollExpired();
+        if (expired) {
+          await engine
+            .run((p) => endTool(p, expired, false, settings().device_config))
+            .then(() => console.log(`[tools] ${expired} finished, display restored`))
+            .catch((e) => console.warn(`[tools] restoring the display failed: ${(e as Error).message}`));
+        }
+        return tools.isActive();
+      },
     });
+    globalThis.__pxlsTools = tools;
     globalThis.__pxlsTokens = tokens;
     globalThis.__pxlsLoop = loop;
     // Close the link cleanly when the container stops.
@@ -230,6 +257,12 @@ export function getEngine(): Engine {
     loop.start();
   }
   return globalThis.__pxlsEngine;
+}
+
+/** The running-tool record shared by the routes, status and render loop. */
+export function getTools(): ToolTimer {
+  getEngine();
+  return globalThis.__pxlsTools!;
 }
 
 /** The Beszel token manager shared by the pages and the Beszel API. */

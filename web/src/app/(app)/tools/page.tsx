@@ -1,7 +1,11 @@
-import { Pending } from "@/components/screens/Pending";
+import { ToolsView } from "@/components/screens/ToolsView";
 import { requireUser } from "@/lib/auth/session";
+import { getConfig, publicConfig } from "@/lib/device/service";
+import type { Config } from "@/ui/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   await requireUser();
-  return <Pending title="Tools" phase={4} />;
+  return <ToolsView config={publicConfig(getConfig()) as unknown as Config} />;
 }

@@ -4,7 +4,7 @@
 import { getDb } from "@/lib/db/sqlite";
 import { deviceConfig, normalizeConfig, pickKnown, type Config, type DeviceConfig } from "@/lib/config/model";
 import { loadConfig, preserveSecrets, publicConfig, saveConfig } from "@/lib/config/store";
-import { getEngine, getTokens } from "@/lib/engine/engine";
+import { getEngine, getTokens, getTools } from "@/lib/engine/engine";
 import { clearSystemCache } from "@/lib/render/beszel";
 import { applyDeviceConfig, nativeMode } from "@/lib/engine/modes";
 
@@ -49,6 +49,10 @@ export async function saveDeviceConfig(raw: unknown): Promise<Outcome> {
   cfg.device_config = dc;
   saveConfig(db, cfg);
 
+  // A running tool owns the display; the render loop applies the saved config when it ends.
+  if (getTools().isActive()) {
+    return { ok: true, message: "Device configuration saved; it will apply when the running tool ends" };
+  }
   const engine = getEngine();
   if (engine.getStatus().device !== "connected") {
     return { ok: true, message: "Device configuration saved (no device connected)" };
@@ -80,7 +84,8 @@ export async function applyBrightness(percent: number): Promise<Outcome> {
   try {
     await engine.run(async (p) => {
       await p.setBrightness(pct);
-      if (cfg.device_config.light_mode === "light") await p.setMode(nativeMode(cfg.device_config)!);
+      // Light mode carries its own brightness, but never overwrite a running tool.
+      if (cfg.device_config.light_mode === "light" && !getTools().isActive()) await p.setMode(nativeMode(cfg.device_config)!);
     });
     return { ok: true, message: `Brightness ${pct}%` };
   } catch (e) {
@@ -97,7 +102,7 @@ export async function applyScores(red: number, blue: number): Promise<Outcome> {
   cfg.device_config.score_config = { red_score: clamp(red), blue_score: clamp(blue) };
   saveConfig(db, cfg);
   const engine = getEngine();
-  if (cfg.device_config.light_mode !== "score" || engine.getStatus().device !== "connected") {
+  if (cfg.device_config.light_mode !== "score" || engine.getStatus().device !== "connected" || getTools().isActive()) {
     return { ok: true, message: "Scores saved" };
   }
   try {
@@ -112,6 +117,8 @@ export async function applyScores(red: number, blue: number): Promise<Outcome> {
 export async function connectDevice(mac: string): Promise<Outcome> {
   const m = mac.trim().toUpperCase();
   if (!MAC_RE.test(m)) return { ok: false, status: 400, error: "Invalid MAC address format" };
+  // A fresh link has no tool running on it.
+  getTools().end();
   const r = await getEngine().connectNow(m);
   if (!r.ok) return { ok: false, status: 500, error: `Failed to connect to device: ${r.error}` };
   const db = getDb();
@@ -143,11 +150,14 @@ export function saveTimezone(tz: string): Outcome {
 
 export function connectionStatus() {
   const s = getEngine().getStatus();
+  const tools = getTools();
+  const left = tools.remainingMs();
   return {
     connected: s.device === "connected",
     manual_disconnect: s.manualDisconnect,
-    // Tools arrive in a later phase.
-    tool_type: null,
-    tool_remaining_secs: null,
+    // The running tool (null when none or expired) and seconds left (null
+    // for tools without a timer, such as the scoreboard).
+    tool_type: tools.kind(),
+    tool_remaining_secs: left === null ? null : Math.ceil(left / 1000),
   };
 }
