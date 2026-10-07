@@ -1,7 +1,9 @@
-import { Pending } from "@/components/screens/Pending";
+import { WebhooksView } from "@/components/screens/WebhookViews";
 import { requireUser } from "@/lib/auth/session";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   await requireUser("admin");
-  return <Pending title="Webhooks" phase={5} />;
+  return <WebhooksView />;
 }

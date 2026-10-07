@@ -25,8 +25,10 @@ export interface LoopDeps {
   engine: Pick<Engine, "run" | "getStatus" | "forceReconnect">;
   config: () => Config;
   render: (page: CustomPage) => Promise<Canvas>;
-  /** Something else owns the display right now (a tool or a notification). */
+  /** A tool owns the display right now: stay quiet. */
   pause?: () => Promise<boolean>;
+  /** The active webhook notification as a frame, drawn over everything else. */
+  notification?: () => Canvas | null;
   now?: () => number;
 }
 
@@ -40,6 +42,7 @@ export class RenderLoop {
   private lastDivoomIndex: number | null = null;
   private lastDivoomAt = 0;
   private failures = 0;
+  private showingNotification = false;
 
   constructor(private readonly deps: LoopDeps) {
     this.lastSwitch = this.now();
@@ -89,6 +92,19 @@ export class RenderLoop {
       return interval;
     }
     if (this.deps.engine.getStatus().device !== "connected") return interval;
+
+    // A notification draws over pages and native modes (every 500 ms at most,
+    // so flashing works). When it ends, re-apply at once instead of in 10 s.
+    const note = this.deps.notification?.() ?? null;
+    if (note) {
+      this.showingNotification = true;
+      await this.push(note);
+      return Math.min(interval, 500);
+    }
+    if (this.showingNotification) {
+      this.showingNotification = false;
+      this.resetNative();
+    }
 
     const pages = enabledPages(cfg.custom_pages);
     const dc = cfg.device_config;

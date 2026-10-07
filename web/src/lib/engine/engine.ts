@@ -18,6 +18,7 @@ import { TokenManager } from "@/lib/render/beszel";
 import { renderPage } from "@/lib/render";
 import { RenderLoop } from "@/lib/render/loop";
 import { endTool } from "@/lib/tools/service";
+import { NotificationManager, renderNotification } from "@/lib/webhooks/notifications";
 import { ToolTimer } from "@/lib/tools/state";
 import { readConfig, type EngineConfig } from "./config";
 import { applyDeviceConfig } from "./modes";
@@ -206,6 +207,7 @@ declare global {
   var __pxlsEngine: Engine | undefined;
   var __pxlsTokens: TokenManager | undefined;
   var __pxlsTools: ToolTimer | undefined;
+  var __pxlsNotifications: NotificationManager | undefined;
   var __pxlsLoop: RenderLoop | undefined;
 }
 
@@ -228,7 +230,12 @@ export function getEngine(): Engine {
       },
     );
     const tokens = new TokenManager(settings);
+    const notifications = new NotificationManager();
     const loop = new RenderLoop({
+      notification: () => {
+        const n = notifications.current();
+        return n ? renderNotification(n) : null;
+      },
       engine,
       config: settings,
       render: (page) => renderPage(page, { timeZone: settings().timezone, tokens }),
@@ -246,6 +253,7 @@ export function getEngine(): Engine {
       },
     });
     globalThis.__pxlsTools = tools;
+    globalThis.__pxlsNotifications = notifications;
     globalThis.__pxlsTokens = tokens;
     globalThis.__pxlsLoop = loop;
     // Close the link cleanly when the container stops.
@@ -257,6 +265,12 @@ export function getEngine(): Engine {
     loop.start();
   }
   return globalThis.__pxlsEngine;
+}
+
+/** Webhook notifications shown by the render loop. */
+export function getNotifications(): NotificationManager {
+  getEngine();
+  return globalThis.__pxlsNotifications!;
 }
 
 /** The running-tool record shared by the routes, status and render loop. */
