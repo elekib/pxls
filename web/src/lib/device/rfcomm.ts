@@ -48,7 +48,14 @@ export class RfcommTransport implements Transport {
     if (!Number.isInteger(dev) || dev < 0 || dev > 255) throw new Error(`invalid rfcomm device: ${dev}`);
 
     const path = `/dev/rfcomm${dev}`;
-    if (!existsSync(path)) {
+    if (existsSync(path)) {
+      // Reuse the binding only if it points at this device; the MAC can change.
+      const { stdout } = await run("rfcomm", ["show", String(dev)]).catch(() => ({ stdout: "" }));
+      if (!stdout.toUpperCase().includes(mac.toUpperCase())) {
+        await run("rfcomm", ["release", String(dev)]).catch(() => {});
+        await run("rfcomm", ["bind", String(dev), mac, String(channel)]);
+      }
+    } else {
       await run("rfcomm", ["bind", String(dev), mac, String(channel)]);
     }
 
