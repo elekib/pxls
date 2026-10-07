@@ -4,6 +4,34 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one container, `pxls`. It reads the same `data/pxls.db` as 0.1.x, so nothing needs migrating; see "Upgrading from 0.1.x" in the README.
+
+### Changed
+- One app and one container replace the Rust backend and the nginx web container. The UI, API and webhook receiver are all on port 3030 (`PXLS_PORT`). Logs: `docker logs pxls`.
+- The Bluetooth link uses BlueZ's `rfcomm` and a raw `/dev/rfcommN` link instead of a native library; no D-Bus mount is needed. Optional `PIXOO_CHANNEL` and `PIXOO_RFCOMM_DEV`.
+- Pages render on the server, and every tab has its own URL, so a refresh no longer jumps back to Device.
+- The browser signs in with an `httpOnly` session cookie; everyone signs in once after upgrading. Script tokens, the refresh flow and all API paths are unchanged.
+- Brightness is its own card on the Device page: it applies while you drag, saves itself, and also drives Light mode (which used to have a second, conflicting slider).
+- Score mode on the Device page uses the Tools scoreboard controls; both accept typed scores.
+- "Show Divoom Logo" is labelled "Show Cloud Channel" (the setting is still not sent to the device; see docs/protocol.md).
+- Diagnostics also has quick tests (brightness, colours, clock, score, buzzer, music modes), which hold the display like a raw send.
+- `PXLS_ALLOWED_ORIGINS` now only adds origins to the sign-in CSRF check; the API no longer answers cross-origin (CORS) requests.
+
+### Fixed
+- Clock pages use the timezone saved on the Device page (it was ignored in favour of the container's clock).
+- Animated GIF pages play at their real speed (they ran ten times too fast) and are scaled per frame.
+- Flash Screen and flashing image notifications blink (they showed a steady colour).
+- The display returns as soon as a notification ends, instead of up to 10 seconds later.
+- Custom script pages stop after 5 seconds instead of blocking the display.
+- Webhook image templates draw text with the bitmap font instead of placeholder dots.
+- A system name containing quotes no longer breaks the Beszel lookup.
+- Lockout ignores a client's own `X-Forwarded-For` header.
+
+### Added
+- `PXLS_LOG_PACKETS=1` logs every packet sent to the device.
+
+## [0.1.0]
+
 ### Added
 - Required API authentication: user accounts for the UI and API (see below), and a per-webhook secret for incoming webhooks.
 - `PXLS_ALLOWED_ORIGINS` CORS allowlist and `PXLS_ALLOW_PRIVATE_URLS` switch for webhook image downloads.

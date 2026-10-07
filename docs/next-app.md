@@ -1,6 +1,6 @@
 # Next.js app (0.2.0)
 
-pxls is being rebuilt as one Next.js app in `web/`: the UI, the API and the display engine run in a single Node process and ship as one image, `ghcr.io/elekib/pxls`. The Rust 0.1.x stack on `main` is the reference until this reaches parity. See [versioning.md](versioning.md).
+pxls is one Next.js app in `web/`: the UI, the API and the display engine run in a single Node process and ship as one image, `ghcr.io/elekib/pxls`. All features of the Rust 0.1.x app are ported; `main` keeps 0.1.x until 0.2.0 is released. See [versioning.md](versioning.md).
 
 ## How it fits together
 
@@ -46,6 +46,6 @@ Goal: everything the Rust 0.1.x app does, rebuilt Next-native (server components
 | 3 ✅ | Render loop and Pages page: custom page rotation, native-mode keep-alive (no `set_color` heartbeat), font and renderer, page types (clock/weather, system/GPU stats, temps, Beszel, text, pixels, script, image upload), uploads with `image_guard` | `rendering/`, `renderer.rs`, `font.rs`, `pages/`, `routes/upload.rs`, `routes/beszel.rs`, `image_guard.rs` |
 | 4 ✅ | Tools page: countdown, sound detector, scoreboard, buzzer, stop, tool state | `routes/tools.rs`, `tool_state.rs`, `pixoo_wrapper.rs` |
 | 5 ✅ | Webhooks: receiver with per-webhook secret, rules, conditions, actions, payload tester, notifications, image processing with `net_guard`, events log and replay | `webhook_enhanced.rs`, `routes/webhook*.rs`, `routes/enhanced_webhooks.rs`, `actions/`, `notification/`, `webhook_image_processor.rs`, `net_guard.rs` |
-| 6 🟡 | Diagnostics page ✅ (admin, flag gated, plus quick tests), mobile nav ✅; left: polish, docs, then release 0.2.0 | `routes/debug.rs`, `frontend/src/components/` |
+| 6 ✅ | Diagnostics page (admin, flag gated, plus quick tests), mobile nav, docs and upgrade guide, slim bundle. Next: device checks, then release 0.2.0 | `routes/debug.rs`, `frontend/src/components/` |
 
 Rules for every phase: same API paths and JSON shapes where scripts use them, secrets never logged or returned, golden-byte tests stay green, tests in `web/__tests__/`.

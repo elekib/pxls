@@ -12,7 +12,7 @@ services:
     env_file:
       - .env
     environment:
-      PORT: ${PXLS_PORT:-3500}
+      PORT: ${PXLS_PORT:-3030}
     volumes:
       - /dev:/dev
       - ./data:/app/data

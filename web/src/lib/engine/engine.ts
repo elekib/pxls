@@ -149,7 +149,8 @@ export class Engine {
         await transport.close();
         return;
       }
-      this.pixoo = new Pixoo(transport);
+      // PXLS_LOG_PACKETS=1 logs every packet sent, in hex.
+      this.pixoo = new Pixoo(transport, process.env.PXLS_LOG_PACKETS === "1" ? (m) => log(m) : undefined);
       this.status = { device: "connected", error: null, connectedAt: new Date().toISOString() };
       log(`connected to ${mac}`);
       if (this.hooks.onConnected) {

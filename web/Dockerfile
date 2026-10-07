@@ -32,7 +32,7 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
-    PORT=3500 \
+    PORT=3030 \
     PXLS_DATA_DIR=/app/data \
     PXLS_VERSION=${VERSION} \
     PXLS_GIT_SHA=${GIT_SHA}
@@ -42,7 +42,7 @@ COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/peer.cjs ./peer.cjs
 
-EXPOSE 3500
+EXPOSE 3030
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
     CMD curl -fsS "http://127.0.0.1:${PORT}/api/health" || exit 1
 # peer.cjs records the real client address for lockout. node:sqlite is stable

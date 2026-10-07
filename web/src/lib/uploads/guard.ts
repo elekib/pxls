@@ -10,7 +10,8 @@ export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const MAX_DIMENSION = 4096;
 const MAX_PIXELS = 16 * 1024 * 1024;
 
-export const uploadsDir = () => path.join(dataDir(), "uploads");
+// The hint keeps the build tracer from bundling every file named "uploads".
+export const uploadsDir = () => path.join(/* turbopackIgnore: true */ dataDir(), "uploads");
 
 /** Detect the format from magic bytes; the filename is never trusted. */
 export function sniffFormat(b: Uint8Array): "png" | "jpg" | "gif" | "bmp" | "webp" | null {

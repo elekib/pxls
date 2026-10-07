@@ -75,7 +75,7 @@ Then delete the branch (`git push origin --delete exp/my-test`) and remove the `
 
 ## Database migrations
 
-Persistent data lives in SQLite (`data/pxls.db`). To change the schema, add a new file `backend/src/database/migrations/NNNN_description.sql` with the next unused number. It is embedded at build time and applied once at startup inside a transaction; there is no list to edit. Never edit a migration that has been released. If two branches pick the same number the build fails with a message telling you to renumber one.
+Persistent data lives in SQLite (`data/pxls.db`). To change the schema, append an entry with the next unused version number to `web/src/lib/db/migrations/index.ts`. Each migration is applied once at startup inside a transaction and recorded in `schema_version`. Never edit a migration that has been released: 0.1.x and 0.2.x share this database.
 
 ## Architecture notes
 
