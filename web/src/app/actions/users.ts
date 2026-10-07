@@ -15,15 +15,14 @@ const notFound = { error: USER_ERROR_MESSAGES["not-found"] };
 
 const audit = (msg: string, fields: Record<string, unknown>) => console.warn(`[security] ${msg}`, JSON.stringify(fields));
 
-export async function createUser(_: FormState, form: FormData): Promise<FormState> {
+export async function createUser(username: string, password: string, roleIn: string): Promise<FormState> {
   const me = await requireUser("admin");
-  const username = String(form.get("username") ?? "").trim();
-  const role: Role = form.get("role") === "admin" ? "admin" : "viewer";
-  const r = await getAuth().createUser(username, String(form.get("password") ?? ""), role);
+  const role: Role = roleIn === "admin" ? "admin" : "viewer";
+  const r = await getAuth().createUser(String(username ?? "").trim(), String(password ?? ""), role);
   if (!r.ok) return { error: r.error ? USER_ERROR_MESSAGES[r.error] : r.message };
   audit("user created", { admin: me.user.username, user: r.user.username, role });
   revalidatePath("/users");
-  return { message: `Created ${r.user.username}.` };
+  return { message: "User created" };
 }
 
 export async function updateUser(id: number, change: { role?: Role; disabled?: boolean }): Promise<FormState> {
@@ -35,7 +34,7 @@ export async function updateUser(id: number, change: { role?: Role; disabled?: b
   if (typeof r === "string") return { error: USER_ERROR_MESSAGES[r] };
   audit("user updated", { admin: me.user.username, user: r.username, disabled: r.disabled, role: r.role });
   revalidatePath("/users");
-  return {};
+  return { message: role !== undefined ? "Role updated" : r.disabled ? "User disabled" : "User enabled" };
 }
 
 export async function resetPassword(id: number, password: string): Promise<FormState> {
@@ -45,7 +44,7 @@ export async function resetPassword(id: number, password: string): Promise<FormS
   const r = await getAuth().adminSetPassword(target, password);
   if (!r.ok) return { error: r.message };
   audit("password reset; sessions revoked", { admin: me.user.username, user: target.username });
-  return { message: `Password reset for ${target.username}. Their sessions were signed out.` };
+  return { message: `Password reset for ${target.username}; their sessions were ended` };
 }
 
 export async function revokeUserSessions(id: number): Promise<FormState> {
@@ -54,7 +53,7 @@ export async function revokeUserSessions(id: number): Promise<FormState> {
   const n = getAuth().store.revokeUserSessions(id, null, nowSecs(), "revoked-by-admin");
   audit("sessions revoked by admin", { admin: me.user.username, user_id: id, sessions: n });
   revalidatePath("/users");
-  return { message: `Signed out ${n} session(s).` };
+  return { message: "Sessions revoked" };
 }
 
 export async function deleteUser(id: number): Promise<FormState> {
@@ -65,5 +64,5 @@ export async function deleteUser(id: number): Promise<FormState> {
   if (r !== true) return { error: USER_ERROR_MESSAGES[r] };
   audit("user deleted", { admin: me.user.username, user_id: id });
   revalidatePath("/users");
-  return {};
+  return { message: "User deleted" };
 }

@@ -19,25 +19,22 @@ export interface FormState {
   message?: string;
 }
 
-const str = (f: FormData, k: string) => {
-  const v = f.get(k);
-  return typeof v === "string" ? v : "";
+const tooMany = (s?: number) => {
+  const mins = s ? Math.ceil(s / 60) : null;
+  return `Too many attempts. Try again${mins ? ` in about ${mins} minute${mins === 1 ? "" : "s"}` : " later"}.`;
 };
 
-const tooMany = (s?: number) => `Too many attempts. Try again in ${Math.ceil((s ?? 60) / 60)} minute(s).`;
-
-export async function login(_: FormState, form: FormData): Promise<FormState> {
+export async function login(username: string, password: string): Promise<FormState> {
   const { ip, userAgent, secure } = await requestInfo();
-  const r = await getAuth().login(str(form, "username"), str(form, "password"), ip, userAgent);
-  if (!r.ok) return { error: r.error === "throttled" ? tooMany(r.retryAfter) : "Invalid username or password" };
+  const r = await getAuth().login(String(username ?? "").trim(), String(password ?? ""), ip, userAgent);
+  if (!r.ok) return { error: r.error === "throttled" ? tooMany(r.retryAfter) : "Invalid username or password." };
   await setSessionCookie(r.value, secure);
   redirect("/");
 }
 
-export async function setup(_: FormState, form: FormData): Promise<FormState> {
-  if (str(form, "password") !== str(form, "confirm")) return { error: "Passwords do not match." };
+export async function setup(code: string, username: string, password: string): Promise<FormState> {
   const { ip, userAgent, secure } = await requestInfo();
-  const r = await getAuth().setup(str(form, "setup_code"), str(form, "username").trim(), str(form, "password"), ip, userAgent);
+  const r = await getAuth().setup(String(code ?? ""), String(username ?? "").trim(), String(password ?? ""), ip, userAgent);
   if (!r.ok) {
     if (r.error === "throttled") return { error: tooMany(r.retryAfter) };
     if (r.error === "invalid") return { error: r.message };
@@ -54,11 +51,10 @@ export async function logout(): Promise<void> {
   redirect("/login");
 }
 
-export async function changePassword(_: FormState, form: FormData): Promise<FormState> {
+export async function changePassword(current: string, next: string): Promise<FormState> {
   const me = await requireUser();
-  if (str(form, "new_password") !== str(form, "confirm")) return { error: "Passwords do not match." };
   const { ip } = await requestInfo();
-  const r = await getAuth().changePassword(me.user, str(form, "current_password"), str(form, "new_password"), ip);
+  const r = await getAuth().changePassword(me.user, String(current ?? ""), String(next ?? ""), ip);
   if (!r.ok) {
     if (r.error === "wrong-current") return { error: "Current password is incorrect" };
     if (r.error === "throttled") return { error: tooMany(r.retryAfter) };
@@ -69,15 +65,16 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   redirect("/login?changed=1");
 }
 
-export async function revokeSession(sessionId: string): Promise<void> {
+export async function revokeSession(sessionId: string): Promise<FormState> {
   const me = await requireUser();
-  if (typeof sessionId !== "string") return;
-  getAuth().store.revokeSession(me.user.id, sessionId, nowSecs(), "revoked-by-user");
+  if (typeof sessionId !== "string") return { error: "Session not found" };
+  const ok = getAuth().store.revokeSession(me.user.id, sessionId, nowSecs(), "revoked-by-user");
   if (sessionId === me.sessionId) {
     await clearSessionCookie();
     redirect("/login");
   }
   revalidatePath("/account");
+  return ok ? { message: "Session signed out" } : { error: "Session not found" };
 }
 
 export async function logoutEverywhere(): Promise<void> {
