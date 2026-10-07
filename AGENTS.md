@@ -14,6 +14,7 @@ Guide for contributors and coding agents working on pxls.
 - pxls is a single Next.js app in `web/` (UI, API and display engine in one process). The Rust `backend/` and Vite `frontend/` live on `main` (0.1.x) as the porting reference.
 - Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). App on port 3500 (`PXLS_PORT`). Logs: `docker logs -f pxls`.
 - Local checks in `web/`: `npm run typecheck`, `npm test`, `npm run build` (Node 22+).
+- Tests live in `web/__tests__/`, mirroring `web/src/` (for example `src/lib/engine/engine.ts` is tested in `__tests__/lib/engine/engine.test.ts`). Import the code under test with `@/` paths. Do not put tests next to source files.
 
 ## Architecture
 

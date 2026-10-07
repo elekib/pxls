@@ -38,10 +38,18 @@ docker compose start backend
 
 `PXLS_ENABLE_DEBUG=1` lets anyone on your network use the test controls, because there are no accounts yet. Stop the container when you are done.
 
-## Roadmap
+## Parity plan
 
-1. ✅ Device link, engine, health, test controls, single image and CI.
-2. Database on the existing SQLite schema, accounts and sessions (port of `auth.rs`, `accounts.rs`).
-3. Config and device settings, render loop and pages, native-mode keep-alive.
-4. Notifications, webhooks and actions, tools.
-5. Port the remaining UI pages, then release 0.2.0.
+Goal: everything the Rust 0.1.x app does, rebuilt Next-native (server components and server actions for the UI), on the **same `data/pxls.db`** so switching images keeps all data and can roll back. Each phase ends with a pushed `exp-next-app` image to test on the server.
+
+| Phase | Scope | Rust reference (on `main`) |
+|---|---|---|
+| 0 ✅ | Device link, engine, health, device test page, single image, CI | `device/`, `routes/health.rs` |
+| 1 | Database (same file, WAL, migrations 0001/0002), first-run setup code, login, sessions, lockout, Account page, Users page (admin), role checks, `/api/auth/*` and `/api/users/*` for scripts | `database/`, `accounts.rs`, `auth.rs`, `routes/account.rs`, `routes/users.rs` |
+| 2 | Config and Device page: connect/disconnect, brightness, time format, native modes, `apply_device_config` on connect and save, secret redaction | `config.rs`, `routes/config.rs`, `routes/device.rs`, `rendering/device_config.rs`, `modes/divoom.rs` |
+| 3 | Render loop and Pages page: custom page rotation, native-mode keep-alive (no `set_color` heartbeat), font and renderer, page types (clock/weather, system/GPU stats, temps, Beszel, text, pixels, script, image upload), uploads with `image_guard` | `rendering/`, `renderer.rs`, `font.rs`, `pages/`, `routes/upload.rs`, `routes/beszel.rs`, `image_guard.rs` |
+| 4 | Tools page: countdown, sound detector, scoreboard, buzzer, stop, tool state | `routes/tools.rs`, `tool_state.rs`, `pixoo_wrapper.rs` |
+| 5 | Webhooks: receiver with per-webhook secret, rules, conditions, actions, payload tester, notifications, image processing with `net_guard`, events log and replay | `webhook_enhanced.rs`, `routes/webhook*.rs`, `routes/enhanced_webhooks.rs`, `actions/`, `notification/`, `webhook_image_processor.rs`, `net_guard.rs` |
+| 6 | Diagnostics page (admin, flag gated), mobile nav, polish, docs, then release 0.2.0 | `routes/debug.rs`, `frontend/src/components/` |
+
+Rules for every phase: same API paths and JSON shapes where scripts use them, secrets never logged or returned, golden-byte tests stay green, tests in `web/__tests__/`.

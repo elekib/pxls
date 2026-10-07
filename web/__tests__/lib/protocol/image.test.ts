@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as frame from "./frame";
-import { CMD_IMAGE, bitsPerPixel, encode, solid, type RgbImage } from "./image";
+import * as frame from "@/lib/protocol/frame";
+import { CMD_IMAGE, bitsPerPixel, encode, solid, type RgbImage } from "@/lib/protocol/image";
 
 const bytes = (u: Uint8Array) => Array.from(u);
 

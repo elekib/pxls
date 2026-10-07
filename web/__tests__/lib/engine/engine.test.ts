@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryTransport } from "@/lib/device/memory";
-import { Engine, type Connector } from "./engine";
+import { Engine, type Connector } from "@/lib/engine/engine";
 
 const config = { mac: "11:22:33:44:55:66", channel: 1, rfcommDev: 0, debug: false };
 

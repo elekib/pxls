@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light dark;
   --bg: #f7f7f8;
   --fg: #18181b;
   --muted: #71717a;
@@ -35,11 +36,11 @@ h2 { font-size: 15px; margin: 0 0 12px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-button {
+button, select {
   font: inherit; padding: 6px 12px; border-radius: 8px; cursor: pointer;
   border: 1px solid var(--border); background: var(--card); color: var(--fg);
 }
-button:hover { border-color: var(--accent); }
-button:disabled { opacity: 0.5; cursor: wait; }
+button:hover, select:hover { border-color: var(--accent); }
+button:disabled, select:disabled { opacity: 0.5; cursor: wait; }
 input[type="range"] { flex: 1; min-width: 120px; }
 code { font-size: 13px; }

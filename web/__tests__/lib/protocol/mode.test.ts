@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as frame from "./frame";
-import { CMD_MODE, ClockDesign, LightEffect, MusicMode, encode, type LightMode } from "./mode";
+import * as frame from "@/lib/protocol/frame";
+import { CMD_MODE, ClockDesign, LightEffect, MusicMode, encode, type LightMode } from "@/lib/protocol/mode";
 
 // Golden packets from backend/src/device/mod.rs tests.
 const pkt = (m: LightMode) => Array.from(frame.encode(CMD_MODE, encode(m)));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { encode } from "./frame";
+import { encode } from "@/lib/protocol/frame";
 
 const bytes = (u: Uint8Array) => Array.from(u);
 

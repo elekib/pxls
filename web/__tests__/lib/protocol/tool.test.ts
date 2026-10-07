@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as frame from "./frame";
-import { encode, type ToolInfo } from "./tool";
+import * as frame from "@/lib/protocol/frame";
+import { encode, type ToolInfo } from "@/lib/protocol/tool";
 
 // Golden packets from backend/src/device/mod.rs tests.
 const pkt = (t: ToolInfo) => Array.from(frame.encode(...encode(t)));

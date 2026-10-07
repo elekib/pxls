@@ -62,7 +62,10 @@ export class Engine {
   run<T>(fn: (pixoo: Pixoo) => Promise<T>): Promise<T> {
     const next = this.queue.then(async () => {
       const pixoo = this.pixoo;
-      if (!pixoo) throw new Error(`device ${this.status.device}`);
+      if (!pixoo) {
+        const { device, error } = this.status;
+        throw new Error(error ? `device ${device}: ${error}` : `device ${device}`);
+      }
       try {
         return await fn(pixoo);
       } catch (e) {

@@ -107,6 +107,11 @@ Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart the backend; admins then get a *
 
 ## Device test checklist
 
+**Results, 2026-10-07** (Node engine spike, Pixoo `11:75:58:8F:CF:2C`, RFCOMM channel 1, model and firmware not recorded):
+- Brightness `0x74` little-endian framing works at 50, 1 and 100 (items 1 and 6): framing is right and unescaped `0x01` arguments are accepted.
+- Image `0x44` works for solid colors and a two-color image; the top-left pixel lands top-left (item 7, static images only). `LEN` as frame length from `AA` is correct.
+- The device replies to packets (item 9): the replies should be read and drained, as the Node transport does.
+
 Run on the server with a real Pixoo and note the model and firmware. Tick each item or record what the display did.
 
 1. **Connect and brightness.** Connect from the UI, set brightness 10, 50, 100. Display should change. If nothing happens, run `command_tester` brightness: it sends the `0x74` and the old `0x32` forms. If only a big-endian packet works, framing is wrong and everything else is moot.

@@ -1,7 +1,7 @@
 import { image } from "@/lib/protocol";
 import { describe, expect, it } from "vitest";
-import { Pixoo } from "./pixoo";
-import { MemoryTransport } from "./memory";
+import { Pixoo } from "@/lib/device/pixoo";
+import { MemoryTransport } from "@/lib/device/memory";
 
 describe("Pixoo", () => {
   it("frames brightness and clamps it", async () => {
