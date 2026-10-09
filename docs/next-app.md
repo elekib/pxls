@@ -18,7 +18,7 @@ The Bluetooth approach was proven on a real Pixoo on 2026-10-07 (RFCOMM channel 
 
 Pushing to `exp/next-app` publishes `ghcr.io/elekib/pxls:exp-next-app` (amd64 while the repository is private). Only one process can hold the Bluetooth link, so stop the Rust backend first.
 
-The Next app opens the **same `pxls.db`** as the Rust app (same schema, migrations and JWT key), so your existing users and passwords work. Back the database up before the first run:
+The Next app opens the same `pxls.db` as the Rust app and keeps your config, pages and webhooks. Accounts moved to Better Auth, though: migration 0003 drops the old `users`, `sessions` and `login_attempts` tables, so **you create the admin again** with the setup code in the log, and going back to the Rust app needs a restored backup. Back the database up before the first run:
 
 ```bash
 cd /opt/stacks/pixoo                 # the running 0.1.x stack
@@ -30,9 +30,9 @@ docker run -d --name pxls-next --privileged --net=host -v /dev:/dev -v "$PWD/dat
 docker logs -f pxls-next             # expect "[engine] connected"
 ```
 
-Open `http://<server>:3500` and sign in with your existing account. Browser sessions from the Rust UI do not carry over (new cookie), so everyone signs in once. Device test controls appear for admins when `PXLS_ENABLE_DEBUG=1`.
+Open `http://<server>:3500`, take the setup code from the log (`docker logs pxls-next 2>&1 | grep -i "setup code"`) and create the admin account. Old accounts and sessions do not carry over. Device test controls appear for admins when `PXLS_ENABLE_DEBUG=1`.
 
-Put the 0.1.x stack back with `docker rm -f pxls-next && docker compose start backend`. Both apps read the same data, so nothing is lost either way.
+Put the 0.1.x stack back with `docker rm -f pxls-next && docker compose start backend`. Restore `data.bak-<date>` if you ran the Next app, since it replaced the account tables.
 
 ## Parity plan
 
@@ -41,7 +41,7 @@ Goal: everything the Rust 0.1.x app does, rebuilt Next-native (server components
 | Phase | Scope | Rust reference (on `main`) |
 |---|---|---|
 | 0 ✅ | Device link, engine, health, device test page, single image, CI | `device/`, `routes/health.rs` |
-| 1 ✅ | Database (same file, WAL, migrations 0001/0002), first-run setup code, login, sessions, lockout, Account page, Users page (admin), role checks, `/api/auth/*` and `/api/users/*` for scripts | `database/`, `accounts.rs`, `auth.rs`, `routes/account.rs`, `routes/users.rs` |
+| 1 ✅ | Database (same file, WAL, migrations 0001/0002), first-run setup code, login, sessions, rate limiting, Account page, Users page (admin), role checks, `/api/auth/*` for scripts (Better Auth) | `database/`, `accounts.rs`, `auth.rs`, `routes/account.rs`, `routes/users.rs` |
 | 2 ✅ | Config and Device page: connect/disconnect, brightness, time format, native modes, `apply_device_config` on connect and save, secret redaction | `config.rs`, `routes/config.rs`, `routes/device.rs`, `rendering/device_config.rs`, `modes/divoom.rs` |
 | 3 ✅ | Render loop and Pages page: custom page rotation, native-mode keep-alive (no `set_color` heartbeat), font and renderer, page types (clock/weather, system/GPU stats, temps, Beszel, text, pixels, script, image upload), uploads with `image_guard` | `rendering/`, `renderer.rs`, `font.rs`, `pages/`, `routes/upload.rs`, `routes/beszel.rs`, `image_guard.rs` |
 | 4 ✅ | Tools page: countdown, sound detector, scoreboard, buzzer, stop, tool state | `routes/tools.rs`, `tool_state.rs`, `pixoo_wrapper.rs` |
