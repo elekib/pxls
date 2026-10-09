@@ -2,7 +2,7 @@
 // Port of routes/webhooks.rs and the webhook parts of auth.rs.
 
 import { randomUUID } from "node:crypto";
-import { constantTimeEq } from "@/lib/auth/service";
+import { constantTimeEq } from "@/lib/auth/util";
 import type { Db } from "@/lib/db/sqlite";
 import { executeAction, type ActionContext } from "./actions";
 import { defaultDisplayAction, displayDefaults, evaluateRule, type DisplayDefaults } from "./match";

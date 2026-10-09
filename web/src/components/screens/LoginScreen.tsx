@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { login } from "@/app/actions/auth";
 
 const inputClass =
   "w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400";
@@ -16,11 +15,21 @@ export function LoginScreen({ notice }: { notice?: string | null }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    // Redirects on success.
-    const r = await login(username.trim(), password);
-    if (r?.error) {
-      setError(r.error);
+    try {
+      // Through the HTTP API, not a server action, so the rate limiter applies.
+      const res = await fetch("/api/auth/sign-in/username", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+      if (res.ok) {
+        window.location.assign("/");
+        return;
+      }
+      setError(res.status === 429 ? "Too many attempts. Try again in a few minutes." : "Invalid username or password.");
       setPassword("");
+    } catch {
+      setError("Could not reach the server.");
     }
     setBusy(false);
   };

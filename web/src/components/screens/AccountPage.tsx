@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { changePassword, logoutEverywhere, revokeSession } from "@/app/actions/auth";
 import { useToast } from "@/components/Toast";
-import type { User } from "@/lib/auth/store";
+import type { User } from "@/lib/auth/accounts";
 
 export interface Session {
   id: string;
