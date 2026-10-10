@@ -1,9 +1,11 @@
 // The render loop. Port of rendering/loop_renderer.rs.
 //
 // Every refresh_interval_ms (1 s by default):
-// - Custom mode: rotate the enabled pages every rotation_time_secs. Rendered
+// - Custom mode: rotate the enabled pages every rotation_time_secs (or the
+//   page's own duration_secs). Rendered
 //   pages are drawn and pushed; Divoom pages are applied as native modes only
-//   on page change or every 10 s, since the device renders them itself.
+//   on page change or every 10 s (User GIFs: every 5 minutes, since re-sending
+//   restarts its slideshow), since the device renders them itself.
 // - Native mode: re-apply the mode on change or every 10 s, as display
 //   refresh and keep-alive. Never send a set_color heartbeat here: it
 //   overwrites the native display (clock, blank, clock flicker).
@@ -18,6 +20,13 @@ import type { Canvas } from "./canvas";
 import { enabledPages, isDivoomPage, type CustomPage } from "./pageTypes";
 
 export const NATIVE_REAPPLY_MS = 10_000;
+/**
+ * The User GIFs channel plays its own slideshow, and sending the mode again
+ * restarts it from the first GIF. Re-applying every 10 s would show only the
+ * GIFs that fit in 10 s, so this one is re-sent rarely, as a safety net.
+ */
+export const USER_REAPPLY_MS = 5 * 60_000;
+const reapplyMs = (kind: string) => (kind === "user" || kind === "DivoomUser" ? USER_REAPPLY_MS : NATIVE_REAPPLY_MS);
 const MIN_INTERVAL_MS = 50;
 const FAILURES_BEFORE_RECONNECT = 5;
 
@@ -111,16 +120,19 @@ export class RenderLoop {
 
     if (dc.light_mode === "custom" && pages.length > 0) {
       const now = this.now();
-      if (now - this.lastSwitch >= cfg.rotation_time_secs * 1000) {
+      // Each page may override the global rotation time for how long it stays up.
+      this.index %= pages.length;
+      const own = pages[this.index]!.duration_secs;
+      const displaySecs = typeof own === "number" && own > 0 ? own : cfg.rotation_time_secs;
+      if (now - this.lastSwitch >= displaySecs * 1000) {
         this.index = (this.index + 1) % pages.length;
         this.lastSwitch = now;
       }
-      this.index %= pages.length;
       const page = pages[this.index]!;
 
       if (isDivoomPage(page.page_type)) {
         const changed = this.lastDivoomIndex !== this.index;
-        if (changed || now - this.lastDivoomAt >= NATIVE_REAPPLY_MS) {
+        if (changed || now - this.lastDivoomAt >= reapplyMs(page.page_type.type)) {
           this.lastDivoomAt = now;
           const m = pageMode(page.page_type as unknown as { type: string } & Record<string, unknown>);
           if (await this.send(m)) this.lastDivoomIndex = this.index;
@@ -134,7 +146,7 @@ export class RenderLoop {
       // Native (device-level) mode.
       const now = this.now();
       const changed = dc.light_mode !== this.lastNative;
-      if (changed || now - this.lastNativeAt >= NATIVE_REAPPLY_MS) {
+      if (changed || now - this.lastNativeAt >= reapplyMs(dc.light_mode)) {
         this.lastNative = dc.light_mode;
         this.lastNativeAt = now;
         await this.send(nativeMode(dc));

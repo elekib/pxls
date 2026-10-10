@@ -8,6 +8,17 @@ import { useState, useEffect, type ChangeEvent, type FocusEvent } from 'react';
 import type { Config, CustomPage, ScriptInput, Pixel } from '@/ui/types';
 import { API_URL, typeLabels } from '@/ui/types';
 import { BeszelLogin } from './BeszelLogin';
+import { DivoomPageFields } from './DivoomPageFields';
+import {
+  parseDuration,
+  buildDivoomPayload,
+  defaultDivoomData,
+  divoomTypeLabels,
+  DIVOOM_TYPES,
+  isDivoomType,
+  loadDivoomData,
+  type DivoomData,
+} from '@/ui/divoomPage';
 
 interface PagesPageProps {
   config: Config | null;
@@ -29,6 +40,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   const [pageName, setPageName] = useState('');
   const [pageType, setPageType] = useState('ClockWeather');
   const [pageEnabled, setPageEnabled] = useState(true);
+  const [pageDurationStr, setPageDurationStr] = useState('');
+  const [divoomData, setDivoomData] = useState<DivoomData>({});
   
   // Page type specific state
   const [clockColor, setClockColor] = useState('#00FFFF');
@@ -94,8 +107,10 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
       setPageName(page.name);
       setPageType(page.page_type.type || 'ClockWeather');
       setPageEnabled(page.enabled);
+      setPageDurationStr(page.duration_secs ? String(page.duration_secs) : '');
       
       const data = page.page_type;
+      if (isDivoomType(data.type)) setDivoomData(loadDivoomData(data.type, data));
       setClockColor('#' + (data.clock_color || '00FFFF'));
       setDateColor('#' + (data.date_color || 'FFFF00'));
       setWeatherColor('#' + (data.weather_color || 'FFA500'));
@@ -166,6 +181,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
       setPageName('New Page');
       setPageType('ClockWeather');
       setPageEnabled(true);
+      setPageDurationStr('');
       resetToDefaults();
     }
     setShowEditor(true);
@@ -208,9 +224,11 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   const handleSavePage = async () => {
     if (!config) return;
     
-    const pageTypeData = { type: pageType } as unknown as CustomPage['page_type'];
+    let pageTypeData = { type: pageType } as unknown as CustomPage['page_type'];
     
-    if (pageType === 'ClockWeather') {
+    if (isDivoomType(pageType)) {
+      pageTypeData = buildDivoomPayload(pageType, divoomData) as unknown as CustomPage['page_type'];
+    } else if (pageType === 'ClockWeather') {
       Object.assign(pageTypeData, {
         clock_color: clockColor.substring(1),
         date_color: dateColor.substring(1),
@@ -280,7 +298,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     const newPage: CustomPage = { 
       name: pageName, 
       enabled: pageEnabled, 
-      page_type: pageTypeData
+      page_type: pageTypeData,
+      duration_secs: parseDuration(pageDurationStr)
     };
     const newPages = [...(config.custom_pages || [])];
     
@@ -675,7 +694,10 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               
               <div className="mb-4">
                 <label className="block text-gray-400 text-sm mb-2">Page Type</label>
-                <select value={pageType} onChange={(e) => setPageType(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                <select value={pageType} onChange={(e) => {
+                  setPageType(e.target.value);
+                  if (isDivoomType(e.target.value)) setDivoomData(defaultDivoomData(e.target.value));
+                }} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
                   <option value="ClockWeather">Clock & Weather</option>
                   <option value="CustomScript">Custom Script</option>
                   <option value="CustomText">Custom Text</option>
@@ -684,8 +706,30 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <option value="CustomPixels">Pixel Drawing</option>
                   <option value="SystemStats">System Stats (Dashdot/Beszel)</option>
                   <option value="Temps">Temps (CPU)</option>
+                  <optgroup label="Divoom native (device-rendered)">
+                    {DIVOOM_TYPES.map((t) => <option key={t} value={t}>{divoomTypeLabels[t]}</option>)}
+                  </optgroup>
                 </select>
               </div>
+
+              <div className="mb-4">
+                <label className="block text-gray-400 text-sm mb-2">Display time (seconds)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={pageDurationStr}
+                  onChange={(e) => setPageDurationStr(e.target.value.replace(/\D/g, ''))}
+                  placeholder={`Default (${globalRotation}s)`}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+                />
+                <p className="text-gray-500 text-xs mt-1">
+                  Leave empty to use the global rotation time. Set a longer time for pages the device animates itself, such as User GIFs with many GIFs.
+                </p>
+              </div>
+
+              {isDivoomType(pageType) && (
+                <DivoomPageFields type={pageType} data={divoomData} onChange={setDivoomData} />
+              )}
               
               {/* Clock/Weather Options */}
               {pageType === 'ClockWeather' && (

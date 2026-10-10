@@ -52,6 +52,25 @@ describe("RenderLoop", () => {
     expect(cmds(s.t).every((c) => c === 0x44)).toBe(true);
   });
 
+  it("lets a page override the rotation time with duration_secs", async () => {
+    const s = setup({
+      refresh_interval_ms: 1000,
+      rotation_time_secs: 5,
+      device_config: { light_mode: "custom" },
+      custom_pages: [{ ...text("A"), duration_secs: 20 }, text("B"), { ...text("C"), duration_secs: 0 }],
+    });
+    await s.loop.tick(); // A
+    s.advance(19_000);
+    await s.loop.tick(); // still A: its own 20 s
+    s.advance(1000);
+    await s.loop.tick(); // B
+    s.advance(5000);
+    await s.loop.tick(); // C (B used the global 5 s)
+    s.advance(5000);
+    await s.loop.tick(); // A again (C's 0 means global 5 s)
+    expect(s.rendered).toEqual(["A", "A", "B", "C", "A"]);
+  });
+
   it("applies Divoom pages only on change or every 10 s", async () => {
     const s = setup({
       rotation_time_secs: 60,
@@ -67,6 +86,33 @@ describe("RenderLoop", () => {
     s.advance(1000);
     await s.loop.tick();
     expect(s.t.packets).toHaveLength(2);
+  });
+
+  it("does not restart the User GIFs slideshow every 10 s", async () => {
+    const s = setup({
+      refresh_interval_ms: 1000,
+      rotation_time_secs: 600,
+      device_config: { light_mode: "custom" },
+      custom_pages: [page("Gifs", { type: "DivoomUser", mode: "default" })],
+    });
+    await s.loop.tick();
+    expect(cmds(s.t)).toEqual([0x45]);
+    for (let i = 0; i < 59; i++) {
+      s.advance(5000); // just under five minutes, polled every 5 s
+      await s.loop.tick();
+    }
+    expect(cmds(s.t)).toEqual([0x45]); // still only the first send
+    s.advance(10_000);
+    await s.loop.tick();
+    expect(cmds(s.t)).toEqual([0x45, 0x45]); // safety-net re-send after 5 minutes
+  });
+
+  it("does not restart native User mode every 10 s either", async () => {
+    const s = setup({ refresh_interval_ms: 1000, device_config: { light_mode: "user" } });
+    await s.loop.tick();
+    s.advance(60_000);
+    await s.loop.tick();
+    expect(cmds(s.t)).toEqual([0x45]);
   });
 
   it("re-applies native modes on change or every 10 s, never a colour heartbeat", async () => {
@@ -92,7 +138,7 @@ describe("RenderLoop", () => {
   });
 
   it("forces a reconnect after five failed sends in a row", async () => {
-    const s = setup({ device_config: { light_mode: "user" } });
+    const s = setup({ device_config: { light_mode: "light" } });
     await s.t.close();
     for (let i = 0; i < 5; i++) {
       s.advance(10_000);

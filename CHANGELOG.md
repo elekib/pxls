@@ -18,6 +18,7 @@ Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one conta
 - `PXLS_ALLOWED_ORIGINS` now only adds origins to the sign-in CSRF check; the API no longer answers cross-origin (CORS) requests.
 
 ### Fixed
+- User GIFs (page and native mode) is no longer restarted every 10 seconds, which limited it to the first few GIFs; it is re-sent only on change and every 5 minutes.
 - Connect cannot hang: the device connect gives up after 20 seconds with a clear error.
 - Clock pages use the timezone saved on the Device page (it was ignored in favour of the container's clock).
 - Animated GIF pages play at their real speed (they ran ten times too fast) and are scaled per frame.
@@ -29,6 +30,7 @@ Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one conta
 - Lockout ignores a client's own `X-Forwarded-For` header.
 
 ### Added
+- Divoom native page types in the page editor (Clock, Light, Special, Music, User GIFs, Scoreboard), and a per-page display time (`duration_secs`) that overrides the global rotation time.
 - `PXLS_LOG_PACKETS=1` logs every packet sent to the device.
 
 ## [0.1.0]
