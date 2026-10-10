@@ -20,12 +20,12 @@ The repository is private. Making it public cannot be undone safely: forks and c
 - [ ] Run the [device test checklist](protocol.md#device-test-checklist) on a real Pixoo.
 - [ ] Restrict who can create `exp/**` branches (see the header of `.github/workflows/exp-images.yml`).
 - [ ] Make the repository public in GitHub settings.
-- [ ] Make the GHCR packages `pxls-backend` and `pxls-frontend` public under each package's settings. Packages do not follow the repository's visibility, and a public package cannot be made private again.
+- [ ] Make the GHCR package `pxls` public under its package settings (and `pxls-backend` / `pxls-frontend` for 0.1.x). Packages do not follow the repository's visibility, and a public package cannot be made private again.
 
 ## Cutting a release
 
 1. Move the `[Unreleased]` section of `CHANGELOG.md` to `[X.Y.Z] - YYYY-MM-DD` and add the compare link.
-2. Make sure `backend/Cargo.toml` and `frontend/package.json` carry the same version.
+2. Set the version in `web/package.json` (0.1.x: `backend/Cargo.toml` and `frontend/package.json`).
 3. Commit with a DCO sign-off: `git commit -s`.
 4. Tag on `main`: `git tag vX.Y.Z`. For a dry run, use a prerelease tag such as `vX.Y.Z-rc.1`. Tags containing `-` are marked as prereleases and do not move `latest`.
 5. Push the tag: `git push origin vX.Y.Z`. This runs `.github/workflows/release.yml`, which publishes the semver and `latest` images and creates the GitHub release.

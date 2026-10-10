@@ -14,73 +14,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Pipeline: install deps -> build -> test -> package docker image.
-  backend:
-    name: Backend (install, build, test)
+  # Pipeline: install deps -> type-check -> test -> build -> package docker image.
+  app:
+    name: App (install, type-check, test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88.0
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: backend
-      - name: Install deps
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libbluetooth-dev libdbus-1-dev libssl-dev
-      - name: Build
-        run: cargo build --locked --all-targets
-      - name: Lint
-        run: |
-          cargo fmt --check
-          cargo clippy --locked --all-targets -- -D warnings
-      - name: Test
-        run: cargo test --locked
-
-  frontend:
-    name: Frontend (install, build, test)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+        working-directory: web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: web/package-lock.json
       - name: Install deps
-        run: npm ci
-      - name: Build
-        run: npm run build
+        run: npm ci --no-audit --no-fund
+      - name: Type-check
+        run: npm run typecheck
       - name: Test
         run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
 
   # Packages the image to prove it builds. Only runs once build and tests pass.
   # On main and exp/* the publish workflows package and push instead (after
   # calling this workflow), and seed this layer cache (same scope) for new branches.
   package:
-    name: Package (${{ matrix.image }})
-    needs: [backend, frontend]
+    name: Package
+    needs: app
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        image: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
-          context: ./${{ matrix.image }}
+          context: ./web
           push: false
-          cache-from: type=gha,scope=${{ matrix.image }}-amd64
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-amd64
+          cache-from: type=gha,scope=pxls-amd64
+          cache-to: type=gha,mode=max,scope=pxls-amd64
 
   secrets:
     name: Secret scan

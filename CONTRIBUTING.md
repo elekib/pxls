@@ -21,38 +21,33 @@ This adds a `Signed-off-by: Your Name <you@example.com>` line. CI rejects pull r
 
 ## Development setup
 
-You need Docker for the full stack, and optionally Rust 1.88+ and Node 20+ for local checks.
+You need Docker for the full stack, and Node 22+ for local checks.
 
 ```bash
-cp .env.example .env     # set TZ
+cp .env.example .env     # set PIXOO_MAC and TZ
 docker compose -f compose.yaml -f compose.build.yaml up --build
 ```
 
-The UI is at http://localhost:3030. On first run, read the one-time setup code with `docker logs pxls-backend 2>&1 | grep -i "setup code"` and create the admin account in the UI.
+The app is at http://localhost:3500.
 
-### Backend (Rust)
+### App (Next.js)
 
-```bash
-cd backend
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo test
-```
-
-The Bluetooth driver only builds on Linux, so run these on Linux or inside the `rust:1.88-slim-bookworm` image with `libbluetooth-dev libdbus-1-dev libssl-dev pkg-config` installed. CI runs them for you.
-
-### Frontend (React)
+pxls is a single Next.js app in `web/`: the UI, the API and the display engine run in one process.
 
 ```bash
-cd frontend
+cd web
 npm ci
-npm run dev        # Vite dev server on :3000, proxies /api to http://127.0.0.1:3400
-npm run build      # type-check and production build
+npm run dev        # dev server on :3000
+npm run typecheck
+npm test
+npm run build
 ```
+
+The Bluetooth link needs Linux with BlueZ (`rfcomm`). Elsewhere the engine reports the device as `error` and keeps retrying; the UI and API still work.
 
 ## Testing a change on a server (experimental builds)
 
-For one-off tests, push a branch named `exp/<name>` (this needs write access to the repository; everyone else can test with `make dev` or in their own fork). The **Publish experimental images** workflow builds both images and pushes them to GHCR as `exp-<name>` and `sha-<short>`. They never touch `dev` or `latest`.
+For one-off tests, push a branch named `exp/<name>` (this needs write access to the repository; everyone else can test with `make dev` or in their own fork). The **Publish experimental images** workflow builds the image and pushes it to GHCR as `exp-<name>` and `sha-<short>`. They never touch `dev` or `latest`.
 
 ```bash
 git switch -c exp/my-test
@@ -80,7 +75,7 @@ Then delete the branch (`git push origin --delete exp/my-test`) and remove the `
 
 ## Database migrations
 
-Persistent data lives in SQLite (`data/pxls.db`). To change the schema, add a new file `backend/src/database/migrations/NNNN_description.sql` with the next unused number. It is embedded at build time and applied once at startup inside a transaction; there is no list to edit. Never edit a migration that has been released. If two branches pick the same number the build fails with a message telling you to renumber one.
+Persistent data lives in SQLite (`data/pxls.db`). To change the schema, append an entry with the next unused version number to `web/src/lib/db/migrations/index.ts`. Each migration is applied once at startup inside a transaction and recorded in `schema_version`. Never edit a migration that has been released: 0.1.x and 0.2.x share this database.
 
 ## Architecture notes
 
