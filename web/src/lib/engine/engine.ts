@@ -24,6 +24,8 @@ import { readConfig, type EngineConfig } from "./config";
 import { applyDeviceConfig } from "./modes";
 
 export const RETRY_MS = 2000;
+/** Longest a connect attempt may take: opening the Bluetooth serial port blocks until the device answers. */
+export const CONNECT_TIMEOUT_MS = 20_000;
 
 export type DeviceStatus = "disabled" | "connecting" | "connected" | "disconnected" | "error";
 
@@ -58,12 +60,15 @@ export class Engine {
   private generation = 0;
   /** MAC for a manual connect that is not saved yet (saved only on success). */
   private trying: string | null = null;
+  /** The connector call that is still running, including one that timed out. */
+  private inFlight: Promise<unknown> | null = null;
 
   constructor(
     readonly config: EngineConfig,
     private readonly connector: Connector,
     private readonly hooks: EngineHooks,
     private readonly retryMs = RETRY_MS,
+    private readonly connectTimeoutMs = CONNECT_TIMEOUT_MS,
   ) {}
 
   start(): void {
@@ -139,10 +144,17 @@ export class Engine {
       this.status = { device: "disabled", error: null, connectedAt: null };
       return;
     }
+    // A timed-out attempt may still be blocked in the OS. Starting another
+    // would pile up blocked threads, so wait for it to finish first.
+    if (this.inFlight) {
+      this.status = { device: "error", error: "a previous connection attempt is still in progress", connectedAt: null };
+      this.schedule();
+      return;
+    }
     const gen = ++this.generation;
     this.status = { ...this.status, device: "connecting" };
     try {
-      const transport = await this.connector(mac, (e) => {
+      const transport = await this.connectWithin(mac, (e) => {
         if (gen === this.generation) void this.drop(e ?? new Error("device hung up"));
       });
       if (this.stopped || this.manual || gen !== this.generation) {
@@ -160,6 +172,37 @@ export class Engine {
       if (gen !== this.generation) return;
       this.status = { device: "error", error: message(e), connectedAt: null };
       this.schedule();
+    }
+  }
+
+  /**
+   * Run the connector for at most connectTimeoutMs. If it finishes later, the
+   * link it opened is closed instead of leaked.
+   */
+  private async connectWithin(mac: string, onHangup: (e?: Error) => void): Promise<Transport> {
+    const attempt = this.connector(mac, onHangup);
+    const settled = attempt.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.inFlight = settled;
+    void settled.then(() => {
+      if (this.inFlight === settled) this.inFlight = null;
+    });
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`timed out after ${Math.round(this.connectTimeoutMs / 1000)}s connecting to ${mac}`)),
+        this.connectTimeoutMs,
+      );
+    });
+    try {
+      return await Promise.race([attempt, timeout]);
+    } catch (e) {
+      void attempt.then((late) => late.close()).catch(() => {});
+      throw e;
+    } finally {
+      clearTimeout(timer);
     }
   }
 

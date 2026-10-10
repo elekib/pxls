@@ -15,7 +15,9 @@ import tty from "node:tty";
 import { promisify } from "node:util";
 import { NotConnectedError, type Transport } from "./types";
 
-const run = promisify(execFile);
+const execFileAsync = promisify(execFile);
+/** rfcomm and stty talk to the kernel and can hang on a bad device; never wait on them forever. */
+const run = (cmd: string, args: string[]) => execFileAsync(cmd, args, { timeout: 10_000 });
 const open = promisify(fs.open);
 const write = promisify(fs.write);
 
