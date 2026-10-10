@@ -67,7 +67,13 @@ export function createAuth(db: Db, opts: AuthOptions = {}) {
     database: db,
     secret: resolveSecret(db, env),
     baseURL: env.PXLS_BASE_URL?.trim() || undefined,
-    trustedOrigins: origins,
+    // The origin the browser used (the Host header) is trusted, as is anything in
+    // PXLS_ALLOWED_ORIGINS. Next's own request URL carries the bind address, not
+    // the name the browser typed, so Better Auth cannot infer this itself.
+    trustedOrigins: (req) => {
+      const host = req?.headers.get("host")?.trim();
+      return host ? [...origins, `http://${host}`, `https://${host}`] : origins;
+    },
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,
