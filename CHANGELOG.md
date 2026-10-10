@@ -18,6 +18,7 @@ Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one conta
 - `PXLS_ALLOWED_ORIGINS` now only adds origins to the sign-in CSRF check; the API no longer answers cross-origin (CORS) requests.
 
 ### Fixed
+- User GIFs (page and native mode) is no longer restarted every 10 seconds, which limited it to the first few GIFs; it is re-sent only on change and every 5 minutes.
 - Connect cannot hang: the device connect gives up after 20 seconds with a clear error.
 - Clock pages use the timezone saved on the Device page (it was ignored in favour of the container's clock).
 - Animated GIF pages play at their real speed (they ran ten times too fast) and are scaled per frame.
