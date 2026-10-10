@@ -43,6 +43,8 @@ export interface CustomPage {
   name: string;
   enabled: boolean;
   page_type: PageType;
+  /** Seconds this page stays up; unset or 0 uses the global rotation time. */
+  duration_secs?: number;
 }
 
 const DIVOOM = new Set(["DivoomEnvironment", "DivoomLight", "DivoomSpecial", "DivoomMusic", "DivoomUser", "DivoomScore"]);

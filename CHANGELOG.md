@@ -29,6 +29,7 @@ Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one conta
 - Lockout ignores a client's own `X-Forwarded-For` header.
 
 ### Added
+- Divoom native page types in the page editor (Clock, Light, Special, Music, User GIFs, Scoreboard), and a per-page display time (`duration_secs`) that overrides the global rotation time.
 - `PXLS_LOG_PACKETS=1` logs every packet sent to the device.
 
 ## [0.1.0]

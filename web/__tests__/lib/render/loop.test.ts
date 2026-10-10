@@ -52,6 +52,25 @@ describe("RenderLoop", () => {
     expect(cmds(s.t).every((c) => c === 0x44)).toBe(true);
   });
 
+  it("lets a page override the rotation time with duration_secs", async () => {
+    const s = setup({
+      refresh_interval_ms: 1000,
+      rotation_time_secs: 5,
+      device_config: { light_mode: "custom" },
+      custom_pages: [{ ...text("A"), duration_secs: 20 }, text("B"), { ...text("C"), duration_secs: 0 }],
+    });
+    await s.loop.tick(); // A
+    s.advance(19_000);
+    await s.loop.tick(); // still A: its own 20 s
+    s.advance(1000);
+    await s.loop.tick(); // B
+    s.advance(5000);
+    await s.loop.tick(); // C (B used the global 5 s)
+    s.advance(5000);
+    await s.loop.tick(); // A again (C's 0 means global 5 s)
+    expect(s.rendered).toEqual(["A", "A", "B", "C", "A"]);
+  });
+
   it("applies Divoom pages only on change or every 10 s", async () => {
     const s = setup({
       rotation_time_secs: 60,

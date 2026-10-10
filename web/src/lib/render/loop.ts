@@ -1,7 +1,8 @@
 // The render loop. Port of rendering/loop_renderer.rs.
 //
 // Every refresh_interval_ms (1 s by default):
-// - Custom mode: rotate the enabled pages every rotation_time_secs. Rendered
+// - Custom mode: rotate the enabled pages every rotation_time_secs (or the
+//   page's own duration_secs). Rendered
 //   pages are drawn and pushed; Divoom pages are applied as native modes only
 //   on page change or every 10 s, since the device renders them itself.
 // - Native mode: re-apply the mode on change or every 10 s, as display
@@ -111,11 +112,14 @@ export class RenderLoop {
 
     if (dc.light_mode === "custom" && pages.length > 0) {
       const now = this.now();
-      if (now - this.lastSwitch >= cfg.rotation_time_secs * 1000) {
+      // Each page may override the global rotation time for how long it stays up.
+      this.index %= pages.length;
+      const own = pages[this.index]!.duration_secs;
+      const displaySecs = typeof own === "number" && own > 0 ? own : cfg.rotation_time_secs;
+      if (now - this.lastSwitch >= displaySecs * 1000) {
         this.index = (this.index + 1) % pages.length;
         this.lastSwitch = now;
       }
-      this.index %= pages.length;
       const page = pages[this.index]!;
 
       if (isDivoomPage(page.page_type)) {
