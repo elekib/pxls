@@ -5,7 +5,7 @@ import { Engine, type Connector, type EngineHooks } from "@/lib/engine/engine";
 
 const config = { mac: null, channel: 1, rfcommDev: 0, debug: false };
 
-function setup(opts: { mac?: string | null; connector?: Connector; hooks?: Partial<EngineHooks> } = {}) {
+function setup(opts: { mac?: string | null; connector?: Connector; hooks?: Partial<EngineHooks>; connectTimeoutMs?: number } = {}) {
   const transports: MemoryTransport[] = [];
   const hangups: ((e?: Error) => void)[] = [];
   const macs: string[] = [];
@@ -19,7 +19,7 @@ function setup(opts: { mac?: string | null; connector?: Connector; hooks?: Parti
       macs.push(m);
       return t;
     });
-  const engine = new Engine(config, connect, { getMac: () => mac, ...opts.hooks }, 10);
+  const engine = new Engine(config, connect, { getMac: () => mac, ...opts.hooks }, 10, opts.connectTimeoutMs);
   return { engine, transports, hangups, macs, setMac: (m: string | null) => (mac = m) };
 }
 
@@ -112,6 +112,46 @@ describe("Engine", () => {
     expect(macs).toEqual(["11:22:33:44:55:66", "AA:BB:CC:DD:EE:FF", "AA:BB:CC:DD:EE:00"]);
     // Retries go back to the saved MAC.
     await vi.waitFor(() => expect(macs.at(-1)).toBe("11:22:33:44:55:66"));
+    await engine.stop();
+  });
+
+  it("gives up on a connect that never answers, and closes the link if it arrives late", async () => {
+    let release!: (t: MemoryTransport) => void;
+    const late = new MemoryTransport();
+    let calls = 0;
+    const { engine } = setup({
+      connectTimeoutMs: 30,
+      connector: () => {
+        calls++;
+        return new Promise<MemoryTransport>((r) => (release = r));
+      },
+    });
+    engine.start();
+    await vi.waitFor(() => expect(engine.getStatus().error).toMatch(/timed out|still in progress/));
+    expect(engine.getStatus().device).toBe("error");
+    // While that attempt is still blocked, retries do not start another one.
+    await new Promise((res) => setTimeout(res, 80));
+    expect(calls).toBe(1);
+    expect(engine.getStatus().error).toMatch(/still in progress|timed out/);
+    release(late);
+    await vi.waitFor(() => expect(late.closes).toBe(1));
+    // Once it has settled, the next retry connects normally.
+    await vi.waitFor(() => expect(calls).toBe(2));
+    await engine.stop();
+  });
+
+  it("answers Connect with the timeout instead of hanging", async () => {
+    let calls = 0;
+    const { engine } = setup({
+      connectTimeoutMs: 30,
+      connector: async () => (++calls === 1 ? new MemoryTransport() : new Promise<MemoryTransport>(() => {})),
+    });
+    engine.start();
+    await vi.waitFor(() => expect(engine.getStatus().device).toBe("connected"));
+    const started = Date.now();
+    const r = await engine.connectNow("11:22:33:44:55:66");
+    expect(r).toMatchObject({ ok: false, error: expect.stringContaining("timed out") });
+    expect(Date.now() - started).toBeLessThan(1000);
     await engine.stop();
   });
 

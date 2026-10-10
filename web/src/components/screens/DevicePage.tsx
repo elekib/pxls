@@ -20,6 +20,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
   const router = useRouter();
   const onConfigUpdate = () => router.refresh();
   const [newMac, setNewMac] = useState('');
+  const [connecting, setConnecting] = useState(false);
   const [timezone, setTimezone] = useState(config.timezone || '');
   const [isConnected, setIsConnected] = useState(connected);
   const [isManualDisconnect, setIsManualDisconnect] = useState(manualDisconnect);
@@ -106,12 +107,15 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
   };
 
   const handleConnect = async () => {
-    if (!newMac.trim()) {
+    // An empty field reconnects to the saved device.
+    const target = newMac.trim() || config.pixoo_mac;
+    if (!target) {
       onNotify('Enter MAC address', 'error');
       return;
     }
     
-    const result = await connect(newMac);
+    setConnecting(true);
+    const result = await connect(target).finally(() => setConnecting(false));
     if (result.message) {
       onNotify('Connected!');
       setIsConnected(true);
@@ -226,7 +230,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
               className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base font-mono focus:outline-none focus:border-cyan-400"
             />
             <div className="flex gap-3">
-              <button className="flex-1 sm:flex-none px-6 py-3 bg-green-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-green-700" onClick={handleConnect}>Connect</button>
+              <button className="flex-1 sm:flex-none px-6 py-3 bg-green-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-green-700 disabled:opacity-50 disabled:cursor-wait" onClick={handleConnect} disabled={connecting}>{connecting ? 'Connecting...' : 'Connect'}</button>
               {isConnected && (
                 <button className="flex-1 sm:flex-none px-6 py-3 bg-red-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-red-700" onClick={handleDisconnect}>Disconnect</button>
               )}
