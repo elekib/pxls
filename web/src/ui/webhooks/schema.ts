@@ -1,4 +1,4 @@
-// Ported from the original Vite UI (frontend/src on main) as-is.
+// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
 
 import type {
   Action, ActionType, Condition, ConditionOperator, DisplayMode, Rule,
@@ -180,7 +180,7 @@ export const emptyRule = (): Rule => ({
   actions: [emptyAction()],
 });
 
-/** Client-side mirror of the backend's validate_rule, for inline feedback. */
+/** Client-side mirror of the server's validate_rule, for inline feedback. */
 export function validateRule(rule: Rule): string | null {
   if (!rule.name.trim()) return 'Rule name is required';
   if (rule.conditions.length === 0) return 'At least one condition is required';

@@ -1,6 +1,6 @@
-// The SQLite database, `<data dir>/pxls.db`, shared with the Rust 0.1.x app:
-// same file, pragmas and migrations, so switching between them keeps all data.
-// Port of backend/src/database/db.rs and migrations.rs.
+// The SQLite database, `<data dir>/pxls.db`. Port of backend/src/database/db.rs
+// and migrations.rs from the Rust app (the `rust-prerelease` branch). Migration
+// 0003 dropped the Rust app's account tables, so the two no longer share a file.
 //
 // Uses Node's built-in node:sqlite (no native addon). One connection per
 // process; SQLite (WAL plus busy timeout) serialises writers across processes.

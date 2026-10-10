@@ -1,6 +1,6 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
+// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
 
 import { useEffect, useState } from 'react';
 import { accountRequest } from '@/ui/api';
@@ -86,7 +86,7 @@ export function DiagnosticsPage({ onNotify }: Props) {
       <div className="max-w-2xl space-y-3">
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
         <p className="text-gray-300">
-          Diagnostics are off. Add <code className="bg-gray-700 px-1 rounded">PXLS_ENABLE_DEBUG=1</code> to <code className="bg-gray-700 px-1 rounded">.env</code> and restart the backend.
+          Diagnostics are off. Add <code className="bg-gray-700 px-1 rounded">PXLS_ENABLE_DEBUG=1</code> to <code className="bg-gray-700 px-1 rounded">.env</code> and restart pxls.
         </p>
       </div>
     );

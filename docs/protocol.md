@@ -69,7 +69,7 @@ Notes:
 - **Special mode:** observed on a real Pixoo: `45 03 TT` is ignored (the display stays on the previous screen) for all four app values, so channel `03` with these values is wrong for this device. Probe with the admin Diagnostics page (below): sweep `45 <channel> <value>` starting from solid red so an ignored command is obvious, try channels `02` and `03`, and record results here.
 - **Scoreboard:** mode `0x45 06` and tool `0x50` are different things. The Tools page and `/api/scoreboard` use mode `0x45 06`, the same command Device config sends, on the open link; each +/- sends one packet (the UI debounces and sends the latest value). `0x50` flashed a logo on a real Pixoo, so the app no longer sends it. Whether `0x45 06` updates live from rapid clicks needs a device test.
 - **Tools and the link:** countdown (`0x72 03`), sound detector (`0x72 02`) and the scoreboard are sent on the already-open link, which stays open. When a tool ends (timer expiry or Stop) the app re-applies the device config on that same link, with no reconnect; Stop first sends the tool's own stop (`0x72 03 00 00 00` / `0x72 02 00`). Whether the display returns this way, and whether the device keeps a tool running with the link open, needs a device test. Fallback: `PXLS_TOOL_CLOSE_LINK=1` closes the link after a tool is sent and the render loop reconnects when it ends, retrying every 2 s.
-- **Tool timing:** the backend keeps one record of the running tool (kind and end time). The countdown ends after its set time and the sound detector after 5 minutes (a UI assumption, the noise meter has no end of its own); the scoreboard has no timer.
+- **Tool timing:** the app keeps one record of the running tool (kind and end time). The countdown ends after its set time and the sound detector after 5 minutes (a UI assumption, the noise meter has no end of its own); the scoreboard has no timer.
 
 ### Image upload (`0x44`)
 
@@ -103,7 +103,7 @@ echo -ne '\x01\x04\x00\x74\x32\xAA\x00\x02' > /dev/rfcomm0
 
 ## Diagnostics page (admin only)
 
-Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart the backend; admins then get a **Diagnostics** tab. It sends a raw command (framing and checksum added) through the connected device, can show solid red first so ignored commands are obvious, steps through a value range, and keeps a log with notes you can copy. After each send the display loop is paused for two minutes. The endpoint (`POST /api/debug/send`) is admin only and returns 403 while the flag is off. **Restore display** (`POST /api/debug/release`, same rules) ends the pause and re-applies your configured mode on the open link, for when a probe leaves the display stuck (for example on the red screen). Turn the flag off again when you are done.
+Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart pxls; admins then get a **Diagnostics** tab. It sends a raw command (framing and checksum added) through the connected device, can show solid red first so ignored commands are obvious, steps through a value range, and keeps a log with notes you can copy. After each send the display loop is paused for two minutes. The endpoint (`POST /api/debug/send`) is admin only and returns 403 while the flag is off. **Restore display** (`POST /api/debug/release`, same rules) ends the pause and re-applies your configured mode on the open link, for when a probe leaves the display stuck (for example on the red screen). Turn the flag off again when you are done.
 
 ## Device test checklist
 

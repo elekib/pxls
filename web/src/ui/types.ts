@@ -25,7 +25,7 @@ export interface Config {
 
 export interface BeszelAuthConfig {
   email: string;
-  /** Never returned by the backend; blank on load, only sent when changing it. */
+  /** Never returned by the API; blank on load, only sent when changing it. */
   password?: string;
   password_set?: boolean;
 }
@@ -200,6 +200,5 @@ export const typeLabels: Record<string, string> = {
   'DivoomScore': '🏆 Divoom Score'
 };
 
-// Same-origin: nginx proxies /api to the backend in production, and the Vite dev
-// server does the same (see vite.config.ts).
+// Same-origin: the UI and the API are served by the same Next.js app.
 export const API_URL = '';

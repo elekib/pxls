@@ -1,6 +1,6 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
+// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
 
 import { WebhookCard } from '@/components/webhooks/WebhookCard';
 import { WebhookToolbar } from '@/components/webhooks/WebhookToolbar';

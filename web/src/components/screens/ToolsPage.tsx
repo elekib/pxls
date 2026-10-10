@@ -1,6 +1,6 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is, plus typed scores.
+// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is, plus typed scores.
 
 import { apiFetch } from '@/ui/api';
 import { useState, useEffect, useRef } from 'react';

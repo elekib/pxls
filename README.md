@@ -48,23 +48,6 @@ Open http://localhost:3030. On first run pxls asks you to create the admin accou
 > Published images are not available yet. Until the first release, build from source:
 > `docker compose -f compose.yaml -f compose.build.yaml up --build -d` (or `make dev`).
 
-## Upgrading from 0.1.x
-
-0.2.0 replaces the Rust backend and the separate web container with one Node.js app and one container, `pxls`. It reads the same `data/pxls.db`, so accounts, passwords, pages, device settings, webhooks, secrets and event history all carry over.
-
-1. Stop the old stack with its own compose file, so port 3030 is free: `docker compose down`.
-2. Back up `data/` (see [Configuration](#configuration)).
-3. Replace `compose.yaml` with the new one (a single `pxls` service). Keep your `.env`, and set `PXLS_TAG` to the new version (or `latest`).
-4. `docker compose up -d`, then check `docker logs pxls` for `[engine] connected`.
-
-What changes for you:
-
-- The UI and webhook receiver are on port 3030, as before. Senders that posted to the backend directly on port 3400 must use 3030.
-- Everyone signs in once again in the browser (new session cookie). Script tokens keep working.
-- Logs: `docker logs pxls` instead of `docker logs pxls-backend`.
-
-To go back, restore the old `compose.yaml` and image tag (`PXLS_TAG=0.1.0`); the database stays compatible.
-
 ## Authentication
 
 pxls has user accounts. There are no default credentials and no shared token. Everything except `/api/health` and the webhook receiver requires a signed-in user.
@@ -146,7 +129,7 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 | `PXLS_ENABLE_DEBUG` | `0` | Set `1` to enable the admin Diagnostics page (raw device commands). Leave off unless you are testing hardware |
 | `PXLS_LOG_PACKETS` | `0` | Set `1` to log every packet sent to the device, in hex |
 | `PXLS_TOOL_CLOSE_LINK` | `0` | Set `1` to release the Bluetooth link after starting a tool, for devices that need it |
-| `PXLS_TAG` | `latest` | Image tag for `docker compose`: `latest`, `dev` or a version such as `0.2.0` |
+| `PXLS_TAG` | `latest` | Image tag for `docker compose`: `latest`, `dev` or a release version |
 
 Device settings, pages and the rest of the app configuration are edited in the web UI. Everything except uploads is stored in one SQLite database, `./data/pxls.db` (with `pxls.db-wal` and `pxls.db-shm` next to it while running), created on first run. Uploaded images live in `./data/uploads`. The `data/` directory and `.env` are git-ignored so they never get committed.
 
@@ -175,7 +158,7 @@ Define rules on the **Webhooks** page. Use the **Event Logs** page to inspect in
 | Path | Contents |
 |---|---|
 | `web/` | The pxls app: Next.js UI and API, the display engine and render loop (`src/lib/engine`, `src/lib/render`), and the Bluetooth driver (`src/lib/device`, `src/lib/protocol`) |
-| `docs/` | Protocol reference, architecture and release notes |
+| `docs/` | Protocol reference, architecture and versioning |
 | `scripts/` | Optional helper scripts |
 | `compose.yaml` | Run the published image |
 | `compose.build.yaml` | Overlay that builds the image from source |
@@ -187,7 +170,7 @@ Early development. The API requires a signed-in user, but the Bluetooth device i
 ## Documentation
 
 - [Bluetooth protocol](docs/protocol.md) (pxls's own driver; per-command verification status and a device test checklist)
-- [How the app fits together](docs/next-app.md) and [versioning and releases](docs/versioning.md)
+- [How the app fits together](docs/architecture.md) and [versioning and releases](docs/versioning.md)
 - [Contributing](CONTRIBUTING.md) and [architecture notes](AGENTS.md)
 - [Changelog](CHANGELOG.md)
 

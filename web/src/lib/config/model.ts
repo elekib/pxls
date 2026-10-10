@@ -1,5 +1,6 @@
 // The app configuration, stored as one JSON document in `app_config` (row 1)
-// and shared with the Rust app. Port of backend/src/config.rs.
+// with the same shape the Rust app used (the `rust-prerelease` branch).
+// Port of backend/src/config.rs.
 //
 // Fields this app does not model yet (custom pages, webhooks, Beszel) are
 // kept as they are, so saving never drops data the Rust app or a later phase

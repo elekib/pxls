@@ -1,4 +1,4 @@
-// Ported from the original Vite UI (frontend/src on main) as-is.
+// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
 
 /** Copy of `items` sorted alphabetically by `label`, ignoring case and accents. */
 export function sortAlpha<T>(items: readonly T[], label: (item: T) => string): T[] {

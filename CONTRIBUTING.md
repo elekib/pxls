@@ -28,7 +28,7 @@ cp .env.example .env     # set PIXOO_MAC and TZ
 docker compose -f compose.yaml -f compose.build.yaml up --build
 ```
 
-The app is at http://localhost:3500.
+The app is at http://localhost:3030.
 
 ### App (Next.js)
 
@@ -70,12 +70,12 @@ Then delete the branch (`git push origin --delete exp/my-test`) and remove the `
 
 1. Fork the repository and branch from `main`.
 2. Keep changes focused. Add or update tests when you change behavior.
-3. Make sure formatting, lints, tests and the frontend build pass.
+3. Make sure `npm run typecheck`, `npm test` and `npm run build` pass in `web/`.
 4. Open a pull request describing the change and how you tested it. `main` is protected: CI must pass and the maintainer reviews.
 
 ## Database migrations
 
-Persistent data lives in SQLite (`data/pxls.db`). To change the schema, append an entry with the next unused version number to `web/src/lib/db/migrations/index.ts`. Each migration is applied once at startup inside a transaction and recorded in `schema_version`. Never edit a migration that has been released: 0.1.x and 0.2.x share this database.
+Persistent data lives in SQLite (`data/pxls.db`). To change the schema, append an entry with the next unused version number to `web/src/lib/db/migrations/index.ts`. Each migration is applied once at startup inside a transaction and recorded in `schema_version`. Never edit a migration that has been released.
 
 ## Architecture notes
 
