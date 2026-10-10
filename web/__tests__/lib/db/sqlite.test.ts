@@ -22,15 +22,15 @@ describe("database", () => {
   it("creates the shared schema", () => {
     const db = openMemoryDb();
     expect(tables(db)).toEqual(
-      expect.arrayContaining(["app_config", "login_attempts", "meta", "schema_version", "sessions", "users", "webhook_events", "webhooks"]),
+      expect.arrayContaining(["account", "app_config", "meta", "rateLimit", "schema_version", "session", "user", "verification", "webhook_events", "webhooks"]),
     );
-    expect(db.prepare("SELECT version FROM schema_version ORDER BY version").all()).toEqual([{ version: 1 }, { version: 2 }]);
+    expect(db.prepare("SELECT version FROM schema_version ORDER BY version").all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
   });
 
   it("is idempotent", () => {
     const db = openMemoryDb();
     migrate(db, MIGRATIONS);
-    expect(db.prepare("SELECT COUNT(*) AS n FROM schema_version").get()).toEqual({ n: 2 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM schema_version").get()).toEqual({ n: 3 });
   });
 
   it("refuses a database from a newer build", () => {
@@ -40,10 +40,10 @@ describe("database", () => {
   });
 
   it("applies a migration that lands with a lower number later", () => {
-    const later = { version: 3, name: "later", sql: "CREATE TABLE later (a)" };
+    const later = { version: 4, name: "later", sql: "CREATE TABLE later (a)" };
     const db = openMemoryDb([later]);
     migrate(db, [...MIGRATIONS, later]);
-    expect(tables(db)).toEqual(expect.arrayContaining(["users", "later"]));
+    expect(tables(db)).toEqual(expect.arrayContaining(["user", "later"]));
   });
 
   it("opens a private WAL file on disk and reopens it", () => {

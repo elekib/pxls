@@ -4,13 +4,13 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
-Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one container, `pxls`. It reads the same `data/pxls.db` as 0.1.x, so nothing needs migrating; see "Upgrading from 0.1.x" in the README.
+Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one container, `pxls`. Accounts are handled by Better Auth; create the admin again with the setup code on first start.
 
 ### Changed
 - One app and one container replace the Rust backend and the nginx web container. The UI, API and webhook receiver are all on port 3030 (`PXLS_PORT`). Logs: `docker logs pxls`.
 - The Bluetooth link uses BlueZ's `rfcomm` and a raw `/dev/rfcommN` link instead of a native library; no D-Bus mount is needed. Optional `PIXOO_CHANNEL` and `PIXOO_RFCOMM_DEV`.
 - Pages render on the server, and every tab has its own URL, so a refresh no longer jumps back to Device.
-- The browser signs in with an `httpOnly` session cookie; everyone signs in once after upgrading. Script tokens, the refresh flow and all API paths are unchanged.
+- Accounts and sessions use Better Auth. The browser signs in with an `httpOnly`, `SameSite=Strict` session cookie. Scripts sign in at `/api/auth/sign-in/username` and use the session token as a bearer token; the JWT and refresh-token flow and `/api/users/*` are gone (admins use `/api/auth/admin/*`). Sign-in is rate limited per address (10 per 15 minutes) instead of locking accounts. `PXLS_JWT_SECRET` is now `PXLS_AUTH_SECRET`; new `PXLS_BASE_URL`.
 - Brightness is its own card on the Device page: it applies while you drag, saves itself, and also drives Light mode (which used to have a second, conflicting slider).
 - Score mode on the Device page uses the Tools scoreboard controls; both accept typed scores.
 - "Show Divoom Logo" is labelled "Show Cloud Channel" (the setting is still not sent to the device; see docs/protocol.md).
@@ -37,11 +37,11 @@ Planned as 0.2.0. pxls is rebuilt as a single Node.js app (Next.js) in one conta
 - `PXLS_ALLOWED_ORIGINS` CORS allowlist and `PXLS_ALLOW_PRIVATE_URLS` switch for webhook image downloads.
 - Version and git revision reported by `/api/health` and shown in the UI.
 - Versioned SQL migrations for the database: add a numbered file under `backend/src/database/migrations/`.
-- User accounts with roles (`admin`, `viewer`), argon2id password hashes, JWT access tokens (15 minutes) and rotating refresh tokens in an `httpOnly` `SameSite=Strict` cookie. Sessions are stored in the database and can be listed and revoked (sign out, sign out everywhere, admin revoke); changing a password revokes all of a user's sessions, and refresh-token reuse revokes the session.
+- User accounts with roles (`admin`, `viewer`) and argon2id password hashes. Sessions are stored in the database and can be listed and revoked (sign out, sign out everywhere, admin revoke); changing a password revokes all of a user's sessions.
 - First-run setup in the web UI, gated by a one-time setup code printed in the backend log. No default credentials.
 - Login throttling with temporary lockout per username and per IP, identical error messages for unknown users and wrong passwords, and `pxls::security` log events that never contain credentials or tokens.
-- Web UI: username/password login, silent token refresh, session-expiry handling, an Account page (change password, manage sessions) and an admin Users page (create, disable, delete, reset passwords, change roles).
-- Database migration `0002_users_sessions` (users, sessions, login attempts). Optional `PXLS_JWT_SECRET` and `PXLS_COOKIE_SECURE`.
+- Web UI: username/password login, session-expiry handling, an Account page (change password, manage sessions) and an admin Users page (create, disable, delete, reset passwords, change roles).
+- Database migration `0003_better_auth` (user, session, account, rate limit tables). Optional `PXLS_AUTH_SECRET`, `PXLS_BASE_URL` and `PXLS_COOKIE_SECURE`.
 - Admin-only Diagnostics page (`PXLS_ENABLE_DEBUG=1`) that sends raw commands to the connected device and sweeps values, for testing hardware. Backed by `POST /api/debug/send` (admin only, off by default; the display loop is paused while probing).
 
 ### Changed

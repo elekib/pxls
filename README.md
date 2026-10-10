@@ -90,29 +90,32 @@ There is no self-registration; an admin creates accounts. Passwords are 12 to 12
 
 ### Sessions
 
+Accounts and sessions are handled by [Better Auth](https://www.better-auth.com), on the same `pxls.db`.
+
 - The web UI signs you in with an `httpOnly`, `SameSite=Strict` session cookie, and pages are rendered on the server for the signed-in user. When the session ends, you are sent to the sign-in page.
-- Scripts sign in through `/api/auth/login`, which returns a short-lived access token (JWT, 15 minutes) and sets a rotating refresh token in an `httpOnly`, `SameSite=Strict` cookie scoped to `/api/auth` (see [Scripts and automation](#scripts-and-automation)).
-- Sessions live in the database, so they can be listed and revoked on the **Account** page (and by an admin). Revoking, signing out, disabling a user or changing a password takes effect immediately, not when the access token expires. Changing a password signs that user out everywhere.
-- Using a refresh token twice (a sign of theft) revokes that whole session.
-- Sessions expire after 7 days idle and 30 days in total.
-- The JWT signing secret is generated on first start and stored in `pxls.db`. Set `PXLS_JWT_SECRET` (32+ characters) to supply your own; changing it signs everyone out.
-- Five failed sign-ins for a username lock that name for 15 minutes, and 20 from one IP lock that IP. This applies to names that do not exist too, and error messages never say whether an account exists. A determined attacker can therefore temporarily lock a known username out; that is the cost of throttling guessing.
-- Lockout and logs use the real client address. Behind a reverse proxy on your network, the client IP comes from `X-Real-IP`, which is only trusted from loopback or private peers; a client's own `X-Forwarded-For` is ignored.
+- Scripts sign in through `/api/auth/sign-in/username` and send the returned session token as `Authorization: Bearer` (see [Scripts and automation](#scripts-and-automation)).
+- Sessions live in the database, so they can be listed and revoked on the **Account** page (and by an admin). Revoking, signing out, disabling a user or changing a password takes effect immediately. Changing a password signs that user out everywhere.
+- A session expires after 7 days without use.
+- The signing secret is generated on first start and stored in `pxls.db`. Set `PXLS_AUTH_SECRET` (32+ characters) to supply your own; changing it signs everyone out.
+- Sign-in is rate limited per client address: 10 attempts per 15 minutes, after which that address gets `429`. Error messages never say whether an account exists.
+- Rate limits and logs use the real client address. Behind a reverse proxy on your network, the client IP comes from `X-Real-IP`, which is only trusted from loopback or private peers; a client's own `X-Forwarded-For` is ignored. IPv6 addresses are limited per /64 network, and the Account page shows them masked to it.
 
 ### Scripts and automation
 
-There is no static API token. Use a dedicated account (a `viewer` for read-only scripts) and sign in with a cookie jar:
+There is no static API token. Use a dedicated account (a `viewer` for read-only scripts). Sign in, then send the `set-auth-token` response header as a bearer token:
 
 ```bash
-curl -s -c jar -H 'X-Requested-With: pxls' -H 'Content-Type: application/json' \
-  -d '{"username":"script","password":"..."}' http://localhost:3030/api/auth/login
-# use "access_token" from the response as: -H "Authorization: Bearer <token>"
-# when it expires (15 min): curl -s -b jar -c jar -X POST -H 'X-Requested-With: pxls' http://localhost:3030/api/auth/refresh
+TOKEN=$(curl -si -H 'Content-Type: application/json' \
+  -d '{"username":"script","password":"..."}' http://localhost:3030/api/auth/sign-in/username \
+  | awk -F': ' 'tolower($1)=="set-auth-token"{print $2}' | tr -d '\r')
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3030/api/config
 ```
 
-Mutating `/api/auth` calls need the `X-Requested-With: pxls` header (CSRF protection).
+The token is the session itself: it lasts until you sign out (`POST /api/auth/sign-out`), an admin revokes it, or it has been unused for 7 days. Admins can also manage users with the `/api/auth/admin/*` endpoints.
 
-If you are behind a reverse proxy that rewrites the `Host` header, add your public origin to `PXLS_ALLOWED_ORIGINS`, otherwise sign-in is rejected by the CSRF check. Serve pxls over HTTPS and forward `X-Forwarded-Proto: https` so the refresh cookie gets the `Secure` flag (or set `PXLS_COOKIE_SECURE=true`).
+Requests that use the browser cookie (not a bearer token) and change state need the `X-Requested-With: pxls` header (CSRF protection).
+
+Set `PXLS_BASE_URL` to the public address you reach pxls at (for example `https://pxls.example.com`). Better Auth then trusts that origin, and the session cookie gets the `Secure` flag when it is `https`. Behind a reverse proxy that rewrites the `Host` header, you can instead add the public origin to `PXLS_ALLOWED_ORIGINS`.
 
 ### Lost the admin password
 
@@ -120,7 +123,7 @@ Stop pxls and remove the accounts so first-run setup returns. This deletes users
 
 ```bash
 docker compose stop pxls
-sqlite3 data/pxls.db "DELETE FROM users;"
+sqlite3 data/pxls.db "DELETE FROM user;"
 docker compose start pxls && docker logs pxls 2>&1 | grep -i "setup code"
 ```
 
@@ -134,10 +137,11 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 | `PIXOO_CHANNEL` | `1` | RFCOMM channel of the display's serial port |
 | `PIXOO_RFCOMM_DEV` | `0` | N in `/dev/rfcommN`; change it if another device uses rfcomm0 |
 | `PXLS_PORT` | `3030` | Port for the web UI, API and webhook receiver |
-| `PXLS_JWT_SECRET` | generated | Optional JWT signing secret, 32+ characters. By default one is generated on first start and stored in the database |
-| `PXLS_COOKIE_SECURE` | auto | Set `true` to always mark the refresh cookie `Secure`. By default it is set when the request arrives with `X-Forwarded-Proto: https` |
+| `PXLS_AUTH_SECRET` | generated | Optional signing secret for sessions, 32+ characters. By default one is generated on first start and stored in the database |
+| `PXLS_BASE_URL` | derived | Public URL of pxls (for example `https://pxls.example.com`). Set it behind a reverse proxy; `https` makes the session cookie `Secure` |
+| `PXLS_COOKIE_SECURE` | auto | Set `true` to always mark the session cookie `Secure` (use when serving over HTTPS and `PXLS_BASE_URL` is not set) |
 | `TZ` | `UTC` | Container timezone (log timestamps). Clock pages use the timezone set on the Device page |
-| `PXLS_ALLOWED_ORIGINS` | empty | Comma-separated extra origins accepted by the sign-in CSRF check, for reverse proxies that rewrite `Host`. The UI and API share one origin, so leave it empty otherwise |
+| `PXLS_ALLOWED_ORIGINS` | empty | Comma-separated extra origins trusted by the sign-in origin check, for reverse proxies that rewrite `Host`. The UI and API share one origin, so leave it empty otherwise |
 | `PXLS_ALLOW_PRIVATE_URLS` | `false` | Let webhook image URLs point at private or LAN addresses (for example a Jellyfin server). Off by default to prevent server-side request forgery |
 | `PXLS_ENABLE_DEBUG` | `0` | Set `1` to enable the admin Diagnostics page (raw device commands). Leave off unless you are testing hardware |
 | `PXLS_LOG_PACKETS` | `0` | Set `1` to log every packet sent to the device, in hex |

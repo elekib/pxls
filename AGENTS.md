@@ -22,6 +22,7 @@ Guide for contributors and coding agents working on pxls.
 - `web/src/lib/engine/engine.ts`: process-wide `Engine` (`getEngine()`). Owns the Bluetooth link, reconnects every 2 s, and serializes device work through `run()`. Never write to the device outside `run()`.
 - `web/src/lib/device/`: `Pixoo` device API and transports. `rfcomm.ts` binds `/dev/rfcommN` and writes in raw TTY mode (no native addons). `memory.ts` is for tests.
 - `web/src/lib/render/`: the render loop (`loop.ts`, page rotation and native keep-alive), the bitmap font and the page types. Tools pause it; webhook notifications draw over it.
+- `web/src/lib/auth/`: accounts and sessions on Better Auth (`auth.ts` config, `accounts.ts` user and session management, `api.ts` guard for route handlers, `session.ts` for server components). `/api/auth/*` is served by Better Auth through an allowlist in `app/api/auth/[...all]/route.ts`; sign-in must go through it so the rate limiter applies. Every other API route calls `requireApi()` itself.
 - `web/src/lib/webhooks/`: receiver, rules engine, actions, notifications and the SSRF guard for image downloads (`netGuard.ts`).
 - `web/src/lib/protocol/`: packet encoders with golden-byte tests ported from the Rust driver. Keep them byte-identical unless a device test says otherwise (see `docs/protocol.md`).
 - Do not send a `set_color` heartbeat in native mode. It overwrites the native display and causes a clock, blank, clock flicker.

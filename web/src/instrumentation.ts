@@ -4,8 +4,8 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { getAuth } = await import("@/lib/auth");
-  getAuth();
+  const { getAccounts } = await import("@/lib/auth");
+  getAccounts();
   // Webhooks without a secret get one, so senders can be configured for them.
   const { getDb } = await import("@/lib/db/sqlite");
   const { ensureSecrets } = await import("@/lib/webhooks/store");

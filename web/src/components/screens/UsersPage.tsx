@@ -7,7 +7,7 @@ import { useState } from "react";
 import type { FormState } from "@/app/actions/auth";
 import { createUser, deleteUser, resetPassword, revokeUserSessions, updateUser } from "@/app/actions/users";
 import { useToast } from "@/components/Toast";
-import type { Role, User } from "@/lib/auth/store";
+import type { Role, User } from "@/lib/auth/accounts";
 
 const inputClass = "px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400";
 const btn = "px-2.5 py-1 text-xs rounded-lg border border-gray-600 bg-gray-700 hover:bg-gray-600";
@@ -18,7 +18,7 @@ export function UsersPage({ me, users }: { me: User; users: User[] }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("viewer");
-  const [resetFor, setResetFor] = useState<number | null>(null);
+  const [resetFor, setResetFor] = useState<string | null>(null);
   const [resetPw, setResetPw] = useState("");
 
   const run = async (action: () => Promise<FormState>) => {
