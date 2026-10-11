@@ -112,13 +112,15 @@ Set `PXLS_BASE_URL` to the public address you reach pxls at (for example `https:
 
 ### Lost the admin password
 
-Stop pxls and remove the accounts so first-run setup returns. This deletes users and their sessions only, not your configuration:
+Stop pxls and remove all accounts and sessions so first-run setup returns. This signs everyone out, and keeps your configuration, pages and webhooks. It needs the `sqlite3` command on the host (for example `sudo apt install sqlite3` on Debian-based systems):
 
 ```bash
 docker compose stop pxls
-sqlite3 data/pxls.db "DELETE FROM user;"
+sqlite3 data/pxls.db "DELETE FROM session; DELETE FROM account; DELETE FROM user;"
 docker compose start pxls && docker logs pxls 2>&1 | grep -i "setup code"
 ```
+
+Then open pxls and create the admin again with the new setup code.
 
 Incoming webhooks use their own secret instead of a user account (see [Webhooks](#webhooks)).
 
