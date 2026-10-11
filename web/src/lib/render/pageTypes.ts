@@ -32,7 +32,7 @@ export type PageType =
   | { type: "ImageUpload"; mode: string; frame_duration: number; file_path?: string | null }
   | { type: "CustomPixels"; pixels: Pixel[] }
   | { type: "CustomText"; text: string; y: number; color: string; background_color: string; scroll_speed: number; enable_scroll: boolean }
-  | { type: "DivoomEnvironment"; time_format: string; clock_design: string; show_divoom: boolean; show_weather: boolean; show_temp: boolean; show_date: boolean; color: [number, number, number] }
+  | { type: "DivoomEnvironment"; clock_design: string; show_divoom: boolean; show_weather: boolean; show_temp: boolean; show_date: boolean; color: [number, number, number] }
   | { type: "DivoomLight"; color: [number, number, number]; brightness: number; effect_mode: number; on: boolean }
   | { type: "DivoomMusic"; mode: string }
   | { type: "DivoomUser"; mode: string }

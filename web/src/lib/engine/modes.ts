@@ -40,7 +40,6 @@ export function nativeMode(dc: DeviceConfig): LightMode | null {
       const e = dc.environment_config;
       return {
         kind: "env",
-        timeFormat: e.time_format === "24h" ? "24h" : "12h",
         clockDesign: CLOCK_DESIGNS[e.clock_design] ?? mode.ClockDesign.Digital,
         showDivoom: e.show_divoom,
         showWeather: e.show_weather,
@@ -71,7 +70,6 @@ export function pageMode(p: { type: string } & Record<string, unknown>): LightMo
     case "DivoomEnvironment":
       return {
         kind: "env",
-        timeFormat: p.time_format === "24h" ? "24h" : "12h",
         clockDesign: CLOCK_DESIGNS[String(p.clock_design)] ?? mode.ClockDesign.Digital,
         showDivoom: !!p.show_divoom,
         showWeather: !!p.show_weather,
@@ -99,12 +97,11 @@ export function pageMode(p: { type: string } & Record<string, unknown>): LightMo
 }
 
 /**
- * Apply brightness, time format and the selected native mode. Runs on connect
+ * Apply brightness and the selected native mode. Runs on connect
  * and on save. In "custom" mode the render loop drives the display instead.
  */
 export async function applyDeviceConfig(pixoo: Pixoo, dc: DeviceConfig): Promise<void> {
   await pixoo.setBrightness(dc.brightness);
-  await pixoo.setTimeFormat(dc.time_format === "24h" ? "24h" : "12h");
   const m = nativeMode(dc);
   if (m) await pixoo.setMode(m);
 }

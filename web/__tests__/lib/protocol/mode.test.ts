@@ -9,7 +9,7 @@ describe("mode", () => {
   it("encodes clock", () => {
     expect(
       pkt({
-        kind: "env", timeFormat: "24h", clockDesign: ClockDesign.Digital, showDivoom: true,
+        kind: "env", clockDesign: ClockDesign.Digital, showDivoom: true,
         showWeather: true, showTemp: true, showDate: true, color: [255, 0, 0],
       }),
     ).toEqual([0x01, 0x0d, 0x00, 0x45, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x01, 0xff, 0x00, 0x00, 0x56, 0x01, 0x02]);
