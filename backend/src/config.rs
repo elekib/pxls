@@ -81,8 +81,6 @@ impl std::fmt::Debug for BeszelAuthConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct EnvironmentConfig {
     #[serde(default)]
-    pub time_format: String, // "12h" or "24h"
-    #[serde(default)]
     pub clock_design: String, // "digital" or "analog1"
     #[serde(default)]
     pub show_divoom: bool,
@@ -142,8 +140,6 @@ pub struct CountdownPreset {
 pub struct DeviceConfig {
     #[serde(default)]
     pub brightness: u8, // 0-70 (device limitation)
-    #[serde(default)]
-    pub time_format: String, // "12h" or "24h"
     #[serde(default)]
     pub light_mode: String, // "custom" for our pages, or native modes
     // Native mode configurations
@@ -218,7 +214,6 @@ pub enum PageType {
         enable_scroll: bool,
     },
     DivoomEnvironment {
-        time_format: String,
         clock_design: String,
         show_divoom: bool,
         show_weather: bool,
@@ -333,10 +328,8 @@ impl Default for Config {
             beszel_token: None,
             device_config: DeviceConfig {
                 brightness: 50,
-                time_format: "12h".to_string(),
                 light_mode: "custom".to_string(),
                 environment_config: EnvironmentConfig {
-                    time_format: "12h".to_string(),
                     clock_design: "digital".to_string(),
                     show_divoom: false,
                     show_weather: false,

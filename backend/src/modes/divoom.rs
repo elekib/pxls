@@ -1,5 +1,5 @@
 use crate::device::transport::Transport;
-use crate::device::{Brightness, LightMode, Pixoo, TimeFormat};
+use crate::device::{Brightness, LightMode, Pixoo};
 use tracing::info;
 
 use crate::config::{CustomPage, DeviceConfig, PageType};
@@ -22,11 +22,6 @@ pub fn apply_divoom_mode_from_config<T: Transport>(
     match device_config.light_mode.as_str() {
         "env" => {
             let env_config = &device_config.environment_config;
-            let tf = match env_config.time_format.as_str() {
-                "24h" => TimeFormat::TwentyfourHour,
-                _ => TimeFormat::TwelveHour,
-            };
-
             let cd = match env_config.clock_design.as_str() {
                 "digital" => crate::device::mode::ClockDesign::Digital,
                 "digital_rainbow" => crate::device::mode::ClockDesign::DigitalRainbow,
@@ -38,7 +33,6 @@ pub fn apply_divoom_mode_from_config<T: Transport>(
             };
 
             let light_mode = LightMode::Env {
-                time_format: tf,
                 clock_design: cd,
                 show_divoom: env_config.show_divoom,
                 show_weather: env_config.show_weather,
@@ -125,7 +119,6 @@ pub fn apply_divoom_mode<T: Transport>(
 ) -> Result<(), Box<dyn std::error::Error>> {
     match &page.page_type {
         PageType::DivoomEnvironment {
-            time_format,
             clock_design,
             show_divoom,
             show_weather,
@@ -133,11 +126,6 @@ pub fn apply_divoom_mode<T: Transport>(
             show_date,
             color,
         } => {
-            let tf = match time_format.as_str() {
-                "24h" => TimeFormat::TwentyfourHour,
-                _ => TimeFormat::TwelveHour,
-            };
-
             let cd = match clock_design.as_str() {
                 "digital" => crate::device::mode::ClockDesign::Digital,
                 "digital_rainbow" => crate::device::mode::ClockDesign::DigitalRainbow,
@@ -149,7 +137,6 @@ pub fn apply_divoom_mode<T: Transport>(
             };
 
             let light_mode = LightMode::Env {
-                time_format: tf,
                 clock_design: cd,
                 show_divoom: *show_divoom,
                 show_weather: *show_weather,

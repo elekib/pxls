@@ -25,7 +25,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Replaced the third-party `pixoo` crate (GPL-3.0) with pxls's own clean-room Bluetooth driver in `backend/src/device/`, built behind a small transport trait and covered by golden-byte tests. No command has been verified on a real Pixoo yet; see the device test checklist in `docs/protocol.md`.
 - Packets now use little-endian length and checksum and brightness command `0x74` (0-100), as in public Timebox protocol write-ups. `docs/protocol.md` was corrected accordingly.
 - The Bluetooth link is now closed on drop and by an explicit `disconnect()`. Before, the `drop(pixoo)` calls after countdown, sound detector and scoreboard did nothing.
-- The 12/24 hour setting is not sent to the device until its command is confirmed. The timer tool supports start and stop only.
+- The timer tool supports start and stop only.
 - `command_tester` and `library_tool_test` use the new driver.
 - Scoreboard scores accept 0-999 (were 0-99) in the config, `/api/tools/scoreboard` and the web UI.
 
@@ -36,6 +36,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Removed
 - Buzzer (Tools page, `/api/buzzer`, the webhook `PlaySound` action). It never worked on a real Pixoo. A stored webhook that uses a `PlaySound` action must be edited before upgrading.
 - Special display mode (device config option and the `DivoomSpecial` page type). The device ignored it. A stored custom page of that type must be removed before upgrading.
+- The 12/24 hour setting (device config and Environment mode). No command for it is known, so it never reached the device.
 
 ### Fixed
 - Diagnostics page: a **Restore display** button (`POST /api/debug/release`) ends the probe pause and puts the display back to the configured mode, so a probe no longer leaves it stuck on red.

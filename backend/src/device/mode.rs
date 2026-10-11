@@ -39,12 +39,6 @@ impl Brightness {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TimeFormat {
-    TwelveHour,
-    TwentyfourHour,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ClockDesign {
     Digital = 0,
     DigitalRainbow = 1,
@@ -82,9 +76,6 @@ pub enum MusicMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LightMode {
     Env {
-        /// Not encoded: the documented clock layout has no 12/24h field.
-        #[allow(dead_code)]
-        time_format: TimeFormat,
         clock_design: ClockDesign,
         /// Not encoded: no documented byte for the Divoom logo.
         #[allow(dead_code)]

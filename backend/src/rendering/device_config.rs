@@ -1,5 +1,5 @@
 use crate::device::transport::Transport;
-use crate::device::{Brightness, Pixoo, TimeFormat};
+use crate::device::{Brightness, Pixoo};
 use tracing::{error, info, instrument, warn};
 
 use crate::config::DeviceConfig;
@@ -17,18 +17,6 @@ pub fn apply_device_config<T: Transport>(
     if let Err(e) = pixoo.set_brightness(brightness) {
         error!(error = %e, "Failed to set brightness");
         return Err(format!("Failed to set brightness: {e}").into());
-    }
-
-    // Apply time format
-    let time_format = match device_config.time_format.as_str() {
-        "24h" => TimeFormat::TwentyfourHour,
-        _ => TimeFormat::TwelveHour,
-    };
-    info!(time_format = %device_config.time_format, "Setting time format");
-
-    if let Err(e) = pixoo.set_time_format(time_format) {
-        error!(error = %e, "Failed to set time format");
-        return Err(format!("Failed to set time format: {e}").into());
     }
 
     // Apply the selected Divoom native mode immediately (env/light/music/

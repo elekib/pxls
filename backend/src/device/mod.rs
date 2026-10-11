@@ -18,16 +18,12 @@ use std::fmt;
 
 use bluetooth_serial_port::BtAddr;
 
-pub use mode::{Brightness, LightMode, TimeFormat};
+pub use mode::{Brightness, LightMode};
 pub use tool::ToolInfo;
 use transport::{BtTransport, Transport};
 
 /// Command bytes that are not part of a mode or tool.
 pub const CMD_BRIGHTNESS: u8 = 0x74;
-
-/// Set-time-format has no verified command byte, so nothing is sent. Set this to
-/// `Some(byte)` once a device test finds it.
-pub const CMD_TIME_FORMAT: Option<u8> = None;
 
 #[derive(Debug)]
 pub enum DeviceError {
@@ -95,17 +91,6 @@ impl<T: Transport> Pixoo<T> {
         self.send(image::CMD_IMAGE, &image::encode(img))
     }
 
-    /// No-op until [`CMD_TIME_FORMAT`] is verified on a device.
-    pub fn set_time_format(&mut self, format: TimeFormat) -> Result<(), DeviceError> {
-        match CMD_TIME_FORMAT {
-            Some(cmd) => self.send(cmd, &[u8::from(format == TimeFormat::TwentyfourHour)]),
-            None => {
-                tracing::debug!(?format, "time format command unverified, not sent");
-                Ok(())
-            }
-        }
-    }
-
     pub fn set_mode(&mut self, mode: LightMode) -> Result<(), DeviceError> {
         self.send(mode::CMD_MODE, &mode.encode())
     }
@@ -164,7 +149,6 @@ mod tests {
     fn clock_mode() {
         let pkt = one(|p| {
             p.set_mode(LightMode::Env {
-                time_format: TimeFormat::TwentyfourHour,
                 clock_design: ClockDesign::Digital,
                 show_divoom: true,
                 show_weather: true,
@@ -375,13 +359,6 @@ mod tests {
             pkt,
             [0x01, 0x08, 0x00, 0x50, 0x01, 0x0C, 0x00, 0x2C, 0x01, 0x92, 0x00, 0x02]
         );
-    }
-
-    #[test]
-    fn time_format_sends_nothing_until_verified() {
-        assert!(CMD_TIME_FORMAT.is_none());
-        let v = sent(|p| p.set_time_format(TimeFormat::TwentyfourHour).unwrap());
-        assert!(v.is_empty());
     }
 
     #[test]
