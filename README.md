@@ -198,6 +198,10 @@ Early development. The API requires a signed-in user, but the Bluetooth device i
 - [Contributing](CONTRIBUTING.md) and [architecture notes](AGENTS.md)
 - [Changelog](CHANGELOG.md)
 
+## Third-party services
+
+The clock and weather page gets its weather from [Open-Meteo](https://open-meteo.com/) (forecast and geocoding APIs), under the [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license: weather data by [Open-Meteo.com](https://open-meteo.com/). pxls sends only the city name you configure and calls the free API without a key. Open-Meteo's free API is for non-commercial use; if you run pxls commercially, check [their terms](https://open-meteo.com/en/terms) and use a paid plan.
+
 ## Contributing
 
 Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Commits must be signed off (`git commit -s`) to certify the Developer Certificate of Origin.

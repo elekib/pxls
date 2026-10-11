@@ -4,3 +4,7 @@ Copyright 2026 Aakib and pxls contributors
 pxls is an unofficial community project. It is not affiliated with,
 endorsed by, or sponsored by Divoom. "Divoom" and "Pixoo" are trademarks
 of their respective owners and are used only to describe compatible hardware.
+
+Weather data on the clock and weather page is provided by Open-Meteo.com
+(https://open-meteo.com/) under CC BY 4.0. Open-Meteo's free API is for
+non-commercial use; see https://open-meteo.com/en/terms.
