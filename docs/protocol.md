@@ -42,7 +42,6 @@ Example, brightness 50%: `01 04 00 74 32 AA 00 02` (`0x04 + 0x74 + 0x32 = 0xAA`)
 | Brightness | `0x74` | `percent: u8` (0-100) | Public | needs device test on Pixoo |
 | Clock mode | `0x45` | `00 01 TT show_time show_weather show_temp show_date R G B` | Public | needs device test |
 | Light mode | `0x45` | `01 R G B brightness effect power 00 00 00` | Public | needs device test |
-| Effects ("special") | `0x45` | `03 TT` | Public layout, Inferred mapping | needs device test |
 | Visualization ("music") | `0x45` | `04 TT` | Public layout, Inferred mapping | needs device test |
 | User mode | `0x45` | `05 00` | Inferred | needs device test |
 | Scoreboard mode | `0x45` | `06 00 red_lo red_hi blue_lo blue_hi` | Public | needs device test |
@@ -61,7 +60,6 @@ Notes:
 - **Time format:** no command is documented anywhere we looked. `Pixoo.setTimeFormat` sends nothing until `CMD_TIME_FORMAT` in `web/src/lib/protocol/index.ts` is set after a device test. The 12/24h setting therefore has no effect for now.
 - **Stopwatch pause/reset** are not documented and not implemented.
 - **Score range:** 0-999 (the driver clamps larger values), confirmed by the public write-up and a device observation that 99 was too low.
-- **Special mode:** observed on a real Pixoo: `45 03 TT` is ignored (the display stays on the previous screen) for all four app values, so channel `03` with these values is wrong for this device. Probe with the admin Diagnostics page (below): sweep `45 <channel> <value>` starting from solid red so an ignored command is obvious, try channels `02` and `03`, and record results here.
 - **Scoreboard:** mode `0x45 06` and tool `0x50` are different things. The Tools page and `/api/scoreboard` use mode `0x45 06`, the same command Device config sends, on the open link; each +/- sends one packet (the UI debounces and sends the latest value). `0x50` flashed a logo on a real Pixoo, so the app no longer sends it. Whether `0x45 06` updates live from rapid clicks needs a device test.
 - **Tools and the link:** countdown (`0x72 03`), sound detector (`0x72 02`) and the scoreboard are sent on the already-open link, which stays open. When a tool ends (timer expiry or Stop) the app re-applies the device config on that same link, with no reconnect; Stop first sends the tool's own stop (`0x72 03 00 00 00` / `0x72 02 00`). Whether the display returns this way, and whether the device keeps a tool running with the link open, needs a device test. Fallback: `PXLS_TOOL_CLOSE_LINK=1` closes the link after a tool is sent and the render loop reconnects when it ends, retrying every 2 s.
 - **Tool timing:** the app keeps one record of the running tool (kind and end time). The countdown ends after its set time and the sound detector after 5 minutes (a UI assumption, the noise meter has no end of its own); the scoreboard has no timer.
@@ -110,7 +108,7 @@ Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart pxls; admins then get a **Diagno
 Run on the server with a real Pixoo and note the model and firmware. Tick each item or record what the display did.
 
 1. **Connect and brightness.** Connect from the UI, set brightness 10, 50, 100. Display should change. If nothing happens, send `74 32` from the Diagnostics page. If the display ignores it, framing is wrong and everything else is moot.
-2. **Native modes.** Apply clock (each of 6 designs, with weather/temp/date on and off), light (color, brightness, 5 effects, on/off), special (4 modes), music (12 modes), user, score. Record which work. Watch for the clock, blank, clock flicker.
+2. **Native modes.** Apply clock (each of 6 designs, with weather/temp/date on and off), light (color, brightness, 5 effects, on/off), music (12 modes), user, score. Record which work. Watch for the clock, blank, clock flicker.
 3. **Tools on the open link.** Start a 1 minute countdown, sound detector and the scoreboard (Tools page) and check each runs with the status still "Connected". Check the display returns by itself when the countdown ends and on Stop, and how many seconds that takes. If a tool does not run or the display does not return, try `PXLS_TOOL_CLOSE_LINK=1`.
 4. **Time format.** Find the command (try the official app with a sniffer, or a Diagnostics sweep), then set `CMD_TIME_FORMAT`.
 5. **Escaping.** Set brightness to 1 (argument `0x01`). If the display ignores it or misbehaves, the device needs escaped packets.

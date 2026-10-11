@@ -60,10 +60,6 @@ export interface ScoreConfig {
   blue_score: number; // 0-999
 }
 
-export interface SpecialConfig {
-  mode: string; // specific special mode type
-}
-
 export interface MusicConfig {
   mode: string; // music visualization mode
 }
@@ -86,7 +82,6 @@ export interface DeviceConfig {
   environment_config: EnvironmentConfig;
   light_config: LightConfig;
   score_config: ScoreConfig;
-  special_config: SpecialConfig;
   music_config: MusicConfig;
   countdown_config: CountdownConfig;
 }
@@ -191,7 +186,6 @@ export const typeLabels: Record<string, string> = {
   'CustomText': '📝 Text',
   'DivoomEnvironment': '⌚ Divoom Clock',
   'DivoomLight': '💡 Divoom Light',
-  'DivoomSpecial': '✨ Divoom Special',
   'DivoomMusic': '🎵 Divoom Music',
   'DivoomUser': '🖼️ Divoom GIFs',
   'DivoomScore': '🏆 Divoom Score'

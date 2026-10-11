@@ -48,9 +48,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
       red_score: 0,
       blue_score: 0,
     },
-    special_config: config.device_config.special_config || {
-      mode: 'default',
-    },
     music_config: config.device_config.music_config || {
       mode: 'bottom_bars',
     },
@@ -290,7 +287,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
             <option value="light">Light Mode</option>
             <option value="music">Music Mode</option>
             <option value="score">Score Mode</option>
-            <option value="special">Special Mode</option>
             <option value="user">User Mode</option>
           </select>
           <p className="text-gray-500 text-sm mt-2">
@@ -490,30 +486,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                 <span className="text-white">Light On</span>
               </label>
             </div>
-          </div>
-        )}
-
-        {deviceConfig.light_mode === 'special' && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-red-600">
-            <h3 className="text-xl font-semibold mb-4 text-red-300">Special Mode Configuration</h3>
-            
-            <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Special Effect</label>
-              <select 
-                value={deviceConfig.special_config.mode}
-                onChange={(e) => setDeviceConfig(prev => ({
-                  ...prev,
-                  special_config: { ...prev.special_config, mode: e.target.value }
-                }))}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-red-400"
-              >
-                <option value="breath">Breath</option>
-                <option value="default">Default</option>
-                <option value="sparkle">Sparkle</option>
-                <option value="wave">Wave</option>
-              </select>
-            </div>
-            <p className="text-gray-400 text-sm">Special visual effects for the display</p>
           </div>
         )}
 

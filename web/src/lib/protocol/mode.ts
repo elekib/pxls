@@ -5,7 +5,6 @@ export const CMD_MODE = 0x45;
 
 const CH_CLOCK = 0x00;
 const CH_LIGHT = 0x01;
-const CH_EFFECTS = 0x03;
 const CH_MUSIC = 0x04;
 const CH_USER = 0x05;
 const CH_SCORE = 0x06;
@@ -61,7 +60,6 @@ export type LightMode =
     }
   | { kind: "light"; color: Rgb; brightness: number; effect: LightEffect; on: boolean }
   | { kind: "user" }
-  | { kind: "special"; mode: number }
   | { kind: "music"; mode: MusicMode }
   | { kind: "score"; red: number; blue: number };
 
@@ -92,8 +90,6 @@ export function encode(mode: LightMode): number[] {
       return [CH_LIGHT, ...mode.color.map(u8), clampPercent(mode.brightness), mode.effect, b(mode.on), 0, 0, 0];
     case "user":
       return [CH_USER, 0x00];
-    case "special":
-      return [CH_EFFECTS, u8(mode.mode)];
     case "music":
       return [CH_MUSIC, mode.mode];
     // 45 06 00 RED(le16) BLUE(le16)
