@@ -8,7 +8,6 @@ export type { ToolInfo } from "./tool";
 
 /** Command bytes that are not part of a mode or tool. */
 export const CMD_BRIGHTNESS = 0x74;
-export const CMD_BUZZER = 0x31;
 
 /** Set-time-format has no verified command byte, so nothing is sent. */
 export const CMD_TIME_FORMAT: number | null = null;

@@ -60,9 +60,6 @@ export function DeviceTester() {
         <button className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "score", red: 12, blue: 34 })}>
           Score 12:34
         </button>
-        <button className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "buzzer", ms: 500 })}>
-          Buzzer
-        </button>
         <select className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" disabled={busy} defaultValue="" onChange={(e) => e.target.value && send({ action: "music", mode: +e.target.value })}>
           <option value="" disabled>
             Music mode…

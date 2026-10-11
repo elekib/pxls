@@ -2,7 +2,6 @@
 
 import {
   CMD_BRIGHTNESS,
-  CMD_BUZZER,
   CMD_TIME_FORMAT,
   frame,
   image,
@@ -49,12 +48,6 @@ export class Pixoo {
 
   setToolInfo(t: ToolInfo): Promise<void> {
     return this.send(...tool.encode(t));
-  }
-
-  /** Buzzer for `totalMs`, sent little-endian. Needs device test. */
-  playBuzzer(totalMs: number): Promise<void> {
-    const ms = Math.max(0, Math.min(0xffff, Math.trunc(totalMs)));
-    return this.send(CMD_BUZZER, [ms & 0xff, ms >> 8]);
   }
 
   /** No-op until CMD_TIME_FORMAT is verified on a device. */

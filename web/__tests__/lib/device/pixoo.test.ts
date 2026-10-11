@@ -22,16 +22,14 @@ describe("Pixoo", () => {
     expect(Array.from(t.packets[0]!.subarray(0, 4))).toEqual([0x01, 0x31, 0x00, 0x44]);
   });
 
-  it("sends mode, tool and buzzer packets", async () => {
+  it("sends mode and tool packets", async () => {
     const t = new MemoryTransport();
     const p = new Pixoo(t);
     await p.setMode({ kind: "user" });
     await p.setToolInfo({ kind: "timer", start: true });
-    await p.playBuzzer(1000);
     expect(t.packets.map((b) => Array.from(b))).toEqual([
       [0x01, 0x05, 0x00, 0x45, 0x05, 0x00, 0x4f, 0x00, 0x02],
       [0x01, 0x05, 0x00, 0x72, 0x00, 0x01, 0x78, 0x00, 0x02],
-      [0x01, 0x05, 0x00, 0x31, 0xe8, 0x03, 0x21, 0x01, 0x02],
     ]);
   });
 

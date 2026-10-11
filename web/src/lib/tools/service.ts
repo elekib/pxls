@@ -1,4 +1,4 @@
-// Tool commands for the API: countdown, sound detector, scoreboard, buzzer and
+// Tool commands for the API: countdown, sound detector, scoreboard and
 // stop. Everything goes over the
 // open link; PXLS_TOOL_CLOSE_LINK=1 releases it after a tool starts, for
 // devices that need that (the engine reconnects when the tool ends).
@@ -74,19 +74,6 @@ export async function startSoundDetector(): Promise<ToolResult> {
   const err = await startTool("sound_detector", SOUND_DETECTOR_MS, (p) => p.setToolInfo({ kind: "noise", start: true }), true);
   if (err) return { ok: false, status: 500, error: `Failed to start sound detector: ${err}` };
   return { ok: true, body: { success: true, message: "Sound detector started (5 min)" } };
-}
-
-/** On the open link; a second Bluetooth connection is refused by the device. */
-export async function playBuzzer(totalTime: unknown): Promise<ToolResult> {
-  const t = totalTime === undefined ? 1000 : totalTime;
-  if (!Number.isInteger(t) || (t as number) < 0) return { ok: false, status: 400, error: "Invalid total_time" };
-  const ms = (t as number) & 0xffff; // the device takes 16 bits
-  try {
-    await getEngine().run((p) => p.playBuzzer(ms));
-    return { ok: true, body: { success: true, message: "Buzzer activated", duration_ms: ms } };
-  } catch (e) {
-    return { ok: false, status: 500, error: `Failed to send buzzer command: ${(e as Error).message}` };
-  }
 }
 
 export async function stopTool(): Promise<ToolResult> {

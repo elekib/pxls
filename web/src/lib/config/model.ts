@@ -53,11 +53,8 @@ export const deviceConfig = z.object({
   countdown_config: z
     .object({
       presets: z.array(countdownPreset).catch([]).default([]),
-      buzzer_active_time_ms: clamped(65535).default(0),
-      buzzer_off_time_ms: clamped(65535).default(0),
-      buzzer_total_time_ms: clamped(65535).default(0),
     })
-    .default({ presets: [], buzzer_active_time_ms: 0, buzzer_off_time_ms: 0, buzzer_total_time_ms: 0 }),
+    .default({ presets: [] }),
 });
 
 export type DeviceConfig = z.infer<typeof deviceConfig>;
@@ -146,9 +143,6 @@ export function defaultConfig(): Config {
           { name: "15 Minutes", minutes: 15, seconds: 0 },
           { name: "25 min (Pomodoro)", minutes: 25, seconds: 0 },
         ],
-        buzzer_active_time_ms: 500,
-        buzzer_off_time_ms: 0,
-        buzzer_total_time_ms: 1000,
       },
     },
     webhooks: [],

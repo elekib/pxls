@@ -14,7 +14,7 @@ vi.mock("@/lib/engine/engine", () => ({
 vi.mock("@/lib/db/sqlite", () => ({ getDb: () => ({}) }));
 vi.mock("@/lib/config/store", async () => ({ loadConfig: () => ({ device_config: deviceConfig.parse({ brightness: 50, light_mode: "user" }) }) }));
 
-const { endTool, playBuzzer, setScoreboard, startCountdown, startSoundDetector, stopTool } = await import("@/lib/tools/service");
+const { endTool, setScoreboard, startCountdown, startSoundDetector, stopTool } = await import("@/lib/tools/service");
 
 const packet = (cmd: number, args: number[]) => Array.from(frame.encode(cmd, args));
 const sent = () => h.t.packets.map((p) => Array.from(p));
@@ -29,12 +29,6 @@ beforeEach(() => {
 afterEach(() => delete process.env.PXLS_TOOL_CLOSE_LINK);
 
 describe("tools", () => {
-  it("sends the buzzer on the open link", async () => {
-    expect(await playBuzzer(1000)).toMatchObject({ ok: true, body: { duration_ms: 1000 } });
-    expect(sent()).toEqual([packet(0x31, [0xe8, 0x03])]);
-    expect(h.t.closes).toBe(0);
-  });
-
   it("starts a countdown with one packet, records it, keeps the link open", async () => {
     expect(await startCountdown(1, 5)).toMatchObject({ ok: true, body: { message: "Countdown started: 1m 5s" } });
     expect(sent()).toEqual([packet(0x72, [0x03, 1, 1, 5])]);

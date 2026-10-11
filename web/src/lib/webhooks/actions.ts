@@ -7,7 +7,6 @@ import type { NotificationManager } from "./notifications";
 
 export interface ActionContext {
   notifications: NotificationManager;
-  buzzer: (totalMs: number) => Promise<void>;
   fetchFn?: typeof fetch;
 }
 
@@ -97,17 +96,6 @@ export async function executeAction(a: Action, payload: Json, d: DisplayDefaults
       for (let i = 0; i < 256; i++) data.set([(rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 255], i * 4);
       ctx.notifications.triggerImage({ width: 16, height: 16, data }, Math.max(1, Math.ceil(durationMs / 1000)), true, Math.max(50, speed));
       return `Flashed screen with color ${color} for ${durationMs}ms`;
-    }
-    case "PlaySound": {
-      const type = str(a, "sound_type") ?? "default";
-      const preset = type === "short" ? 200 : type === "beep" ? 500 : type === "alarm" ? 3000 : 1000;
-      const total = (u64(a, "total_time_ms") ?? preset) & 0xffff;
-      try {
-        await ctx.buzzer(total);
-      } catch (e) {
-        throw new Error(`Failed to play buzzer: ${(e as Error).message}`);
-      }
-      return `Played sound ${type} for ${total}ms`;
     }
     case "LogEvent": {
       const message = (str(a, "message") !== undefined ? substitutePlaceholders(str(a, "message")!, payload) : "") || "Event logged";
