@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { openMemoryDb } from "@/lib/db/sqlite";
 import type { ActionContext } from "@/lib/webhooks/actions";
 import { parseWebhook } from "@/lib/webhooks/model";
@@ -16,9 +16,8 @@ function setup(overrides: object = {}) {
   });
   replaceWebhooks(db, [hook]);
   const notifications = new NotificationManager();
-  const buzz = vi.fn(async () => {});
-  const ctx: ActionContext = { notifications, buzzer: buzz };
-  return { db, ctx, notifications, buzz };
+  const ctx: ActionContext = { notifications };
+  return { db, ctx, notifications };
 }
 
 describe("webhook secrets", () => {
@@ -63,11 +62,10 @@ describe("processing", () => {
   });
 
   it("runs default actions and records failures without stopping", async () => {
-    const s = setup({ rules: [], default_actions: [{ action_type: "ForwardWebhook", parameters: {} }, { action_type: "PlaySound", parameters: { sound_type: "beep" } }] });
+    const s = setup({ rules: [], default_actions: [{ action_type: "ForwardWebhook", parameters: {} }, { action_type: "LogEvent", parameters: { message: "hi" } }] });
     const r = await ingestWebhook(s.db, "radarr", {}, s.ctx);
-    expect(r.body.actions_taken).toEqual(["Action failed: Forward webhook requires url parameter", "Played sound beep for 500ms"]);
+    expect(r.body.actions_taken).toEqual(["Action failed: Forward webhook requires url parameter", "Logged event: hi"]);
     expect(r.body.error).toBe("ForwardWebhook action failed: Forward webhook requires url parameter");
-    expect(s.buzz).toHaveBeenCalledWith(500);
   });
 
   it("does not log when log_events is off", async () => {

@@ -6,7 +6,7 @@ export type Json = null | boolean | number | string | Json[] | { [k: string]: Js
 export const OPERATORS = ["Equals", "NotEquals", "Contains", "NotContains", "GreaterThan", "LessThan", "Exists", "NotExists"] as const;
 export type Operator = (typeof OPERATORS)[number];
 
-export const ACTION_TYPES = ["DisplayNotification", "DisplayImage", "FlashScreen", "PlaySound", "LogEvent", "ForwardWebhook"] as const;
+export const ACTION_TYPES = ["DisplayNotification", "DisplayImage", "FlashScreen", "LogEvent", "ForwardWebhook"] as const;
 export type ActionType = (typeof ACTION_TYPES)[number];
 
 export type ConditionLogic = "All" | "Any";
@@ -85,7 +85,6 @@ alias("NotExists", "not_exists", "notexists");
 alias("DisplayNotification", "display_notification", "displaynotification");
 alias("DisplayImage", "display_image", "displayimage");
 alias("FlashScreen", "flash_screen", "flashscreen");
-alias("PlaySound", "play_sound", "playsound");
 alias("LogEvent", "log_event", "logevent");
 alias("ForwardWebhook", "forward_webhook", "forwardwebhook");
 alias("All", "all", "and");

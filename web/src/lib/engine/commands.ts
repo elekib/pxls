@@ -14,7 +14,6 @@ export const command = z.discriminatedUnion("action", [
   z.object({ action: z.literal("clock"), design: z.number().int().min(0).max(5), rgb }),
   z.object({ action: z.literal("music"), mode: z.number().int().min(0).max(11) }),
   z.object({ action: z.literal("score"), red: z.number().int().min(0).max(999), blue: z.number().int().min(0).max(999) }),
-  z.object({ action: z.literal("buzzer"), ms: z.number().int().min(100).max(5000) }),
 ]);
 export type Command = z.infer<typeof command>;
 
@@ -33,7 +32,5 @@ export function apply(p: Pixoo, c: Command): Promise<void> {
       return p.setMode({ kind: "music", mode: c.mode as mode.MusicMode });
     case "score":
       return p.setMode({ kind: "score", red: c.red, blue: c.blue });
-    case "buzzer":
-      return p.playBuzzer(c.ms);
   }
 }

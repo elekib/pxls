@@ -61,9 +61,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         { name: "15 Minutes", minutes: 15, seconds: 0 },
         { name: "25 min (Pomodoro)", minutes: 25, seconds: 0 },
       ],
-      buzzer_active_time_ms: 500,
-      buzzer_off_time_ms: 0,
-      buzzer_total_time_ms: 1000,
     },
   });
 
