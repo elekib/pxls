@@ -4,7 +4,9 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
-First release (0.1.0). pxls is a single Node.js app (Next.js) in one container, `pxls`.
+## [0.1.0] - 2026-10-11
+
+First release. pxls is a single Node.js app (Next.js) in one container, `pxls`.
 
 ### Added
 - One app and one container: the UI, the API and the webhook receiver are all on port 3030 (`PXLS_PORT`). Logs: `docker logs pxls`. Every page has its own URL and is rendered on the server.
@@ -26,3 +28,6 @@ First release (0.1.0). pxls is a single Node.js app (Next.js) in one container, 
 - `/api/health` reports only liveness to anonymous callers.
 - Uploads are validated by content, size and dimensions, stored under sanitized names and served only from the uploads directory.
 - Webhook image downloads block private, loopback and link-local addresses by default (`PXLS_ALLOW_PRIVATE_URLS`) and re-check every redirect.
+
+[Unreleased]: https://github.com/elekib/pxls/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/elekib/pxls/releases/tag/v0.1.0
