@@ -25,7 +25,6 @@ const LIGHT_EFFECTS = [
   [3, 'Fly'],
   [4, 'Sleep'],
 ] as const;
-const SPECIAL_MODES = ['default', 'sparkle', 'breath', 'wave'];
 const MUSIC_MODES = [
   'bottom_bars',
   'center_bars',
@@ -114,15 +113,6 @@ export function DivoomPageFields({ type, data, onChange }: Props) {
             Light on
           </label>
         </>
-      )}
-
-      {type === 'DivoomSpecial' && (
-        <div className="mb-4">
-          <label className="block text-gray-400 text-sm mb-2">Effect</label>
-          <select value={String(data.mode)} onChange={(e) => set({ mode: e.target.value })} className={inputClass}>
-            {SPECIAL_MODES.map((m) => <option key={m} value={m}>{label(m)}</option>)}
-          </select>
-        </div>
       )}
 
       {type === 'DivoomMusic' && (

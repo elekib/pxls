@@ -9,7 +9,7 @@ First release (0.1.0). pxls is a single Node.js app (Next.js) in one container, 
 ### Added
 - One app and one container: the UI, the API and the webhook receiver are all on port 3030 (`PXLS_PORT`). Logs: `docker logs pxls`. Every page has its own URL and is rendered on the server.
 - A Bluetooth link to the display through BlueZ's `rfcomm` and a raw `/dev/rfcommN` TTY, with pxls's own clean-room packet driver covered by golden-byte tests. Optional `PIXOO_CHANNEL` and `PIXOO_RFCOMM_DEV`. The device connect gives up after 20 seconds with a clear error, so Connect cannot hang; per-command verification status is in `docs/protocol.md`.
-- Page rotation with page types for clock and weather, system and GPU stats, Beszel, text, pixel art, images and animated GIFs, and custom scripts (stopped after 5 seconds). Divoom native page types (Clock, Light, Special, Music, User GIFs, Scoreboard) can be added in the page editor, and a page can set its own display time (`duration_secs`).
+- Page rotation with page types for clock and weather, system and GPU stats, Beszel, text, pixel art, images and animated GIFs, and custom scripts (stopped after 5 seconds). Divoom native page types (Clock, Light, Music, User GIFs, Scoreboard) can be added in the page editor, and a page can set its own display time (`duration_secs`).
 - Native Divoom modes on the Device page, a live brightness card, and a timezone for clock pages. User GIFs is re-sent only on change and every 5 minutes, so the slideshow is not restarted.
 - Tools: countdown, sound detector and scoreboard.
 - Webhooks with a per-webhook secret, rules, conditions, actions, notifications and an event log with replay. Flash and image notifications blink, and the display returns as soon as one ends.

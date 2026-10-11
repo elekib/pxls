@@ -13,7 +13,6 @@ describe("native modes", () => {
     expect(nativeMode(dc({ light_mode: "env", environment_config: { clock_design: "??" } }))).toMatchObject({ clockDesign: 0 });
     expect(nativeMode(dc({ light_mode: "music", music_config: { mode: "fireworks" } }))).toEqual({ kind: "music", mode: 10 });
     expect(nativeMode(dc({ light_mode: "music", music_config: { mode: "??" } }))).toEqual({ kind: "music", mode: 0 });
-    expect(nativeMode(dc({ light_mode: "special", special_config: { mode: "wave" } }))).toEqual({ kind: "special", mode: 3 });
     expect(nativeMode(dc({ light_mode: "light", brightness: 40, light_config: { effect_mode: 9, brightness: 90, on: true } }))).toMatchObject({ effect: 0, brightness: 40, on: true });
     expect(nativeMode(dc({ light_mode: "score", score_config: { red_score: 3, blue_score: 4 } }))).toEqual({ kind: "score", red: 3, blue: 4 });
   });

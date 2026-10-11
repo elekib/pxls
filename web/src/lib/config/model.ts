@@ -48,7 +48,6 @@ export const deviceConfig = z.object({
   environment_config: environmentConfig.default(environmentConfig.parse({})),
   light_config: lightConfig.default(lightConfig.parse({})),
   score_config: z.object({ red_score: score.default(0), blue_score: score.default(0) }).default({ red_score: 0, blue_score: 0 }),
-  special_config: z.object({ mode: str.default("") }).default({ mode: "" }),
   music_config: z.object({ mode: str.default("") }).default({ mode: "" }),
   countdown_config: z
     .object({
@@ -134,7 +133,6 @@ export function defaultConfig(): Config {
       },
       light_config: { color: [255, 255, 255], brightness: 50, effect_mode: 0, on: true },
       score_config: { red_score: 0, blue_score: 0 },
-      special_config: { mode: "default" },
       music_config: { mode: "bottom_bars" },
       countdown_config: {
         presets: [
