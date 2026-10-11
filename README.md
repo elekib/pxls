@@ -152,6 +152,10 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 | `PXLS_ENABLE_DEBUG` | `0` | Set `1` to enable the admin Diagnostics page (raw device commands). Leave off unless you are testing hardware |
 | `PXLS_LOG_PACKETS` | `0` | Set `1` to log every packet sent to the device, in hex |
 | `PXLS_TOOL_CLOSE_LINK` | `0` | Set `1` to release the Bluetooth link after starting a tool, for devices that need it |
+| `PXLS_WEATHER_PROVIDER` | `open-meteo` | Weather source for the clock and weather page. `open-meteo` is the only one so far |
+| `PXLS_WEATHER_API_KEY` | empty | Open-Meteo API key from a paid plan. Needed for commercial use, since the free API is non-commercial only |
+| `PXLS_WEATHER_API_URL` | `https://api.open-meteo.com` | Open-Meteo forecast base URL. Use `https://customer-api.open-meteo.com` with a paid key, or your own Open-Meteo server |
+| `PXLS_WEATHER_GEOCODING_URL` | `https://geocoding-api.open-meteo.com` | Open-Meteo geocoding base URL. Use `https://customer-geocoding-api.open-meteo.com` with a paid key |
 | `PXLS_TAG` | `latest` | Image tag for `docker compose`: `latest`, `dev` or a release version |
 
 Device settings, pages and the rest of the app configuration are edited in the web UI. Everything except uploads is stored in one SQLite database, `./data/pxls.db` (with `pxls.db-wal` and `pxls.db-shm` next to it while running), created on first run. Uploaded images live in `./data/uploads`. The `data/` directory and `.env` are git-ignored so they never get committed.
