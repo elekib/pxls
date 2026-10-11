@@ -2,7 +2,7 @@
 
 How pxls talks to legacy Divoom Pixoo (16x16) displays. The implementation lives in `web/src/lib/protocol/` (packet encoders) and `web/src/lib/device/` (device API and Bluetooth link), and is written from public protocol write-ups and observed device behavior. It does not use or derive from any third-party driver source.
 
-**Status legend.** *Public* = layout documented by a public write-up. *Observed* = layout taken from observed device or app behavior. *Inferred* = our mapping, no document states it. Everything marked *needs device test* has not been confirmed against real hardware; the checklist at the end says how to confirm each one.
+**Status legend.** *Public* = layout documented by a public write-up. *Observed* = layout taken from observed device or app behavior. *Inferred* = our mapping, no document states it. *Verified* = confirmed on a real Pixoo by the maintainer. Everything marked *needs device test* has not been confirmed against real hardware; the checklist at the end says how to confirm each one.
 
 ## Sources
 
@@ -39,16 +39,16 @@ Example, brightness 50%: `01 04 00 74 32 AA 00 02` (`0x04 + 0x74 + 0x32 = 0xAA`)
 
 | Command | Code | Args | Source | Status |
 |---------|------|------|--------|--------|
-| Brightness | `0x74` | `percent: u8` (0-100) | Public | needs device test on Pixoo |
-| Clock mode | `0x45` | `00 01 TT show_time show_weather show_temp show_date R G B` | Public | needs device test |
-| Light mode | `0x45` | `01 R G B brightness effect power 00 00 00` | Public | needs device test |
-| Visualization ("music") | `0x45` | `04 TT` | Public layout, Inferred mapping | needs device test |
-| User mode | `0x45` | `05 00` | Inferred | needs device test |
-| Scoreboard mode | `0x45` | `06 00 red_lo red_hi blue_lo blue_hi` | Public | needs device test |
-| Image | `0x44` | see below | Public (Timebox family) | needs device test |
-| Stopwatch tool | `0x72` | `00 action` (1 start, 0 stop) | Observed | needs device test |
-| Noise meter tool | `0x72` | `02 action` | Observed | needs device test |
-| Countdown tool | `0x72` | `03 action minutes seconds` | Observed | needs device test |
+| Brightness | `0x74` | `percent: u8` (0-100) | Public | verified |
+| Clock mode | `0x45` | `00 01 TT show_time show_weather show_temp show_date R G B` | Public | verified |
+| Light mode | `0x45` | `01 R G B brightness effect power 00 00 00` | Public | verified |
+| Visualization ("music") | `0x45` | `04 TT` | Public layout, Inferred mapping | verified |
+| User mode | `0x45` | `05 00` | Inferred | verified |
+| Scoreboard mode | `0x45` | `06 00 red_lo red_hi blue_lo blue_hi` | Public | verified |
+| Image | `0x44` | see below | Public (Timebox family) | verified |
+| Stopwatch tool | `0x72` | `00 action` (1 start, 0 stop) | Observed | not offered in the app; unverified |
+| Noise meter tool | `0x72` | `02 action` | Observed | verified |
+| Countdown tool | `0x72` | `03 action minutes seconds` | Observed | verified |
 | Scoreboard tool | `0x50` | `on red_lo red_hi blue_lo blue_hi` | Observed | **not used by the app**: on a real Pixoo it showed a logo instead of a scoreboard; encoder kept, unverified |
 
 Notes:
@@ -68,7 +68,7 @@ Args: `00 0A 0A 04 | AA LEN_LO LEN_HI 00 00 00 NN PALETTE PIXELS`
 
 - `NN` palette size (`00` means 256), `PALETTE` is `NN` RGB triples in order of first use.
 - `PIXELS`: one palette index per pixel, row by row from the top left, `ceil(log2(NN))` bits each (minimum 1), filled least-significant bit first, last byte zero padded.
-- `LEN` is assumed to be the whole frame length from `AA` through the last pixel byte (the write-up says only "image data length"). *Assumption, needs device test.*
+- `LEN` is assumed to be the whole frame length from `AA` through the last pixel byte (the write-up says only "image data length"). *Confirmed by the device test: images display correctly.*
 - Sent as one packet, no chunking. Non-16x16 images are resized (nearest neighbour).
 
 ## Connection lifecycle
@@ -97,6 +97,8 @@ echo -ne '\x01\x04\x00\x74\x32\xAA\x00\x02' > /dev/rfcomm0
 Set `PXLS_ENABLE_DEBUG=1` in `.env` and restart pxls; admins then get a **Diagnostics** tab. It sends a raw command (framing and checksum added) through the connected device, can show solid red first so ignored commands are obvious, steps through a value range, and keeps a log with notes you can copy. After each send the display loop is paused for two minutes. The endpoint (`POST /api/debug/send`) is admin only and returns 403 while the flag is off. **Restore display** (`POST /api/debug/release`, same rules) ends the pause and re-applies your configured mode on the open link, for when a probe leaves the display stuck (for example on the red screen). Turn the flag off again when you are done.
 
 ## Device test checklist
+
+**Results, 2026-10-11:** every command the app offers (brightness, clock, light, music, user and scoreboard modes, images, countdown, sound detector) works on a real Pixoo, reported by the maintainer after running the app against it from a server. Per-command notes, model and firmware were not recorded. The scoreboard tool `0x50` and the stopwatch tool are not offered by the app and remain unverified.
 
 **Results, 2026-10-07** (a Pixoo on RFCOMM channel 1, model and firmware not recorded):
 - Brightness `0x74` little-endian framing works at 50, 1 and 100 (items 1 and 6): framing is right and unescaped `0x01` arguments are accepted.

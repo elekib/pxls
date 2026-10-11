@@ -2,7 +2,7 @@
   "name": "pxls",
   "private": true,
   "license": "Apache-2.0",
-  "version": "0.1.0-dev",
+  "version": "0.1.0",
   "type": "module",
   "engines": {
     "node": ">=22"
