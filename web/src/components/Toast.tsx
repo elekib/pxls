@@ -1,6 +1,6 @@
 "use client";
 
-// The original UI's notification banner (top right, 3 s), as a context.
+// The notification banner (top right, 3 s), as a context.
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { FORBIDDEN_EVENT } from "@/ui/api";

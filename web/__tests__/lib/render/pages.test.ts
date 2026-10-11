@@ -17,7 +17,7 @@ describe("clock and weather", () => {
     expect(clockParts(d, "Not/AZone").minute).toBe("04");
   });
 
-  it("lays out time, date and temperature like the Rust page", () => {
+  it("lays out time, date and temperature", () => {
     const t = { hour: "9", minute: "41", month: "Oct", day: "06", second: 2 };
     const got = drawClockWeather(page, t, { temp: "72", code: -1 }, 0);
     const want = new Canvas();

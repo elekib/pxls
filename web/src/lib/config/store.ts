@@ -1,5 +1,4 @@
 // Load and save the config row, and the browser-safe view of it.
-// Port of database/store.rs (config part) and routes/config.rs.
 
 import type { Db } from "@/lib/db/sqlite";
 import { defaultConfig, normalizeConfig, type Config } from "./model";

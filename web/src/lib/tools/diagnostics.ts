@@ -1,5 +1,5 @@
 // Admin device diagnostics: send a raw command to the connected display.
-// Port of routes/debug.rs. Off unless PXLS_ENABLE_DEBUG=1. While probing, the
+// Off unless PXLS_ENABLE_DEBUG=1. While probing, the
 // render loop is held off (as a "diagnostics" tool) so it does not overwrite
 // what you are looking at.
 
@@ -36,7 +36,7 @@ export function parseHex(input: string): number[] {
 export type DiagResult = { status: number; body: Record<string, unknown> };
 const err = (status: number, error: string): DiagResult => ({ status, body: { error } });
 
-/** Hold the render loop off for `secs` (capped), as the Rust probe did. */
+/** Hold the render loop off for `secs` (capped). */
 export function hold(secs: number = DEFAULT_HOLD_SECS): number {
   const s = Math.max(1, Math.min(MAX_HOLD_SECS, Math.trunc(secs)));
   getTools().begin("diagnostics", s * 1000);

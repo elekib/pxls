@@ -1,5 +1,4 @@
-// Webhooks and their event log in pxls.db. Port of database/store.rs
-// (webhook and event parts) and the WebhookDatabase helpers.
+// Webhooks and their event log in pxls.db.
 
 import { randomBytes } from "node:crypto";
 import { tx, type Db } from "@/lib/db/sqlite";
@@ -11,7 +10,7 @@ const COLUMNS = ["name", "path", "enabled", "secret", "log_events", "max_events"
 export const MAX_TOTAL_EVENTS = 1000;
 
 export const MIN_WEBHOOK_SECRET_LEN = 16;
-/** 64 hex characters, like the Rust generate_secret. */
+/** 64 hex characters. */
 export const generateSecret = () => randomBytes(32).toString("hex");
 
 type Row = Record<string, unknown>;
@@ -64,7 +63,7 @@ export function ensureSecrets(db: Db): number {
   return changed;
 }
 
-/** Find by path or name, like the Rust lookups. */
+/** Find by path or name. */
 export const findWebhook = (list: Webhook[], name: string) => list.find((w) => w.path === name || w.name === name);
 
 // ---- events ---------------------------------------------------------------
@@ -117,7 +116,7 @@ export function clearEvents(db: Db, webhookName: string | null): void {
   else db.prepare("DELETE FROM webhook_events WHERE webhook_name = ?").run(webhookName);
 }
 
-/** RFC 3339 UTC timestamp with nanoseconds, the format Rust wrote. */
+/** RFC 3339 UTC timestamp with nanoseconds. */
 export function nowTimestamp(): string {
   const d = new Date();
   const ns = String(d.getUTCMilliseconds()).padStart(3, "0") + "000000";

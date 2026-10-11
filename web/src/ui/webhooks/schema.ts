@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import type {
   Action, ActionType, Condition, ConditionOperator, DisplayMode, Rule,
 } from './types';

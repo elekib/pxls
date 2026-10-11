@@ -17,7 +17,7 @@ body:
     id: version
     attributes:
       label: pxls version
-      description: Shown in the UI sidebar and at /api/health
+      description: Shown at the bottom of the sidebar
   - type: input
     id: device
     attributes:

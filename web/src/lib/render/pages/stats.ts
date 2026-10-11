@@ -1,5 +1,4 @@
 // System, GPU and temperature pages from Dash. or a Beszel hub.
-// Port of pages/system_stats.rs, gpu_stats.rs and temps.rs.
 
 import { hexToRgb } from "@/lib/config/model";
 import { Canvas, type Rgb } from "../canvas";
@@ -9,7 +8,7 @@ import { fetchSystemRecord, hubGet, type TokenManager } from "../beszel";
 const DASHDOT_TIMEOUT_MS = 3000;
 const OFFLINE: Rgb = [100, 100, 100];
 
-/** Rust `f64 as u32`: rounds, then saturates at 0. */
+/** Rounds, then saturates at 0. */
 const u32 = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.round(v)) : null);
 
 export function usageColor(n: number): Rgb {

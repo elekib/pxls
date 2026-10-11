@@ -1,4 +1,4 @@
-// Run a webhook action. Port of actions/mod.rs.
+// Run a webhook action.
 
 import type { Json, Action } from "./model";
 import { extractFieldAsString, substitutePlaceholders, type DisplayDefaults } from "./match";

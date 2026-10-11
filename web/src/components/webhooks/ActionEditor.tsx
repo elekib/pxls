@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { ACTION_TYPES, getActionParamFields, type ParamField } from '@/ui/webhooks/schema';
 import type { Action, ActionType, ParamValue } from '@/ui/webhooks/types';
 import { compactInputClass } from './ui';

@@ -1,5 +1,4 @@
-// Uploaded image and custom script pages. Port of pages/image_upload.rs and
-// pages/custom_script.rs.
+// Uploaded image and custom script pages.
 
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -19,7 +18,7 @@ function label(text: string, x: number, color: [number, number, number]): Canvas
   return c;
 }
 
-/** 16x16 RGB of an image, resized with Lanczos3 like the Rust code; alpha dropped. */
+/** 16x16 RGB of an image, resized with Lanczos3; alpha dropped. */
 async function staticFrame(file: string): Promise<Canvas> {
   let input = sharp(file, { pages: 1 });
   if (file.toLowerCase().endsWith(".bmp")) {
@@ -58,7 +57,6 @@ async function loadGif(file: string): Promise<Gif> {
   }
   const frames = Array.from({ length: pages }, (_, i) => Canvas.from(data.subarray(i * frameBytes, (i + 1) * frameBytes)));
   // GIF delays are in ms here; 0 means "as fast as possible", shown as 100 ms
-  // (Rust divided real delays by ten, playing every GIF ten times too fast).
   const delays = frames.map((_, i) => meta.delay?.[i] || 100);
   return { frames, delays };
 }
@@ -97,7 +95,7 @@ export async function renderImageUpload(mode: string, filePath: string | null | 
 /**
  * Run the page's shell command with INPUT_<NAME> variables. JSON pixel output
  * is drawn; any other output shows its first five characters. Admin-configured
- * only. Unlike Rust, a hung script is stopped after 5 s.
+ * only. A hung script is stopped after 5 s.
  */
 export function renderCustomScript(scriptPath: string, inputs: ScriptInput[]): Promise<Canvas> {
   const env: NodeJS.ProcessEnv = { ...process.env };

@@ -1,5 +1,4 @@
-// Engine settings from the environment. More settings move here as the Rust
-// config is ported.
+// Engine settings from the environment.
 
 export interface EngineConfig {
   mac: string | null;

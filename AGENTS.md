@@ -11,7 +11,7 @@ Guide for contributors and coding agents working on pxls.
 
 ## Build and run
 
-- pxls is a single Next.js app in `web/` (UI, API and display engine in one process). The earlier Rust `backend/` and Vite `frontend/` app is kept on the `rust-prerelease` branch (commit 7bd0731) as the porting reference.
+- pxls is a single Next.js app in `web/` (UI, API and display engine in one process).
 - Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). App on port 3030 (`PXLS_PORT`). Logs: `docker logs -f pxls`.
 - Local checks in `web/`: `npm run typecheck`, `npm test`, `npm run build` (Node 22+).
 - Tests live in `web/__tests__/`, mirroring `web/src/` (for example `src/lib/engine/engine.ts` is tested in `__tests__/lib/engine/engine.test.ts`). Import the code under test with `@/` paths. Do not put tests next to source files.
@@ -24,7 +24,7 @@ Guide for contributors and coding agents working on pxls.
 - `web/src/lib/render/`: the render loop (`loop.ts`, page rotation and native keep-alive), the bitmap font and the page types. Tools pause it; webhook notifications draw over it.
 - `web/src/lib/auth/`: accounts and sessions on Better Auth (`auth.ts` config, `accounts.ts` user and session management, `api.ts` guard for route handlers, `session.ts` for server components). `/api/auth/*` is served by Better Auth through an allowlist in `app/api/auth/[...all]/route.ts`; sign-in must go through it so the rate limiter applies. Every other API route calls `requireApi()` itself.
 - `web/src/lib/webhooks/`: receiver, rules engine, actions, notifications and the SSRF guard for image downloads (`netGuard.ts`).
-- `web/src/lib/protocol/`: packet encoders with golden-byte tests ported from the Rust driver. Keep them byte-identical unless a device test says otherwise (see `docs/protocol.md`).
+- `web/src/lib/protocol/`: packet encoders with golden-byte tests. Keep them byte-identical unless a device test says otherwise (see `docs/protocol.md`).
 - Do not send a `set_color` heartbeat in native mode. It overwrites the native display and causes a clock, blank, clock flicker.
 
 ## Sign-off

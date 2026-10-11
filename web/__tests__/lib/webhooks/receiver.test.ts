@@ -99,7 +99,7 @@ describe("storage", () => {
 });
 
 describe("notification rendering", () => {
-  it("maps icons and shortens titles like Rust", () => {
+  it("maps icons and shortens titles", () => {
     expect(iconCode("📺 tv")).toBe("TV");
     expect(iconCode("ab")).toBe("AB");
     expect(firstWord("dune: part two", 4)).toBe("DUNE");

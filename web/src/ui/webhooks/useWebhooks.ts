@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { eventApi, errorMessage, webhookApi } from './api';
 import type { Rule, Webhook, WebhookSummary } from './types';

@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 export type ConditionOperator =
   | 'Equals' | 'NotEquals' | 'Contains' | 'NotContains'
   | 'GreaterThan' | 'LessThan' | 'Exists' | 'NotExists';

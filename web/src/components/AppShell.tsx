@@ -14,7 +14,7 @@ interface ShellProps {
   children: React.ReactNode;
 }
 
-/** The original UI's layout: sidebar, mobile drawer and bottom tabs. */
+/** The app layout: sidebar, mobile drawer and bottom tabs. */
 export function AppShell({ children, ...user }: ShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

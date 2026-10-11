@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PayloadEditor, parsePayload } from '@/components/webhooks/PayloadTester';
 import { Badge, btn, CopyButton, Field, inputClass, relativeTime } from '@/components/webhooks/ui';

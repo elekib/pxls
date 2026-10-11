@@ -1,4 +1,4 @@
-// A connected display. Port of the Pixoo struct in backend/src/device/mod.rs.
+// A connected display.
 
 import {
   CMD_BRIGHTNESS,

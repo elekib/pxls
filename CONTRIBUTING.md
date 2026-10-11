@@ -19,6 +19,8 @@ git commit -s -m "Describe your change"
 
 This adds a `Signed-off-by: Your Name <you@example.com>` line. CI rejects pull requests with unsigned commits. To fix a branch: `git rebase --signoff main`.
 
+Contributions are licensed under the [Apache License 2.0](LICENSE), the same as the project.
+
 ## Development setup
 
 You need Docker for the full stack, and Node 22+ for local checks.
@@ -37,11 +39,13 @@ pxls is a single Next.js app in `web/`: the UI, the API and the display engine r
 ```bash
 cd web
 npm ci
-npm run dev        # dev server on :3000
+PXLS_DATA_DIR=../data npm run dev   # dev server on :3000
 npm run typecheck
 npm test
 npm run build
 ```
+
+`PXLS_DATA_DIR` is where the database and uploads live (`data/` is git-ignored). The dev server prints the first-run setup code in its terminal.
 
 The Bluetooth link needs Linux with BlueZ (`rfcomm`). Elsewhere the engine reports the device as `error` and keeps retrying; the UI and API still work.
 

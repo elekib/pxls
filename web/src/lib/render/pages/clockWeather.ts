@@ -1,8 +1,6 @@
-// Clock, date and current weather. Port of pages/clock_weather.rs.
+// Clock, date and current weather.
 //
-// Differences from Rust, on purpose: time uses the saved timezone (Rust used
-// the container's local time and ignored the setting), and the weather fetch
-// has a timeout.
+// Time uses the saved timezone, and the weather fetch has a timeout.
 
 import { hexToRgb } from "@/lib/config/model";
 import { Canvas, type Rgb } from "../canvas";
@@ -50,7 +48,7 @@ async function fetchWeather(location: string, unit: string): Promise<Weather> {
   }
 }
 
-/** Cached for 10 minutes per location and unit, failures included (like Rust). */
+/** Cached for 10 minutes per location and unit, failures included. */
 export async function getWeather(location: string, unit: string): Promise<Weather> {
   const key = `${location}|${unit}`;
   if (cache && cache.key === key && Date.now() - cache.at < WEATHER_TTL_MS) return cache.value;

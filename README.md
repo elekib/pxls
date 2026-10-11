@@ -38,15 +38,25 @@ The images are built for `linux/amd64` and `linux/arm64`, so a Raspberry Pi work
 ## Quick start
 
 ```bash
+git clone https://github.com/elekib/pxls.git
+cd pxls
 cp .env.example .env
 # Edit .env: set TZ (and optionally PIXOO_MAC)
-docker compose up -d
+make dev
 ```
 
-Open http://localhost:3030. On first run pxls asks you to create the admin account (see [Authentication](#authentication)). Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`) and connect.
+`make dev` builds the image from source and starts it (`docker compose -f compose.yaml -f compose.build.yaml up --build -d`). Published images are not available yet; once they are, `docker compose up -d` runs the published image instead.
 
-> Published images are not available yet. Until the first release, build from source:
-> `docker compose -f compose.yaml -f compose.build.yaml up --build -d` (or `make dev`).
+Open http://localhost:3030. On first run pxls asks you to create the admin account (see [Authentication](#authentication)). Then open the **Device** page, enter your Pixoo's Bluetooth MAC address (format `AA:BB:CC:DD:EE:FF`; `bluetoothctl devices` lists the devices your host knows, after you pair the display with it) and connect.
+
+## Updating
+
+```bash
+git pull
+make dev
+```
+
+Your data in `./data` is kept and the database is upgraded on start. Back it up first (see [Configuration](#configuration)).
 
 ## Authentication
 
@@ -143,7 +153,7 @@ Point a sender at `POST /api/webhook/<name>`, for example a Radarr or Sonarr "We
 http://<host>:3030/api/webhook/radarr
 ```
 
-Each webhook has a secret, generated when you create it (and for existing webhooks the first time this version starts). Copy it from the webhook card on the **Webhooks** page. Senders can present it in any of these ways:
+Each webhook has a secret, generated when you create it. Copy it from the webhook card on the **Webhooks** page. Senders can present it in any of these ways:
 
 - `X-Webhook-Secret: <secret>` header
 - HTTP Basic auth with the secret as the password (any username). Radarr and Sonarr support this
@@ -180,4 +190,4 @@ Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) fi
 
 ## License
 
-No license has been chosen yet, so all rights are reserved for now. A license will be added before the first public release. See [NOTICE](NOTICE).
+pxls is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for the copyright and trademark notices.

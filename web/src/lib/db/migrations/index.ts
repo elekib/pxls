@@ -1,5 +1,4 @@
-// Schema migrations. 0001 and 0002 are the SQL from the Rust backend (the
-// `rust-prerelease` branch); 0003 on is Node-only. To change the schema, append a new entry.
+// Schema migrations. To change the schema, append a new entry.
 // Never edit a released one.
 
 export interface Migration {

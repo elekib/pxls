@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { apiFetch } from '@/ui/api';
 import { useState, useEffect, useCallback } from 'react';
 import type { Config, BeszelAuthStatus } from '@/ui/types';

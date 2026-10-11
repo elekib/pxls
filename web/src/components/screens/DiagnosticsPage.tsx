@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { useEffect, useState } from 'react';
 import { accountRequest } from '@/ui/api';
 

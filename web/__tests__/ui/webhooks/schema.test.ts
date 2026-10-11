@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { describe, expect, it } from 'vitest';
 import {
   describeAction, describeCondition, emptyAction, emptyRule, flattenPaths,

@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { useMemo, useState } from 'react';
 import { webhookApi, errorMessage } from '@/ui/webhooks/api';
 import { describeAction, describeCondition, emptyRule, GENERIC_SAMPLE, prettyJson, type ServicePreset } from '@/ui/webhooks/schema';

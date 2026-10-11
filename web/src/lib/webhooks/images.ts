@@ -1,7 +1,7 @@
-// Images for webhook actions. Port of webhook_image_processor.rs: url,
+// Images for webhook actions. url,
 // base64, template and text_overlay sources, then a "cover" resize to the
 // action's width x height (16x16 by default) with an optional crop_y_offset.
-// Templates draw text with the real bitmap font (Rust drew placeholder dots).
+// Templates draw text with the bitmap font.
 
 import sharp from "sharp";
 import { Canvas } from "@/lib/render/canvas";

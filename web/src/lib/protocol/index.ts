@@ -6,7 +6,7 @@ export type { RgbImage } from "./image";
 export type { LightMode, Rgb, TimeFormat } from "./mode";
 export type { ToolInfo } from "./tool";
 
-/** Command bytes that are not part of a mode or tool (backend/src/device/mod.rs). */
+/** Command bytes that are not part of a mode or tool. */
 export const CMD_BRIGHTNESS = 0x74;
 export const CMD_BUZZER = 0x31;
 

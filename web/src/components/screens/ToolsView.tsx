@@ -5,7 +5,7 @@ import { useToast } from "@/components/Toast";
 import type { Config } from "@/ui/types";
 import { ToolsPage } from "./ToolsPage";
 
-/** Hooks the ported ToolsPage up to the Next app: refresh and toasts. */
+/** Hooks the ToolsPage up to the Next app: refresh and toasts. */
 export function ToolsView({ config }: { config: Config }) {
   const router = useRouter();
   const notify = useToast();

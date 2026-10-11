@@ -5,7 +5,7 @@ import { MemoryTransport } from "@/lib/device/memory";
 import { Pixoo } from "@/lib/device/pixoo";
 import { ToolTimer } from "@/lib/tools/state";
 
-// A stand-in engine over an in-memory link, like the Rust MockTransport tests.
+// A stand-in engine over an in-memory link.
 const h = vi.hoisted(() => ({ t: null as unknown as MemoryTransport, p: null as unknown as Pixoo, tools: null as unknown as ToolTimer, reconnects: 0 }));
 vi.mock("@/lib/engine/engine", () => ({
   getEngine: () => ({ run: (fn: (p: Pixoo) => Promise<unknown>) => fn(h.p), forceReconnect: () => void h.reconnects++ }),

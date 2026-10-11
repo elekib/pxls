@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is, plus typed scores.
-
 import { apiFetch } from '@/ui/api';
 import { useState, useEffect, useRef } from 'react';
 import type { Config, CountdownConfig, CountdownPreset, DeviceConfig } from '@/ui/types';

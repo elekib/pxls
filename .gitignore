@@ -4,7 +4,6 @@ data/
 
 # Build output
 node_modules/
-target/
 dist/
 
 # OS

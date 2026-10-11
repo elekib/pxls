@@ -1,5 +1,4 @@
-// Divoom native modes from config. Port of modes/divoom.rs and
-// rendering/device_config.rs; unknown names fall back like the Rust code.
+// Divoom native modes from config; unknown names fall back to a default.
 
 import type { DeviceConfig } from "@/lib/config/model";
 import type { Pixoo } from "@/lib/device/pixoo";
@@ -53,8 +52,7 @@ export function nativeMode(dc: DeviceConfig): LightMode | null {
       };
     }
     case "light": {
-      // One brightness: the device setting also drives Light mode (Rust used a
-      // separate light_config.brightness, so two sliders disagreed).
+      // One brightness: the device setting also drives Light mode.
       const l = dc.light_config;
       return { kind: "light", color: l.color, brightness: dc.brightness, effect: effect(l.effect_mode), on: l.on };
     }
@@ -71,7 +69,7 @@ export function nativeMode(dc: DeviceConfig): LightMode | null {
   }
 }
 
-/** The native mode for a Divoom page in the custom rotation (Rust apply_divoom_mode). */
+/** The native mode for a Divoom page in the custom rotation. */
 export function pageMode(p: { type: string } & Record<string, unknown>): LightMode | null {
   switch (p.type) {
     case "DivoomEnvironment":

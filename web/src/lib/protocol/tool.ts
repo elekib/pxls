@@ -1,5 +1,5 @@
 // Tool commands: stopwatch, noise meter, countdown and the scoreboard tool.
-// Port of backend/src/device/tool.rs. All need device test.
+// All need device test.
 
 import { score } from "./mode";
 

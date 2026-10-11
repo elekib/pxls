@@ -1,5 +1,5 @@
-// Display modes (`0x45`). Port of backend/src/device/mode.rs; sources and
-// verification status are in docs/protocol.md.
+// Display modes (`0x45`). Sources and verification status are
+// in docs/protocol.md.
 
 export const CMD_MODE = 0x45;
 

@@ -1,7 +1,5 @@
 // The notification shown on top of everything else, and how it is drawn.
-// Port of notification/manager.rs and rendering/notification_page.rs.
-// Unlike Rust, image notifications blink when `flash` is set (Rust ignored it,
-// so Flash Screen showed a steady colour).
+// Image notifications blink when `flash` is set.
 
 import { Canvas, type Rgb } from "@/lib/render/canvas";
 import { drawText } from "@/lib/render/font";
@@ -50,7 +48,7 @@ export class NotificationManager {
   }
 }
 
-/** Notification colours default to cyan, as in the Rust renderer. */
+/** Notification colours default to cyan. */
 function hexToRgb(hex: string): Rgb {
   const h = hex.replace(/^#/, "");
   return /^[0-9a-fA-F]{6}$/.test(h) ? [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)] : [0, 255, 255];

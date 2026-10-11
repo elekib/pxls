@@ -7,7 +7,7 @@ import { applyDeviceConfig, nativeMode } from "@/lib/engine/modes";
 const dc = (o: object) => deviceConfig.parse(o);
 
 describe("native modes", () => {
-  it("maps names like the Rust code, with fallbacks", () => {
+  it("maps names, with fallbacks", () => {
     expect(nativeMode(dc({ light_mode: "custom" }))).toBeNull();
     expect(nativeMode(dc({ light_mode: "env", environment_config: { clock_design: "analog2", color: [1, 2, 3] } }))).toMatchObject({ kind: "env", clockDesign: 5, color: [1, 2, 3] });
     expect(nativeMode(dc({ light_mode: "env", environment_config: { clock_design: "??" } }))).toMatchObject({ clockDesign: 0 });

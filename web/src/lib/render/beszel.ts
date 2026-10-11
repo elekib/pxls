@@ -1,5 +1,5 @@
 // Beszel (PocketBase) hub access for the System, GPU and Temps pages.
-// Port of token_manager.rs and pages/beszel.rs: the app logs in with the
+// The app logs in with the
 // configured credentials, keeps the token in memory only, renews it before
 // expiry, throttles logins, and caches system-name lookups.
 
@@ -58,7 +58,7 @@ export interface BeszelStatus {
   last_error: string | null;
 }
 
-/** Provides a valid Beszel token. Port of TokenManager. */
+/** Provides a valid Beszel token. */
 export class TokenManager {
   private token: string | null = null;
   private exp: number | null = null;

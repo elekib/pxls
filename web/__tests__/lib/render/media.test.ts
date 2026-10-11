@@ -36,7 +36,7 @@ describe("image pages", () => {
 
   it("shows placeholders for missing, unknown and broken files", async () => {
     expect((await renderImageUpload("animated", null, 0)).get(4, 6)).toEqual([100, 100, 100]); // "GIF"
-    // The font has no "?" glyph, so (as in Rust) it draws as a solid red block.
+    // The font has no "?" glyph, so it draws as a solid red block.
     expect((await renderImageUpload("static", "../etc/passwd", 0)).get(7, 6)).toEqual([255, 0, 0]);
     expect((await renderImageUpload("static", "missing.png", 0)).data.some((v) => v === 255)).toBe(true);
     expect((await renderImageUpload("static", "broken.png", 0)).get(3, 6)).toEqual([255, 0, 0]); // "ERR"

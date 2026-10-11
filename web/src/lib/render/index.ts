@@ -1,4 +1,4 @@
-// Render one custom page to a 16x16 frame. Port of pages/mod.rs.
+// Render one custom page to a 16x16 frame.
 
 import type { TokenManager } from "./beszel";
 import { Canvas } from "./canvas";

@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on the `rust-prerelease` branch) as-is.
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/ui/api', () => ({ apiFetch: vi.fn() }));

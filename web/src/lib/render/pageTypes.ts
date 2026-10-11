@@ -1,5 +1,5 @@
-// Custom page definitions as stored in config.custom_pages (serde's
-// `#[serde(tag = "type")]` layout). Port of the PageType enum in config.rs.
+// Custom page definitions as stored in config.custom_pages:
+// the `type` field selects the variant.
 
 export interface Pixel {
   x: number;

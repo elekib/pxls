@@ -1,6 +1,6 @@
 "use client";
 
-// Port of the original AccountPage. Sessions come from the server render.
+// Sessions come from the server render.
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
