@@ -25,7 +25,7 @@ export function apply(p: Pixoo, c: Command): Promise<void> {
       return p.setImage(image.solid(...c.rgb));
     case "clock":
       return p.setMode({
-        kind: "env", timeFormat: "24h", clockDesign: c.design as mode.ClockDesign, showDivoom: false,
+        kind: "env", clockDesign: c.design as mode.ClockDesign, showDivoom: false,
         showWeather: false, showTemp: false, showDate: false, color: c.rgb,
       });
     case "music":
