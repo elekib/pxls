@@ -21,7 +21,7 @@ pxls runs next to your Pixoo, talks to it over Bluetooth, and gives you a web UI
   - Custom scripts
 - **Native Divoom modes.** Let the device render its own environment clock, light, special, music, user or score modes.
 - **Webhooks.** Receive events from other services (for example Radarr or Sonarr). Rules match on the payload and trigger a notification, an image, a screen flash and more. Every received event is logged and can be replayed.
-- **Tools.** Buzzer, countdown, sound detector and scoreboard.
+- **Tools.** Countdown, sound detector and scoreboard.
 - **Device control.** Connect and disconnect, brightness, 12h/24h time format.
 
 ## Requirements

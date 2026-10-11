@@ -53,7 +53,6 @@ fn api_routes() -> Router<AppState> {
         )
         .route("/api/uploads/:filename", get(self::upload::serve_file))
         .route("/api/health", get(self::health::health_check))
-        .route("/api/buzzer", post(self::tools::play_buzzer))
         .route("/api/countdown", post(self::tools::start_countdown))
         .route(
             "/api/sound-detector",

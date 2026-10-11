@@ -19,16 +19,6 @@ use crate::AppState;
 const SOUND_DETECTOR_SECS: u64 = 300;
 
 #[derive(Debug, Deserialize)]
-pub struct BuzzerRequest {
-    #[serde(default = "default_total_time")]
-    pub total_time: u32,
-}
-
-fn default_total_time() -> u32 {
-    1000
-}
-
-#[derive(Debug, Deserialize)]
 pub struct CountdownRequest {
     pub minutes: u8,
     pub seconds: u8,
@@ -180,35 +170,6 @@ pub async fn start_sound_detector(State(state): State<AppState>) -> Response {
                 format!("Failed to start sound detector: {e}"),
             )
         }
-    }
-}
-
-#[instrument(skip(state))]
-pub async fn play_buzzer(
-    State(state): State<AppState>,
-    Json(req): Json<BuzzerRequest>,
-) -> Response {
-    // Sent on the open link; a second Bluetooth connection is refused.
-    let total_time = req.total_time as u16;
-    let pixoo = state.pixoo.clone();
-    let result = blocking(move || match pixoo.lock() {
-        Ok(mut wrapper) => wrapper.with_link(|p| pixoo_wrapper::play_buzzer(p, total_time)),
-        Err(_) => Err(anyhow::anyhow!("Failed to access Pixoo connection")),
-    })
-    .await;
-    match result {
-        Ok(Ok(())) => {
-            info!("Buzzer activated successfully");
-            ok(json!({ "success": true, "message": "Buzzer activated", "duration_ms": total_time }))
-        }
-        Ok(Err(e)) => {
-            warn!(error = %e, "Failed to send buzzer command");
-            fail(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to send buzzer command: {e}"),
-            )
-        }
-        Err(e) => fail(StatusCode::INTERNAL_SERVER_ERROR, e),
     }
 }
 

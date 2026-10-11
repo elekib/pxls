@@ -44,7 +44,6 @@ impl ActionExecutor {
             }
             ActionType::DisplayImage => self.execute_display_image(action, payload, defaults).await,
             ActionType::FlashScreen => self.execute_flash_screen(action, defaults).await,
-            ActionType::PlaySound => self.execute_play_sound(action).await,
             ActionType::LogEvent => self.execute_log_event(action, payload).await,
             ActionType::ForwardWebhook => self.execute_forward_webhook(action, payload).await,
         }
@@ -286,41 +285,6 @@ impl ActionExecutor {
         Ok(format!(
             "Flashed screen with color {color} for {duration_ms}ms"
         ))
-    }
-
-    async fn execute_play_sound(&self, action: &WebhookAction) -> Result<String> {
-        // sound_type presets map to (active_time_ms, off_time_ms, total_time_ms)
-        let sound_type = Self::param_str(action, "sound_type").unwrap_or("default");
-
-        let (preset_active, preset_off, preset_total) = match sound_type {
-            "short" => (200, 0, 200),
-            "beep" => (150, 100, 500),
-            "alarm" => (400, 200, 3000),
-            _ => (500, 0, 1000),
-        };
-
-        // The device layout only carries the total time, so the active/off
-        // parameters are accepted but unused.
-        let _ = (preset_active, preset_off);
-        let total_time = Self::param_u64(action, "total_time_ms").unwrap_or(preset_total) as u16;
-
-        // Sent on the open link; a second Bluetooth connection is refused.
-        let pixoo = self.pixoo.clone();
-        tokio::task::spawn_blocking(move || {
-            let mut wrapper = pixoo
-                .lock()
-                .map_err(|_| anyhow::anyhow!("Failed to access Pixoo connection"))?;
-            wrapper.with_link(|p| crate::pixoo_wrapper::play_buzzer(p, total_time))
-        })
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?
-        .map_err(|e| anyhow::anyhow!("Failed to play buzzer: {e}"))?;
-
-        info!(
-            "Play sound action: type={}, total={}ms",
-            sound_type, total_time
-        );
-        Ok(format!("Played sound {sound_type} for {total_time}ms"))
     }
 
     async fn execute_log_event(&self, action: &WebhookAction, payload: &Value) -> Result<String> {

@@ -8,7 +8,7 @@ How pxls talks to legacy Divoom Pixoo (16x16) displays. The implementation lives
 
 - **[Timebox Evo protocol write-up](https://github.com/RomRider/node-divoom-timebox-evo/blob/master/PROTOCOL.md)** (public, no license stated; only facts were used): framing, little-endian fields, checksum, brightness `0x74`, channels `0x45 00/01/03/04/06`, image upload layout.
 - **[Timebox (Mini) protocol write-up](https://github.com/MarcG046/timebox/blob/master/doc/protocol.md)** (public, no license stated): framing, escaping rule (not used, see below), static image command number.
-- **This repository's earlier notes and app code**: tool command `0x72` layouts, scoreboard tool `0x50`, buzzer `0x31`.
+- **This repository's earlier notes and app code**: tool command `0x72` layouts, scoreboard tool `0x50`.
 
 Both public write-ups cover the Timebox family. Pixoo behaviour is assumed to match where noted.
 
@@ -50,7 +50,6 @@ Example, brightness 50%: `01 04 00 74 32 AA 00 02` (`0x04 + 0x74 + 0x32 = 0xAA`)
 | Scoreboard mode | `0x45` | `06 00 red_lo red_hi blue_lo blue_hi` | Public | needs device test |
 | Image | `0x44` | see below | Public (Timebox family) | needs device test |
 | Time format | unknown | n/a | none | **not sent** |
-| Buzzer | `0x31` | `total_ms: u16` little-endian | Repo (previous behavior) | needs device test |
 | Stopwatch tool | `0x72` | `00 action` (1 start, 0 stop) | Repo | needs device test |
 | Noise meter tool | `0x72` | `02 action` | Repo | needs device test |
 | Countdown tool | `0x72` | `03 action minutes seconds` | Repo | needs device test |
@@ -62,7 +61,6 @@ Notes:
 - **Light effect:** 0 normal, 1 rainbow ("love" in the write-up), 2 plants, 3 fly ("no mosquito"), 4 sleep.
 - **Music `TT`** (observed on a real Pixoo, not documented): 0 bottom bars, 1 face 3, 2 center bars, 3 face 1, 4 matrix, 5 frog face, 6 side bars, 7 face 2, 8 falling blocks, 9 dancing boy, 10 fireworks, 11 dancing girl.
 - **Time format:** no command is documented anywhere we looked. `Pixoo::set_time_format` sends nothing until `CMD_TIME_FORMAT` in `backend/src/device/mod.rs` is set after a device test. The 12/24h setting therefore has no effect for now.
-- **Buzzer:** an earlier implementation also sent `0x45 06 00` after the buzzer. The scoreboard channel is `06`, so that was removed. Other buzzer layouts (4 and 6 byte, big-endian) were tried historically; the 2-byte little-endian form is what pxls sent before and is kept. The buzzer is now sent on the already-open link: it used to open a second connection, which a Pixoo likely refuses while the first is open (the Tools page showed an error). Needs device test.
 - **Stopwatch pause/reset** are not documented and not implemented.
 - **Tool layouts:** the old notes' example packets for tools had lengths that did not match their arguments; the argument lists above are used, framed as in the table above.
 - **Score range:** 0-999 (the driver clamps larger values), confirmed by the public write-up and a device observation that 99 was too low.
@@ -113,12 +111,11 @@ Run on the server with a real Pixoo and note the model and firmware. Tick each i
 2. **Native modes.** Apply clock (each of 6 designs, with weather/temp/date on and off), light (color, brightness, 5 effects, on/off), special (4 modes), music (12 modes), user, score. Record which work. Watch for the clock, blank, clock flicker.
 3. **Tools on the open link.** Start a 1 minute countdown, sound detector and the scoreboard (Tools page) and check each runs with the status still "Connected". Check the display returns by itself when the countdown ends and on Stop, and how many seconds that takes. If a tool does not run or the display does not return, try `PXLS_TOOL_CLOSE_LINK=1`.
 4. **Time format.** Find the command (try the official app with a sniffer, or `command_tester` scan), then set `CMD_TIME_FORMAT`.
-5. **Buzzer.** Trigger it. Silence means the layout is wrong; try the variants in `command_tester`.
-6. **Escaping.** Set brightness to 1 (argument `0x01`). If the display ignores it or misbehaves, the device needs escaped packets.
-7. **Images.** Push each page type (text, image, scroll). Check colors, orientation and no garbage. If the image is shifted or the device ignores it, `LEN` semantics are the first suspect.
-8. **Clock byte 3.** Compare 12h vs 24h display with the app set to each; see if that byte is a 24h flag.
-9. **Responses.** The driver never reads. Leave the server running for a few hours with the render loop active and confirm no stalls (unread device replies could fill the socket buffer).
-10. **Reconnect.** Power cycle the display; confirm the loop reconnects.
+5. **Escaping.** Set brightness to 1 (argument `0x01`). If the display ignores it or misbehaves, the device needs escaped packets.
+6. **Images.** Push each page type (text, image, scroll). Check colors, orientation and no garbage. If the image is shifted or the device ignores it, `LEN` semantics are the first suspect.
+7. **Clock byte 3.** Compare 12h vs 24h display with the app set to each; see if that byte is a 24h flag.
+8. **Responses.** The driver never reads. Leave the server running for a few hours with the render loop active and confirm no stalls (unread device replies could fill the socket buffer).
+9. **Reconnect.** Power cycle the display; confirm the loop reconnects.
 
 ## Troubleshooting
 

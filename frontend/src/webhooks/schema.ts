@@ -52,7 +52,6 @@ export const ACTION_TYPES: Option<ActionType>[] = [
   { value: 'DisplayNotification', label: 'Display Notification' },
   { value: 'DisplayImage', label: 'Display Image' },
   { value: 'FlashScreen', label: 'Flash Screen' },
-  { value: 'PlaySound', label: 'Play Sound' },
   { value: 'LogEvent', label: 'Log Event' },
   { value: 'ForwardWebhook', label: 'Forward Webhook' },
 ];
@@ -62,13 +61,6 @@ const IMAGE_SOURCES: Option[] = [
   { value: 'base64', label: 'Base64' },
   { value: 'template', label: 'Template' },
   { value: 'text_overlay', label: 'Text Overlay' },
-];
-
-const SOUND_TYPES: Option[] = [
-  { value: 'default', label: 'Default' },
-  { value: 'short', label: 'Short' },
-  { value: 'beep', label: 'Beep' },
-  { value: 'alarm', label: 'Alarm' },
 ];
 
 const LOG_LEVELS: Option[] = [
@@ -147,12 +139,6 @@ const FIELDS: Record<ActionType, ParamField[]> = {
     { key: 'duration_ms', label: 'Duration (ms)', type: 'number', placeholder: '500' },
     { key: 'flash_speed_ms', label: 'Flash Speed (ms)', type: 'number', placeholder: '200' },
   ],
-  PlaySound: [
-    { key: 'sound_type', label: 'Sound Type', type: 'select', options: SOUND_TYPES },
-    { key: 'total_time_ms', label: 'Total Time (ms)', type: 'number', placeholder: '1000' },
-    { key: 'active_time_ms', label: 'Active Time (ms)', type: 'number', placeholder: '500' },
-    { key: 'off_time_ms', label: 'Off Time (ms)', type: 'number', placeholder: '0' },
-  ],
   LogEvent: [
     { key: 'message', label: 'Message', type: 'text', placeholder: 'Downloaded {movie.title}' },
     { key: 'level', label: 'Level', type: 'select', options: LOG_LEVELS },
@@ -221,7 +207,6 @@ export function describeAction(a: Action): string {
     : a.action_type === 'LogEvent' ? p.message
     : a.action_type === 'ForwardWebhook' ? p.url
     : a.action_type === 'FlashScreen' ? p.color
-    : a.action_type === 'PlaySound' ? p.sound_type
     : undefined;
   return detail ? `${label}: ${detail}` : label;
 }

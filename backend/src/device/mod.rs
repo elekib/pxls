@@ -24,7 +24,6 @@ use transport::{BtTransport, Transport};
 
 /// Command bytes that are not part of a mode or tool.
 pub const CMD_BRIGHTNESS: u8 = 0x74;
-pub const CMD_BUZZER: u8 = 0x31;
 
 /// Set-time-format has no verified command byte, so nothing is sent. Set this to
 /// `Some(byte)` once a device test finds it.
@@ -114,12 +113,6 @@ impl<T: Transport> Pixoo<T> {
     pub fn set_tool_info(&mut self, tool: ToolInfo) -> Result<(), DeviceError> {
         let (cmd, args) = tool.encode();
         self.send(cmd, &args)
-    }
-
-    /// Buzzer for `total_ms`, argument sent little-endian like the previous
-    /// implementation. Needs device test; see docs/protocol.md.
-    pub fn play_buzzer(&mut self, total_ms: u16) -> Result<(), DeviceError> {
-        self.send(CMD_BUZZER, &total_ms.to_le_bytes())
     }
 }
 
@@ -388,12 +381,6 @@ mod tests {
             pkt,
             [0x01, 0x08, 0x00, 0x50, 0x01, 0x0C, 0x00, 0x2C, 0x01, 0x92, 0x00, 0x02]
         );
-    }
-
-    #[test]
-    fn buzzer() {
-        let pkt = one(|p| p.play_buzzer(1000).unwrap());
-        assert_eq!(pkt, [0x01, 0x05, 0x00, 0x31, 0xE8, 0x03, 0x21, 0x01, 0x02]);
     }
 
     #[test]

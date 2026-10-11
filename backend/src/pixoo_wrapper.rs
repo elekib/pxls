@@ -28,14 +28,6 @@ impl ToolLink {
     }
 }
 
-/// Play the buzzer for `total_ms` on the open link (a second connection to the
-/// device is refused while the first is open). The layout carries only the
-/// total time. Needs device test, see docs/protocol.md.
-pub fn play_buzzer<T: Transport>(pixoo: &mut Pixoo<T>, total_ms: u16) -> Result<()> {
-    pixoo.play_buzzer(total_ms)?;
-    Ok(())
-}
-
 /// Start a countdown. Needs device test.
 pub fn start_countdown<T: Transport>(
     pixoo: &mut Pixoo<T>,
@@ -168,15 +160,6 @@ mod tests {
     ) {
         let (t, log) = MockTransport::new();
         (Pixoo::with_transport(t), log)
-    }
-
-    #[test]
-    fn buzzer_goes_out_on_the_open_link() {
-        let (mut p, log) = pixoo();
-        play_buzzer(&mut p, 1000).unwrap();
-        let log = log.lock().unwrap();
-        assert_eq!(log.packets, vec![packet(0x31, &[0xE8, 0x03])]);
-        assert_eq!(log.closes, 0);
     }
 
     #[test]

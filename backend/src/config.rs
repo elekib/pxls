@@ -132,12 +132,6 @@ pub struct MusicConfig {
 pub struct CountdownConfig {
     #[serde(default)]
     pub presets: Vec<CountdownPreset>,
-    #[serde(default)]
-    pub buzzer_active_time_ms: u16,
-    #[serde(default)]
-    pub buzzer_off_time_ms: u16,
-    #[serde(default)]
-    pub buzzer_total_time_ms: u16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -400,9 +394,6 @@ impl Default for Config {
                             seconds: 0,
                         },
                     ],
-                    buzzer_active_time_ms: 500,
-                    buzzer_off_time_ms: 0,
-                    buzzer_total_time_ms: 1000,
                 },
             },
         }

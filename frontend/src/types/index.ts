@@ -76,9 +76,6 @@ export interface CountdownPreset {
 
 export interface CountdownConfig {
   presets: CountdownPreset[];
-  buzzer_active_time_ms: number;
-  buzzer_off_time_ms: number;
-  buzzer_total_time_ms: number;
 }
 
 export interface DeviceConfig {

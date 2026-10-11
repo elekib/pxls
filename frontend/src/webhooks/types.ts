@@ -4,7 +4,7 @@ export type ConditionOperator =
 
 export type ActionType =
   | 'DisplayNotification' | 'DisplayImage' | 'FlashScreen'
-  | 'PlaySound' | 'LogEvent' | 'ForwardWebhook';
+  | 'LogEvent' | 'ForwardWebhook';
 
 export type ConditionLogic = 'All' | 'Any';
 

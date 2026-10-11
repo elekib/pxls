@@ -48,12 +48,10 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
   const [presets, setPresets] = useState<CountdownPreset[]>(
     savedCountdown?.presets || DEFAULT_PRESETS
   );
-  const [buzzerTotal, setBuzzerTotal] = useState(savedCountdown?.buzzer_total_time_ms || 1000);
 
   useEffect(() => {
     if (savedCountdown) {
       setPresets(savedCountdown.presets);
-      setBuzzerTotal(savedCountdown.buzzer_total_time_ms);
     }
   }, [savedCountdown]);
 
@@ -135,25 +133,6 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
     }
   };
 
-  const handleTestBuzzer = async () => {
-    try {
-      const response = await apiFetch(`${API_URL}/api/buzzer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ total_time: buzzerTotal })
-      });
-      const result = await response.json();
-
-      if (result.success) {
-        onNotify('Buzzer activated!');
-      } else {
-        onNotify(result.error || 'Buzzer failed', 'error');
-      }
-    } catch {
-      onNotify('Buzzer test failed - device may not be connected', 'error');
-    }
-  };
-
   // Posts the latest scores. Requests are chained so they reach the device in order.
   const postScores = () => {
     sendChain.current = sendChain.current.then(async () => {
@@ -219,8 +198,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
     }
   };
 
-  // Saves only the given part of the countdown config; everything else stays as
-  // saved, so editing presets never writes unsaved buzzer values and vice versa.
+  // Saves only the given part of the countdown config; everything else stays as saved.
   const saveCountdownConfig = async (patch: Partial<CountdownConfig>, doneMessage: string) => {
     if (!config) return;
 
@@ -249,7 +227,6 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
   };
 
   const handleSavePresets = () => saveCountdownConfig({ presets }, 'Timer presets saved!');
-  const handleSaveBuzzer = () => saveCountdownConfig({ buzzer_total_time_ms: buzzerTotal }, 'Buzzer settings saved!');
 
   const updatePreset = (index: number, field: keyof CountdownPreset, value: string | number) => {
     setPresets(prev => prev.map((preset, i) => (i === index ? { ...preset, [field]: value } : preset)));
@@ -400,39 +377,6 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
             className={`w-full py-3 rounded-lg font-semibold transition-all ${startButton(canStart && (customMinutes > 0 || customSeconds > 0), 'bg-blue-600 hover:bg-blue-700')}`}
           >
             Start {customMinutes}m {customSeconds}s Countdown
-          </button>
-        </div>
-      </div>
-
-      {/* Buzzer Section */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-yellow-600">
-        <h3 className="text-xl font-semibold mb-4 text-yellow-300">Buzzer</h3>
-
-        <div className="mb-4 max-w-xs">
-          <label className="block text-gray-400 text-sm mb-1">Total Time (ms)</label>
-          <input
-            type="number"
-            min="100"
-            max="10000"
-            value={buzzerTotal}
-            onChange={(e) => setBuzzerTotal(parseInt(e.target.value) || 100)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={handleTestBuzzer}
-            disabled={!canStart}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${startButton(canStart, 'bg-yellow-600 hover:bg-yellow-700')}`}
-          >
-            🔊 Test Buzzer
-          </button>
-          <button
-            onClick={handleSaveBuzzer}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all"
-          >
-            Save Buzzer
           </button>
         </div>
       </div>

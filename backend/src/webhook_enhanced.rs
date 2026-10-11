@@ -62,8 +62,6 @@ pub enum ActionType {
     DisplayImage,
     #[serde(alias = "flash_screen", alias = "flashscreen")]
     FlashScreen,
-    #[serde(alias = "play_sound", alias = "playsound")]
-    PlaySound,
     #[serde(alias = "log_event", alias = "logevent")]
     LogEvent,
     #[serde(alias = "forward_webhook", alias = "forwardwebhook")]
