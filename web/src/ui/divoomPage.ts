@@ -7,7 +7,6 @@ export type DivoomData = Record<string, unknown>;
 export const DIVOOM_TYPES = [
   'DivoomEnvironment',
   'DivoomLight',
-  'DivoomSpecial',
   'DivoomMusic',
   'DivoomUser',
   'DivoomScore',
@@ -18,7 +17,6 @@ export type DivoomPageType = (typeof DIVOOM_TYPES)[number];
 export const divoomTypeLabels: Record<DivoomPageType, string> = {
   DivoomEnvironment: 'Divoom Clock / Environment',
   DivoomLight: 'Divoom Light',
-  DivoomSpecial: 'Divoom Special Effect',
   DivoomMusic: 'Divoom Music Visualizer',
   DivoomUser: 'Divoom User GIFs',
   DivoomScore: 'Divoom Scoreboard',
@@ -38,7 +36,6 @@ const DEFAULTS: Record<DivoomPageType, DivoomData> = {
     color: [255, 255, 255],
   },
   DivoomLight: { color: [255, 255, 255], brightness: 100, effect_mode: 0, on: true },
-  DivoomSpecial: { mode: 'default' },
   DivoomMusic: { mode: 'bottom_bars' },
   DivoomUser: { mode: 'default' },
   DivoomScore: { red_score: 0, blue_score: 0 },

@@ -4,6 +4,7 @@ import { gifFrameIndex } from "@/lib/render/pages/media";
 import { renderCustomPixels, renderCustomText } from "@/lib/render/pages/simple";
 import { drawGpuStats, drawSystemStats, drawTemps, tempColor, usageColor } from "@/lib/render/pages/stats";
 import { Canvas } from "@/lib/render/canvas";
+import { enabledPages } from "@/lib/render/pageTypes";
 import { drawText } from "@/lib/render/font";
 
 const page = { clock_color: "00FFFF", date_color: "FFFF00", weather_color: "FFA500", weather_location: "X", temperature_unit: "celsius" };
@@ -98,5 +99,13 @@ describe("GIF timing", () => {
   });
   it("uses a fixed duration when set", () => {
     expect([0, 49, 50, 100, 150].map((t) => gifFrameIndex(gif, t, 50))).toEqual([0, 0, 1, 2, 0]);
+  });
+});
+
+describe("enabled pages", () => {
+  it("skips disabled pages and pages of a type that no longer exists", () => {
+    const mk = (type: string, enabled = true) => ({ name: type, enabled, page_type: { type } });
+    const pages = enabledPages([mk("CustomText"), mk("DivoomSpecial"), mk("DivoomMusic"), mk("ClockWeather", false), null, { enabled: true }]);
+    expect(pages.map((p) => p.name)).toEqual(["CustomText", "DivoomMusic"]);
   });
 });

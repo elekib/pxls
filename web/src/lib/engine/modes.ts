@@ -28,10 +28,8 @@ export const MUSIC_MODES: Record<string, mode.MusicMode> = {
   dancing_girl: mode.MusicMode.DancingGirl,
 };
 
-export const SPECIAL_MODES: Record<string, number> = { default: 0, sparkle: 1, breath: 2, wave: 3 };
-
 /** Native display modes; "custom" means pxls renders its own pages. */
-export const NATIVE_MODES = ["env", "light", "special", "music", "user", "score"] as const;
+export const NATIVE_MODES = ["env", "light", "music", "user", "score"] as const;
 
 const effect = (n: number) => (n >= 0 && n <= 4 ? (n as mode.LightEffect) : mode.LightEffect.Normal);
 
@@ -57,8 +55,6 @@ export function nativeMode(dc: DeviceConfig): LightMode | null {
     }
     case "user":
       return { kind: "user" };
-    case "special":
-      return { kind: "special", mode: SPECIAL_MODES[dc.special_config.mode] ?? 0 };
     case "music":
       return { kind: "music", mode: MUSIC_MODES[dc.music_config.mode] ?? mode.MusicMode.BottomBars };
     case "score":
@@ -89,8 +85,6 @@ export function pageMode(p: { type: string } & Record<string, unknown>): LightMo
         effect: effect(Number(p.effect_mode)),
         on: !!p.on,
       };
-    case "DivoomSpecial":
-      return { kind: "special", mode: SPECIAL_MODES[String(p.mode)] ?? 0 };
     case "DivoomMusic":
       return { kind: "music", mode: MUSIC_MODES[String(p.mode)] ?? mode.MusicMode.BottomBars };
     case "DivoomUser":

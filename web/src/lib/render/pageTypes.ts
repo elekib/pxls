@@ -34,7 +34,6 @@ export type PageType =
   | { type: "CustomText"; text: string; y: number; color: string; background_color: string; scroll_speed: number; enable_scroll: boolean }
   | { type: "DivoomEnvironment"; clock_design: string; show_divoom: boolean; show_weather: boolean; show_temp: boolean; show_date: boolean; color: [number, number, number] }
   | { type: "DivoomLight"; color: [number, number, number]; brightness: number; effect_mode: number; on: boolean }
-  | { type: "DivoomSpecial"; mode: string }
   | { type: "DivoomMusic"; mode: string }
   | { type: "DivoomUser"; mode: string }
   | { type: "DivoomScore"; red_score: number; blue_score: number };
@@ -47,14 +46,22 @@ export interface CustomPage {
   duration_secs?: number;
 }
 
-const DIVOOM = new Set(["DivoomEnvironment", "DivoomLight", "DivoomSpecial", "DivoomMusic", "DivoomUser", "DivoomScore"]);
+const DIVOOM = new Set(["DivoomEnvironment", "DivoomLight", "DivoomMusic", "DivoomUser", "DivoomScore"]);
 
 export const isDivoomPage = (p: PageType) => DIVOOM.has(p.type);
 
-/** The enabled, well-formed pages from config.custom_pages, in order. */
+const KNOWN = new Set<string>([
+  "ClockWeather", "SystemStats", "GpuStats", "Temps", "CustomScript", "ImageUpload", "CustomPixels", "CustomText", ...DIVOOM,
+]);
+
+/**
+ * The enabled, well-formed pages from config.custom_pages, in order. Pages of a
+ * type this version no longer has (a removed one) are skipped instead of
+ * showing a blank screen for their whole slot.
+ */
 export function enabledPages(raw: unknown[]): CustomPage[] {
   return raw.filter(
     (p): p is CustomPage =>
-      !!p && typeof p === "object" && (p as CustomPage).enabled === true && typeof (p as CustomPage).page_type?.type === "string",
+      !!p && typeof p === "object" && (p as CustomPage).enabled === true && KNOWN.has((p as CustomPage).page_type?.type),
   );
 }
