@@ -17,9 +17,9 @@ describe("native modes", () => {
     expect(nativeMode(dc({ light_mode: "score", score_config: { red_score: 3, blue_score: 4 } }))).toEqual({ kind: "score", red: 3, blue: 4 });
   });
 
-  it("applies brightness, then the native mode (time format is not sent)", async () => {
+  it("applies brightness, then the native mode", async () => {
     const t = new MemoryTransport();
-    await applyDeviceConfig(new Pixoo(t), dc({ brightness: 60, time_format: "24h", light_mode: "user" }));
+    await applyDeviceConfig(new Pixoo(t), dc({ brightness: 60, light_mode: "user" }));
     expect(t.packets.map((p) => Array.from(p))).toEqual([
       [0x01, 0x04, 0x00, 0x74, 0x3c, 0xb4, 0x00, 0x02],
       [0x01, 0x05, 0x00, 0x45, 0x05, 0x00, 0x4f, 0x00, 0x02],

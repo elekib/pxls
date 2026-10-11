@@ -39,7 +39,6 @@ export interface BeszelAuthStatus {
 }
 
 export interface EnvironmentConfig {
-  time_format: string; // "12h" or "24h"
   clock_design: string; // "digital" or "analog1"
   show_divoom: boolean;
   show_weather: boolean;
@@ -76,7 +75,6 @@ export interface CountdownConfig {
 
 export interface DeviceConfig {
   brightness: number; // 0-70 (device limitation)
-  time_format: string; // "12h" or "24h"
   light_mode: string; // "custom" for our pages, or native modes
   // Native mode configurations
   environment_config: EnvironmentConfig;
@@ -126,7 +124,6 @@ export interface PageTypeData {
   scroll_speed?: number;
   enable_scroll?: boolean;
   // Divoom native modes
-  time_format?: string;
   clock_design?: string;
   show_divoom?: boolean;
   show_weather?: boolean;

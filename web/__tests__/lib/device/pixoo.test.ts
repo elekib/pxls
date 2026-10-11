@@ -33,12 +33,6 @@ describe("Pixoo", () => {
     ]);
   });
 
-  it("sends nothing for time format until verified", async () => {
-    const t = new MemoryTransport();
-    await new Pixoo(t).setTimeFormat("24h");
-    expect(t.packets).toHaveLength(0);
-  });
-
   it("fails after disconnect and closes once", async () => {
     const t = new MemoryTransport();
     const p = new Pixoo(t);
