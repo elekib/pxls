@@ -749,6 +749,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Weather Location</label>
                     <input type="text" value={weatherLocation} onChange={(e) => setWeatherLocation(e.target.value)} placeholder="New York,NY" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400" />
+                    <p className="text-gray-500 text-sm mt-2">Sent to your weather URL as {"{location}"} and {"{unit}"} (PXLS_WEATHER_URL). Without that URL no weather is shown.</p>
                   </div>
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Temperature Unit</label>

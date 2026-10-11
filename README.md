@@ -202,7 +202,7 @@ pxls does not ship a weather service. Point `PXLS_WEATHER_URL` at any URL that a
 - `temp`: the temperature as a number, in the unit pxls asks for. Required.
 - `code`: a WMO weather interpretation code for the icon (0 clear, 1-3 cloudy, 45/48 fog, 51-65 rain, 71-77 snow, 95-99 storm). Optional; without it there is no icon.
 
-`{location}` and `{unit}` in the URL are replaced with the page's location and `celsius` or `fahrenheit` (for example `http://bridge.lan/weather?q={location}&u={unit}`). pxls fetches only when the URL is set, caches the answer for 10 minutes, and draws the temperature row only when it gets a valid reply: on any error, nothing is drawn in its place. The URL is never logged, so it may carry a token. Most weather APIs return a different shape, so run a small bridge that converts one to this format; you are responsible for that service's terms.
+`{location}` and `{unit}` in the URL are replaced with the page's location and `celsius` or `fahrenheit` (for example `http://bridge.lan/weather?q={location}&u={unit}`). pxls fetches only when the URL is set, caches the answer for 10 minutes, and draws the temperature row only when it gets a valid reply: on any error, nothing is drawn in its place. The URL is never logged, so it may carry a token. Most weather APIs return a different shape, so run a small bridge that converts one to this format; you are responsible for that service's terms. [examples/weather-bridge](examples/weather-bridge/) has a working example bridge.
 
 ## Documentation
 
