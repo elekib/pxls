@@ -27,10 +27,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
 
   const [deviceConfig, setDeviceConfig] = useState<DeviceConfig>({
     brightness: config.device_config.brightness || 50,
-    time_format: config.device_config.time_format || '12h',
     light_mode: config.device_config.light_mode || 'custom',
     environment_config: config.device_config.environment_config || {
-      time_format: '12h',
       clock_design: 'digital',
       show_divoom: false,
       show_weather: false,
@@ -299,40 +297,6 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
           <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-green-600">
             <h3 className="text-xl font-semibold mb-4 text-green-300">Environment Mode Configuration</h3>
             
-            <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Time Format</label>
-              <div className="flex gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="env_time_format" 
-                    value="12h"
-                    checked={deviceConfig.environment_config.time_format === '12h'}
-                    onChange={(e) => setDeviceConfig(prev => ({
-                      ...prev,
-                      environment_config: { ...prev.environment_config, time_format: e.target.value }
-                    }))}
-                    className="mr-2"
-                  />
-                  <span className="text-white">12 Hour</span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="env_time_format" 
-                    value="24h"
-                    checked={deviceConfig.environment_config.time_format === '24h'}
-                    onChange={(e) => setDeviceConfig(prev => ({
-                      ...prev,
-                      environment_config: { ...prev.environment_config, time_format: e.target.value }
-                    }))}
-                    className="mr-2"
-                  />
-                  <span className="text-white">24 Hour</span>
-                </label>
-              </div>
-            </div>
-
             <div className="mb-4">
               <label className="block text-gray-400 text-sm mb-2">Clock Design</label>
               <select 

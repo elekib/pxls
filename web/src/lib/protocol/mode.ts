@@ -13,8 +13,6 @@ const CH_SCORE = 0x06;
 export const MAX_SCORE = 999;
 
 export type Rgb = readonly [number, number, number];
-export type TimeFormat = "12h" | "24h";
-
 export const ClockDesign = {
   Digital: 0,
   DigitalRainbow: 1,
@@ -48,8 +46,6 @@ export type MusicMode = (typeof MusicMode)[keyof typeof MusicMode];
 export type LightMode =
   | {
       kind: "env";
-      /** Not encoded: the documented clock layout has no 12/24h field. */
-      timeFormat: TimeFormat;
       clockDesign: ClockDesign;
       /** Not encoded: no documented byte for the Divoom logo. */
       showDivoom: boolean;

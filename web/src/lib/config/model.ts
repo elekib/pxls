@@ -19,7 +19,6 @@ const score = clamped(999);
 const str = z.string().catch("").transform((s) => s.slice(0, 200));
 
 export const environmentConfig = z.object({
-  time_format: str.default(""),
   clock_design: str.default(""),
   show_divoom: z.boolean().catch(false).default(false),
   show_weather: z.boolean().catch(false).default(false),
@@ -43,7 +42,6 @@ export const countdownPreset = z.object({
 
 export const deviceConfig = z.object({
   brightness: pct.default(0),
-  time_format: str.default(""),
   light_mode: str.default(""),
   environment_config: environmentConfig.default(environmentConfig.parse({})),
   light_config: lightConfig.default(lightConfig.parse({})),
@@ -120,10 +118,8 @@ export function defaultConfig(): Config {
     ],
     device_config: {
       brightness: 50,
-      time_format: "12h",
       light_mode: "custom",
       environment_config: {
-        time_format: "12h",
         clock_design: "digital",
         show_divoom: false,
         show_weather: false,

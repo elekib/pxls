@@ -15,7 +15,7 @@ describe("config model", () => {
 
   it("gives missing fields zero values and keeps unknown fields", () => {
     const cfg = normalizeConfig({ pixoo_mac: "AA", future_field: { x: 1 }, device_config: { brightness: 70 } });
-    expect(cfg.device_config).toMatchObject({ brightness: 70, light_mode: "", time_format: "" });
+    expect(cfg.device_config).toMatchObject({ brightness: 70, light_mode: "" });
     expect(cfg.device_config.light_config).toEqual({ color: [0, 0, 0], brightness: 0, effect_mode: 0, on: false });
     expect(cfg.future_field).toEqual({ x: 1 });
     expect(cfg.custom_pages).toEqual([]);

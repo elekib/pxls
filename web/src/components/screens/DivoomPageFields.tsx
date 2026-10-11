@@ -71,13 +71,6 @@ export function DivoomPageFields({ type, data, onChange }: Props) {
       {type === 'DivoomEnvironment' && (
         <>
           <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-2">Time Format</label>
-            <select value={String(data.time_format)} onChange={(e) => set({ time_format: e.target.value })} className={inputClass}>
-              <option value="12h">12 hour</option>
-              <option value="24h">24 hour</option>
-            </select>
-          </div>
-          <div className="mb-4">
             <label className="block text-gray-400 text-sm mb-2">Clock Design</label>
             <select value={String(data.clock_design)} onChange={(e) => set({ clock_design: e.target.value })} className={inputClass}>
               {CLOCK_DESIGNS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
