@@ -31,7 +31,7 @@ pub fn apply_device_config<T: Transport>(
         return Err(format!("Failed to set time format: {e}").into());
     }
 
-    // Apply the selected Divoom native mode immediately (env/light/special/music/
+    // Apply the selected Divoom native mode immediately (env/light/music/
     // user/score). In "custom" mode the rendering loop drives the display, so
     // there is nothing to apply here. Applying native modes here means config
     // changes take effect instantly on save/connect instead of waiting up to

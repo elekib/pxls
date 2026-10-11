@@ -35,6 +35,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Removed
 - Buzzer (Tools page, `/api/buzzer`, the webhook `PlaySound` action). It never worked on a real Pixoo. A stored webhook that uses a `PlaySound` action must be edited before upgrading.
+- Special display mode (device config option and the `DivoomSpecial` page type). The device ignored it. A stored custom page of that type must be removed before upgrading.
 
 ### Fixed
 - Diagnostics page: a **Restore display** button (`POST /api/debug/release`) ends the probe pause and puts the display back to the configured mode, so a probe no longer leaves it stuck on red.

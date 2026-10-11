@@ -129,7 +129,6 @@ impl PageRenderer {
             // Divoom native modes - these are handled by apply_divoom_mode, not rendered
             PageType::DivoomEnvironment { .. } => Ok(DynamicImage::new_rgb8(16, 16)),
             PageType::DivoomLight { .. } => Ok(DynamicImage::new_rgb8(16, 16)),
-            PageType::DivoomSpecial { .. } => Ok(DynamicImage::new_rgb8(16, 16)),
             PageType::DivoomMusic { .. } => Ok(DynamicImage::new_rgb8(16, 16)),
             PageType::DivoomUser { .. } => Ok(DynamicImage::new_rgb8(16, 16)),
             PageType::DivoomScore { .. } => Ok(DynamicImage::new_rgb8(16, 16)),

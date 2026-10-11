@@ -117,12 +117,6 @@ pub struct ScoreConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SpecialConfig {
-    #[serde(default)]
-    pub mode: String, // specific special mode type
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MusicConfig {
     #[serde(default)]
     pub mode: String, // music visualization mode
@@ -159,8 +153,6 @@ pub struct DeviceConfig {
     pub light_config: LightConfig,
     #[serde(default)]
     pub score_config: ScoreConfig,
-    #[serde(default)]
-    pub special_config: SpecialConfig,
     #[serde(default)]
     pub music_config: MusicConfig,
     #[serde(default)]
@@ -239,9 +231,6 @@ pub enum PageType {
         brightness: u8,
         effect_mode: u8,
         on: bool,
-    },
-    DivoomSpecial {
-        mode: String,
     },
     DivoomMusic {
         mode: String,
@@ -364,9 +353,6 @@ impl Default for Config {
                 score_config: ScoreConfig {
                     red_score: 0,
                     blue_score: 0,
-                },
-                special_config: SpecialConfig {
-                    mode: "default".to_string(),
                 },
                 music_config: MusicConfig {
                     mode: "bottom_bars".to_string(),

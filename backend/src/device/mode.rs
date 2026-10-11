@@ -3,8 +3,8 @@
 //! Sources: the public Timebox Evo write-up documents `45 00` (clock),
 //! `45 01` (light), `45 03` (effects), `45 04` (visualization) and
 //! `45 06` (scoreboard) with their arguments. Needs device test on Pixoo:
-//! the mapping of the app's "special" mode to `45 03`, "music" to `45 04`,
-//! and the layout of `45 05` ("user") are inferred, not documented.
+//! the mapping of the app's "music" mode to `45 04` and the layout of
+//! `45 05` ("user") are inferred, not documented.
 //!
 //! Music mode indexes were corrected from device observation (not from a
 //! document): the order below is what the display actually shows.
@@ -13,7 +13,6 @@ pub const CMD_MODE: u8 = 0x45;
 
 const CH_CLOCK: u8 = 0x00;
 const CH_LIGHT: u8 = 0x01;
-const CH_EFFECTS: u8 = 0x03;
 const CH_MUSIC: u8 = 0x04;
 const CH_USER: u8 = 0x05;
 const CH_SCORE: u8 = 0x06;
@@ -102,9 +101,6 @@ pub enum LightMode {
         on: bool,
     },
     User,
-    Special {
-        mode: u8,
-    },
     Music {
         mode: MusicMode,
     },
@@ -158,7 +154,6 @@ impl LightMode {
                 0x00,
             ],
             Self::User => vec![CH_USER, 0x00],
-            Self::Special { mode } => vec![CH_EFFECTS, mode],
             Self::Music { mode } => vec![CH_MUSIC, mode as u8],
             // 45 06 00 RED(le16) BLUE(le16)
             Self::Score {

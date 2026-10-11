@@ -9,7 +9,6 @@ pub fn is_divoom_page_type(page_type: &PageType) -> bool {
         page_type,
         PageType::DivoomEnvironment { .. }
             | PageType::DivoomLight { .. }
-            | PageType::DivoomSpecial { .. }
             | PageType::DivoomMusic { .. }
             | PageType::DivoomUser { .. }
             | PageType::DivoomScore { .. }
@@ -78,19 +77,6 @@ pub fn apply_divoom_mode_from_config<T: Transport>(
         "user" => {
             pixoo.set_mode(LightMode::User)?;
             info!("User mode activated");
-        }
-        "special" => {
-            let special_config = &device_config.special_config;
-            let mode_value = match special_config.mode.as_str() {
-                "default" => 0,
-                "sparkle" => 1,
-                "breath" => 2,
-                "wave" => 3,
-                _ => 0,
-            };
-            let light_mode = LightMode::Special { mode: mode_value };
-            pixoo.set_mode(light_mode)?;
-            info!(mode = %special_config.mode, "Special mode activated");
         }
         "music" => {
             let music_config = &device_config.music_config;
@@ -203,17 +189,6 @@ pub fn apply_divoom_mode<T: Transport>(
                 on = *on,
                 "Light page mode applied"
             );
-        }
-        PageType::DivoomSpecial { mode } => {
-            let mode_value = match mode.as_str() {
-                "default" => 0,
-                "sparkle" => 1,
-                "breath" => 2,
-                "wave" => 3,
-                _ => 0,
-            };
-            pixoo.set_mode(LightMode::Special { mode: mode_value })?;
-            info!(mode = %mode, "Special page mode applied");
         }
         PageType::DivoomMusic { mode } => {
             let music_mode = match mode.as_str() {

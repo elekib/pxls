@@ -220,12 +220,6 @@ mod tests {
     }
 
     #[test]
-    fn special_mode() {
-        let pkt = one(|p| p.set_mode(LightMode::Special { mode: 2 }).unwrap());
-        assert_eq!(pkt, [0x01, 0x05, 0x00, 0x45, 0x03, 0x02, 0x4F, 0x00, 0x02]);
-    }
-
-    #[test]
     fn music_mode() {
         let m = |mode| one(|p| p.set_mode(LightMode::Music { mode }).unwrap());
         assert_eq!(
