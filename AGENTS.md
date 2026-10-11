@@ -6,13 +6,13 @@ Guide for contributors and coding agents working on pxls.
 
 - Never commit `data/` or `.env`. They hold credentials, event logs and personal media.
 - Keep "Pixoo" descriptive only (Divoom trademark). The project name is pxls.
-- Preserve secret handling when porting config: the Rust `config.rs` redacts secrets in `Debug`, and `routes/config.rs` strips them from API responses. Do the same in the Node app (never log secrets, never return them from the API).
+- Preserve secret handling: never log secrets (webhook secrets, Beszel credentials, tokens, passwords) and never return them from the API.
 - Device behavior needs a real Pixoo over Bluetooth. Say so in a PR if you could not test it.
 
 ## Build and run
 
-- pxls is a single Next.js app in `web/` (UI, API and display engine in one process). The Rust `backend/` and Vite `frontend/` live on `main` (0.1.x) as the porting reference.
-- Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). App on port 3500 (`PXLS_PORT`). Logs: `docker logs -f pxls`.
+- pxls is a single Next.js app in `web/` (UI, API and display engine in one process).
+- Full stack from source: `make dev` (same as `docker compose -f compose.yaml -f compose.build.yaml up --build -d`). App on port 3030 (`PXLS_PORT`). Logs: `docker logs -f pxls`.
 - Local checks in `web/`: `npm run typecheck`, `npm test`, `npm run build` (Node 22+).
 - Tests live in `web/__tests__/`, mirroring `web/src/` (for example `src/lib/engine/engine.ts` is tested in `__tests__/lib/engine/engine.test.ts`). Import the code under test with `@/` paths. Do not put tests next to source files.
 
@@ -24,7 +24,7 @@ Guide for contributors and coding agents working on pxls.
 - `web/src/lib/render/`: the render loop (`loop.ts`, page rotation and native keep-alive), the bitmap font and the page types. Tools pause it; webhook notifications draw over it.
 - `web/src/lib/auth/`: accounts and sessions on Better Auth (`auth.ts` config, `accounts.ts` user and session management, `api.ts` guard for route handlers, `session.ts` for server components). `/api/auth/*` is served by Better Auth through an allowlist in `app/api/auth/[...all]/route.ts`; sign-in must go through it so the rate limiter applies. Every other API route calls `requireApi()` itself.
 - `web/src/lib/webhooks/`: receiver, rules engine, actions, notifications and the SSRF guard for image downloads (`netGuard.ts`).
-- `web/src/lib/protocol/`: packet encoders with golden-byte tests ported from the Rust driver. Keep them byte-identical unless a device test says otherwise (see `docs/protocol.md`).
+- `web/src/lib/protocol/`: packet encoders with golden-byte tests. Keep them byte-identical unless a device test says otherwise (see `docs/protocol.md`).
 - Do not send a `set_color` heartbeat in native mode. It overwrites the native display and causes a clock, blank, clock flicker.
 
 ## Sign-off

@@ -1,5 +1,5 @@
 // SSRF guard for fetching images from URLs that arrive in webhook payloads.
-// Port of net_guard.rs: http/https only; every address the host resolves to
+// http/https only; every address the host resolves to
 // must be public unless PXLS_ALLOW_PRIVATE_URLS=true; redirects are followed
 // by hand so each hop is checked; and the connection is pinned to the address
 // that was checked, so DNS cannot change between check and connect.

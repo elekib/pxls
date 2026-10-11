@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { useState } from 'react';
 import { DISPLAY_MODES, ICON_PRESETS, PRESET_COLORS } from '@/ui/webhooks/schema';
 import type { DisplayMode, Webhook } from '@/ui/webhooks/types';

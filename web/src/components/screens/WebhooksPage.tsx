@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { WebhookCard } from '@/components/webhooks/WebhookCard';
 import { WebhookToolbar } from '@/components/webhooks/WebhookToolbar';
 import { useWebhooks } from '@/ui/webhooks/useWebhooks';

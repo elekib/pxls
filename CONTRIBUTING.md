@@ -19,6 +19,8 @@ git commit -s -m "Describe your change"
 
 This adds a `Signed-off-by: Your Name <you@example.com>` line. CI rejects pull requests with unsigned commits. To fix a branch: `git rebase --signoff main`.
 
+Contributions are licensed under the [Apache License 2.0](LICENSE), the same as the project.
+
 ## Development setup
 
 You need Docker for the full stack, and Node 22+ for local checks.
@@ -28,7 +30,7 @@ cp .env.example .env     # set PIXOO_MAC and TZ
 docker compose -f compose.yaml -f compose.build.yaml up --build
 ```
 
-The app is at http://localhost:3500.
+The app is at http://localhost:3030.
 
 ### App (Next.js)
 
@@ -37,11 +39,13 @@ pxls is a single Next.js app in `web/`: the UI, the API and the display engine r
 ```bash
 cd web
 npm ci
-npm run dev        # dev server on :3000
+PXLS_DATA_DIR=../data npm run dev   # dev server on :3000
 npm run typecheck
 npm test
 npm run build
 ```
+
+`PXLS_DATA_DIR` is where the database and uploads live (`data/` is git-ignored). The dev server prints the first-run setup code in its terminal.
 
 The Bluetooth link needs Linux with BlueZ (`rfcomm`). Elsewhere the engine reports the device as `error` and keeps retrying; the UI and API still work.
 
@@ -70,12 +74,12 @@ Then delete the branch (`git push origin --delete exp/my-test`) and remove the `
 
 1. Fork the repository and branch from `main`.
 2. Keep changes focused. Add or update tests when you change behavior.
-3. Make sure formatting, lints, tests and the frontend build pass.
+3. Make sure `npm run typecheck`, `npm test` and `npm run build` pass in `web/`.
 4. Open a pull request describing the change and how you tested it. `main` is protected: CI must pass and the maintainer reviews.
 
 ## Database migrations
 
-Persistent data lives in SQLite (`data/pxls.db`). To change the schema, append an entry with the next unused version number to `web/src/lib/db/migrations/index.ts`. Each migration is applied once at startup inside a transaction and recorded in `schema_version`. Never edit a migration that has been released: 0.1.x and 0.2.x share this database.
+Persistent data lives in SQLite (`data/pxls.db`). To change the schema, append an entry with the next unused version number to `web/src/lib/db/migrations/index.ts`. Each migration is applied once at startup inside a transaction and recorded in `schema_version`. Never edit a migration that has been released.
 
 ## Architecture notes
 

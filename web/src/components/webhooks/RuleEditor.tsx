@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { useMemo, useState } from 'react';
 import { webhookApi, errorMessage } from '@/ui/webhooks/api';
 import { emptyAction, emptyCondition, prettyJson, validateRule, type ServicePreset } from '@/ui/webhooks/schema';

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as frame from "@/lib/protocol/frame";
 import { encode, type ToolInfo } from "@/lib/protocol/tool";
 
-// Golden packets from backend/src/device/mod.rs tests.
+// Golden packets: known byte sequences for each command.
 const pkt = (t: ToolInfo) => Array.from(frame.encode(...encode(t)));
 
 describe("tool", () => {

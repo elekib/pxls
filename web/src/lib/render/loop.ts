@@ -1,4 +1,4 @@
-// The render loop. Port of rendering/loop_renderer.rs.
+// The render loop.
 //
 // Every refresh_interval_ms (1 s by default):
 // - Custom mode: rotate the enabled pages every rotation_time_secs (or the

@@ -1,5 +1,4 @@
-// 3x5 bitmap font and text drawing. Port of backend/src/font.rs and renderer.rs;
-// glyphs, widths and spacing match the Rust renderer exactly.
+// 3x5 bitmap font and text drawing.
 
 import type { Canvas, Rgb } from "./canvas";
 
@@ -49,7 +48,7 @@ const GLYPHS: Record<string, number[]> = {
 };
 const UNKNOWN = [0b111, 0b111, 0b111, 0b111, 0b111];
 
-/** Rust uppercases ASCII only. */
+/** Uppercases ASCII only. */
 const upper = (ch: string) => (ch >= "a" && ch <= "z" ? ch.toUpperCase() : ch);
 
 export const glyph = (ch: string) => GLYPHS[upper(ch)] ?? UNKNOWN;

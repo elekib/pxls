@@ -1,11 +1,11 @@
-// Field extraction, rule evaluation and placeholders. Port of the logic in
-// webhook_enhanced.rs, with the same loose comparisons and edge cases.
+// Field extraction, rule evaluation and placeholders, with loose
+// comparisons.
 
 import type { Action, Condition, Json, Rule, Webhook } from "./model";
 
 const isObj = (v: Json | undefined): v is { [k: string]: Json } => !!v && typeof v === "object" && !Array.isArray(v);
 
-/** serde_json's to_string for a value (numbers as JSON, strings raw, null empty). */
+/** A value as text: numbers as JSON, strings raw, null empty. */
 export function valueToString(v: Json): string {
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);

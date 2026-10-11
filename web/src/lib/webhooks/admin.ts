@@ -1,6 +1,4 @@
-// Webhook, rule and event management. Port of routes/enhanced_webhooks.rs,
-// routes/webhook_rules.rs and routes/webhook_events.rs, with the same
-// defaults, validation and messages.
+// Webhook, rule and event management.
 
 import { randomUUID } from "node:crypto";
 import { getDb } from "@/lib/db/sqlite";

@@ -1,15 +1,12 @@
-// The app configuration, stored as one JSON document in `app_config` (row 1)
-// and shared with the Rust app. Port of backend/src/config.rs.
+// The app configuration, stored as one JSON document in `app_config` (row 1).
 //
 // Fields this app does not model yet (custom pages, webhooks, Beszel) are
-// kept as they are, so saving never drops data the Rust app or a later phase
-// needs. Missing fields get the same defaults serde gives them in Rust: the
-// type's zero value, not Config::default().
+// kept as they are, so saving never drops stored data. Missing fields get the
+// type's zero value, not the first-run defaults.
 
 import { z } from "zod";
 
-// Numbers are clamped, never rejected: a stored config must always load, and
-// the Rust app clamps the same values when it sends them.
+// Numbers are clamped, never rejected: a stored config must always load.
 const clamped = (max: number) =>
   z
     .number()
@@ -89,18 +86,18 @@ export interface Config {
   [other: string]: unknown;
 }
 
-/** Top-level fields of the Rust Config; a client may only send these. */
+/** Top-level fields of the config; a client may only send these. */
 export const CONFIG_KEYS = [
   "pixoo_mac", "weather_location", "timezone", "refresh_interval_ms", "rotation_time_secs", "clock_color",
   "date_color", "weather_color", "custom_pages", "device_config", "webhooks", "enhanced_webhooks", "beszel_auth",
 ] as const;
 
-/** Drop fields the Rust app would not deserialize (client input only). */
+/** Keep only the known top-level fields (client input only). */
 export function pickKnown(raw: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(CONFIG_KEYS.filter((k) => k in raw).map((k) => [k, raw[k]]));
 }
 
-/** The first-run config (Rust `Config::default()`). */
+/** The first-run config. */
 export function defaultConfig(): Config {
   return {
     pixoo_mac: "",
@@ -166,7 +163,7 @@ const asArray = (v: unknown) => (Array.isArray(v) ? v : []);
 
 /**
  * A stored or submitted JSON document as a Config: modelled fields get
- * serde-style defaults, unknown fields are kept, numbers are clamped.
+ * zero-value defaults, unknown fields are kept, numbers are clamped.
  */
 export function normalizeConfig(raw: unknown): Config {
   const o = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};

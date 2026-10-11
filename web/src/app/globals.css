@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark theme configuration (from the original UI) */
+/* Dark theme configuration */
 @layer base {
   html {
     color-scheme: dark;

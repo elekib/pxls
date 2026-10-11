@@ -1,6 +1,6 @@
 "use server";
 
-// Device page actions. Viewers get the original UI's read-only message.
+// Device page actions. Viewers get a read-only message.
 
 import { revalidatePath } from "next/cache";
 import { currentUser } from "@/lib/auth/session";

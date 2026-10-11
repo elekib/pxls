@@ -8,7 +8,7 @@ export interface Tab {
   mobile?: boolean;
 }
 
-/** Same tabs, order and icons as the original UI. */
+/** The navigation tabs, in order. */
 export const TABS: Tab[] = [
   { href: "/", label: "Device", short: "Device", icon: "📱", mobile: true },
   { href: "/pages", label: "Pages", short: "Pages", icon: "🎨", mobile: true },

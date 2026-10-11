@@ -1,5 +1,5 @@
 // Device and config operations shared by the API routes and the UI's server
-// actions. Port of routes/device.rs and routes/config.rs.
+// actions.
 
 import { getDb } from "@/lib/db/sqlite";
 import { deviceConfig, normalizeConfig, pickKnown, type Config, type DeviceConfig } from "@/lib/config/model";

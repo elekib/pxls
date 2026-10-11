@@ -10,8 +10,7 @@
 // Assumption, needs device test: `LEN` is the frame length from `AA` through
 // the last pixel byte.
 //
-// Port of backend/src/device/image.rs. Resizing is the caller's job: the Rust
-// encoder resizes with nearest neighbour, here the input must already be 16x16.
+// Resizing is the caller's job: the input must already be 16x16.
 
 export const CMD_IMAGE = 0x44;
 export const SIZE = 16;

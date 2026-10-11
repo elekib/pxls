@@ -1,7 +1,7 @@
 "use client";
 
-// Port of the original Vite DevicePage: same markup and behaviour, with the
-// data loaded on the server and changes sent through server actions.
+// The Device page: data is loaded on the server and changes are sent through
+// server actions.
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";

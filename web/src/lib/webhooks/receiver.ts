@@ -1,5 +1,4 @@
 // Incoming webhooks: authenticate, run rules and actions, log the event.
-// Port of routes/webhooks.rs and the webhook parts of auth.rs.
 
 import { randomUUID } from "node:crypto";
 import { constantTimeEq } from "@/lib/auth/util";

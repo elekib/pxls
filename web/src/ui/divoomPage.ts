@@ -1,5 +1,5 @@
-// Divoom-native page types. The device renders these itself, so the backend
-// deserializes them strictly (no serde defaults): every field must be sent.
+// Divoom-native page types. The device renders these itself, so the server
+// validates them strictly: every field must be sent.
 
 export type Rgb = [number, number, number];
 export type DivoomData = Record<string, unknown>;
@@ -59,7 +59,7 @@ export function loadDivoomData(type: DivoomPageType, saved: object): DivoomData 
   return data;
 }
 
-// Build the exact payload the backend expects: only known keys, none missing.
+// Build the exact payload the API expects: only known keys, none missing.
 export function buildDivoomPayload(type: DivoomPageType, data: DivoomData): DivoomData {
   const payload: DivoomData = { type };
   const defaults = DEFAULTS[type];

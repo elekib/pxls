@@ -21,6 +21,7 @@ ARG GIT_SHA=unknown
 LABEL org.opencontainers.image.title="pxls" \
       org.opencontainers.image.description="Dashboard for legacy Divoom Pixoo Bluetooth displays" \
       org.opencontainers.image.source="https://github.com/elekib/pxls" \
+      org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${GIT_SHA}"
 

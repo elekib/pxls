@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { useEffect, useMemo, useState } from 'react';
 import { errorMessage, eventApi, webhookApi } from '@/ui/webhooks/api';
 import { flattenPaths, GENERIC_SAMPLE, presetFor, prettyJson } from '@/ui/webhooks/schema';

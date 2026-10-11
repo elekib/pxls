@@ -71,7 +71,7 @@ export class RfcommTransport implements Transport {
       throw e;
     }
 
-    // Drain replies; the Rust driver never read them (checklist item 9).
+    // Drain replies; see item 9 of the device test checklist.
     let reader: tty.ReadStream | null = null;
     if (tty.isatty(fd)) {
       reader = new tty.ReadStream(fd);

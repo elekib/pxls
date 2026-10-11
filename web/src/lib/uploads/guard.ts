@@ -1,5 +1,5 @@
 // Validation for images that come from outside (uploads, fetched URLs) and
-// safe handling of stored upload filenames. Port of image_guard.rs.
+// safe handling of stored upload filenames.
 
 import { realpathSync, statSync } from "node:fs";
 import path from "node:path";

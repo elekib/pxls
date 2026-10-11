@@ -1,6 +1,6 @@
 // Which on-device tool is running and for how long. One source of truth for
-// the routes, the status endpoint and the render loop. Port of tool_state.rs;
-// the clock is injected so expiry can be tested.
+// the routes, the status endpoint and the render loop. The clock is injected so expiry
+// can be tested.
 
 export type ToolKind = "countdown" | "sound_detector" | "scoreboard" | "diagnostics";
 

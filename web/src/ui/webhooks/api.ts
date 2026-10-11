@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { apiFetch } from '@/ui/api';
 import { API_URL } from '@/ui/types';
 import type {

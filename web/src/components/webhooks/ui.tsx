@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { useEffect, useState, type ReactNode } from 'react';
 import { API_URL } from '@/ui/types';
 

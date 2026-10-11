@@ -1,5 +1,3 @@
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { eventApi, errorMessage, webhookApi } from './api';
 import type { Rule, Webhook, WebhookSummary } from './types';
@@ -17,7 +15,7 @@ export function uniqueName(base: string, taken: Iterable<string>): string {
   return `${base}_${n}`;
 }
 
-/** Defaults for a new webhook; the backend fills in anything omitted. */
+/** Defaults for a new webhook; the server fills in anything omitted. */
 export function newWebhookDefaults(overrides: Partial<Webhook> = {}): Partial<Webhook> {
   return {
     enabled: true,

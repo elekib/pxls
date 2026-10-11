@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { apiFetch } from '@/ui/api';
 import { AuthImage } from './AuthImage';
 import { useState, useEffect, type ChangeEvent, type FocusEvent } from 'react';

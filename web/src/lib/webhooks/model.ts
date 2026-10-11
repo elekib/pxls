@@ -1,5 +1,4 @@
-// Webhook, rule and event types, stored in the same shape as the Rust app's
-// webhook_enhanced.rs (serde). Inputs accept the same aliases serde accepted
+// Webhook, rule and event types, with aliases accepted on input
 // ("eq", "display_notification", "and"...); stored values are canonical.
 
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
@@ -67,7 +66,7 @@ export interface WebhookEvent {
   matched_rule: string | null;
 }
 
-/** Thrown when input doesn't match the schema (serde's deserialize error). */
+/** Thrown when input doesn't match the schema */
 export class ParseError extends Error {}
 
 const ALIASES: Record<string, string> = {};

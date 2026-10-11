@@ -1,4 +1,4 @@
-// Image upload for Image pages. Port of routes/upload.rs: the content decides
+// Image upload for Image pages. the content decides
 // the type, names are generated, size and dimensions are capped.
 
 import { randomBytes } from "node:crypto";

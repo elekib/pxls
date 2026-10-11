@@ -1,4 +1,4 @@
-// Text and pixel pages. Port of pages/custom_text.rs and custom_pixels.rs.
+// Text and pixel pages.
 
 import { hexToRgb } from "@/lib/config/model";
 import { Canvas } from "../canvas";

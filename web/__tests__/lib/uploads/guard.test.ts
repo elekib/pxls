@@ -45,7 +45,7 @@ describe("image guard", () => {
     await expect(validateImageBytes(bmp(5000, 1, [0, 0, 0]))).rejects.toThrow(/too large/);
   });
 
-  it("sanitizes filenames like the Rust guard", () => {
+  it("sanitizes filenames", () => {
     expect(sanitizeStem("My Photo.PNG")).toBe("My_Photo");
     expect(sanitizeStem("../../etc/passwd")).toBe("passwd");
     expect(sanitizeStem("..\\..\\boot.ini")).toBe("boot");

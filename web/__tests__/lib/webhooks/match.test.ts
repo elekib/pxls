@@ -34,7 +34,7 @@ describe("extractField", () => {
 describe("conditions", () => {
   const rule = (conds: object[], logic = "all") => parseRule({ name: "r", conditions: conds, actions: [{ action_type: "log_event" }], condition_logic: logic });
 
-  it("compares loosely like Rust", () => {
+  it("compares loosely", () => {
     expect(valuesEqual("5", 5, false)).toBe(true);
     expect(valuesEqual(true, "true", false)).toBe(true);
     expect(valuesEqual("Dune", "dune", true)).toBe(true);

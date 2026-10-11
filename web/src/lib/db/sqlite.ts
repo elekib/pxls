@@ -1,6 +1,4 @@
-// The SQLite database, `<data dir>/pxls.db`, shared with the Rust 0.1.x app:
-// same file, pragmas and migrations, so switching between them keeps all data.
-// Port of backend/src/database/db.rs and migrations.rs.
+// The SQLite database, `<data dir>/pxls.db`.
 //
 // Uses Node's built-in node:sqlite (no native addon). One connection per
 // process; SQLite (WAL plus busy timeout) serialises writers across processes.
@@ -57,7 +55,7 @@ function createPrivateFile(file: string) {
 
 /**
  * Run `fn` in a write transaction (BEGIN IMMEDIATE takes the write lock up
- * front, like the Rust code). Rolls back if `fn` throws.
+ * front). Rolls back if `fn` throws.
  */
 export function tx<T>(db: Db, fn: () => T): T {
   db.exec("BEGIN IMMEDIATE");

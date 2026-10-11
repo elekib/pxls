@@ -2,7 +2,7 @@ import { requireApi } from "@/lib/auth/api";
 import { json, readJson } from "@/lib/auth/http";
 import type { ToolResult } from "@/lib/tools/service";
 
-/** POST handler for a tool command: admin only, JSON body, Rust response shapes. */
+/** POST handler for a tool command: admin only, JSON body. */
 export function toolRoute(run: (body: Record<string, unknown>) => Promise<ToolResult>) {
   return async (req: Request) => {
     const me = await requireApi(req);

@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { apiFetch } from '@/ui/api';
 import { useState, useEffect, useCallback } from 'react';
 import type { Config, BeszelAuthStatus } from '@/ui/types';
@@ -63,7 +61,7 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
       if (result.success) onNotify('Login works!');
       else onNotify(result.error || 'Login failed', 'error');
     } catch {
-      onNotify('Could not reach the pixoo backend', 'error');
+      onNotify('Could not reach pxls', 'error');
     } finally {
       setBusy(false);
     }
@@ -100,7 +98,7 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
     if (!config || !confirm('Remove the saved Beszel login? Beszel pages will stop updating.')) return;
     setBusy(true);
     try {
-      // An empty email tells the backend to clear the stored login.
+      // An empty email tells pxls to clear the stored login.
       const result = await postConfig({ email: '', password: '' });
       if (result.success) {
         onNotify('Beszel login removed');

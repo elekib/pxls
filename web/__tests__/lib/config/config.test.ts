@@ -4,7 +4,7 @@ import { loadConfig, preserveSecrets, publicConfig, saveConfig } from "@/lib/con
 import { openMemoryDb } from "@/lib/db/sqlite";
 
 describe("config model", () => {
-  it("writes the Rust defaults on first load and round-trips", () => {
+  it("writes the defaults on first load and round-trips", () => {
     const db = openMemoryDb();
     const cfg = loadConfig(db);
     expect(cfg).toEqual(defaultConfig());
@@ -13,7 +13,7 @@ describe("config model", () => {
     expect(loadConfig(db).timezone).toBe("Europe/London");
   });
 
-  it("gives missing fields serde zero values and keeps unknown fields", () => {
+  it("gives missing fields zero values and keeps unknown fields", () => {
     const cfg = normalizeConfig({ pixoo_mac: "AA", future_field: { x: 1 }, device_config: { brightness: 70 } });
     expect(cfg.device_config).toMatchObject({ brightness: 70, light_mode: "", time_format: "" });
     expect(cfg.device_config.light_config).toEqual({ color: [0, 0, 0], brightness: 0, effect_mode: 0, on: false });

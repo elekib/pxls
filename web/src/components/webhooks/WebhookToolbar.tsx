@@ -1,7 +1,5 @@
 "use client";
 
-// Ported from the original Vite UI (frontend/src on main) as-is.
-
 import { useRef } from 'react';
 import { SERVICE_PRESETS } from '@/ui/webhooks/schema';
 import type { Webhook } from '@/ui/webhooks/types';

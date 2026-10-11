@@ -1,6 +1,6 @@
 "use client";
 
-// Port of the original UsersPage. The list comes from the server render.
+// The list comes from the server render.
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";

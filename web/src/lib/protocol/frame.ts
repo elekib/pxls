@@ -4,8 +4,6 @@
 // The checksum is the 16-bit sum of every byte from the length field through
 // the last argument. Both 16-bit fields are little-endian. Arguments are sent
 // raw, without escaping; see docs/protocol.md.
-//
-// Port of backend/src/device/frame.rs.
 
 export const START = 0x01;
 export const END = 0x02;
