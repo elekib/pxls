@@ -32,12 +32,21 @@ describe("clock and weather", () => {
     same(got, want);
   });
 
-  it("blinks the colon and draws an icon only with a valid reading", () => {
+  it("blinks the colon and draws an icon only when there is a code", () => {
     const t = { hour: "10", minute: "00", month: "Jan", day: "01", second: 1 };
-    const noColon = drawClockWeather(page, t, { temp: "--", code: 0 }, 0);
+    const noColon = drawClockWeather(page, t, { temp: "5", code: -1 }, 0);
     expect(noColon.get(7, 1)).toEqual([0, 0, 0]);
+    expect(noColon.get(6, 11)).toEqual([0, 0, 0]);
     const sunny = drawClockWeather(page, { ...t, second: 0 }, { temp: "5", code: 0 }, 0);
     expect(sunny.get(6, 11)).toEqual([255, 200, 0]); // icon at tempWidth(3) + 3; ray in its first column
+  });
+
+  it("draws only the clock and date, with no placeholder, when there is no weather", () => {
+    const t = { hour: "9", minute: "41", month: "Oct", day: "06", second: 2 };
+    const got = drawClockWeather(page, t, null, 0);
+    const want = drawClockWeather(page, t, { temp: "72", code: -1 }, 0);
+    for (let y = 0; y < 11; y++) for (let x = 0; x < 16; x++) expect(got.get(x, y)).toEqual(want.get(x, y));
+    for (let y = 11; y < 16; y++) for (let x = 0; x < 16; x++) expect(got.get(x, y)).toEqual([0, 0, 0]);
   });
 });
 

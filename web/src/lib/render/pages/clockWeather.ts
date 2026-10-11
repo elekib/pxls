@@ -1,62 +1,16 @@
 // Clock, date and current weather.
 //
-// Time uses the saved timezone, and the weather fetch has a timeout.
+// Time uses the saved timezone. The weather row is drawn only when the weather
+// URL gave a reading (see lib/weather.ts); otherwise the page is just clock and date.
 
 import { hexToRgb } from "@/lib/config/model";
 import { Canvas, type Rgb } from "../canvas";
 import { drawText } from "../font";
+import { getWeather, type Weather } from "@/lib/weather";
 
-const WEATHER_TTL_MS = 10 * 60_000;
 const ICON_FRAME_MS = 333;
-const FETCH_TIMEOUT_MS = 5000;
 
-interface Weather {
-  temp: string;
-  code: number;
-}
-
-let cache: { key: string; at: number; value: Weather } | null = null;
-let inflight: Promise<Weather> | null = null;
 const anim = { frame: 0, at: 0 };
-
-async function json(url: string): Promise<unknown> {
-  const r = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
-async function fetchWeather(location: string, unit: string): Promise<Weather> {
-  const none = { temp: "--", code: -1 };
-  try {
-    const city = (location.split(",")[0] ?? location).trim();
-    const geo = (await json(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`,
-    )) as { results?: { latitude?: number; longitude?: number }[] };
-    const first = geo.results?.[0];
-    if (!first) return none;
-    const u = unit === "celsius" ? "celsius" : "fahrenheit";
-    const w = (await json(
-      `https://api.open-meteo.com/v1/forecast?latitude=${first.latitude ?? 0}&longitude=${first.longitude ?? 0}&current_weather=true&temperature_unit=${u}`,
-    )) as { current_weather?: { temperature?: number; weathercode?: number } };
-    const t = w.current_weather?.temperature;
-    return {
-      temp: typeof t === "number" ? t.toFixed(0) : "--",
-      code: typeof w.current_weather?.weathercode === "number" ? w.current_weather.weathercode : -1,
-    };
-  } catch {
-    return none;
-  }
-}
-
-/** Cached for 10 minutes per location and unit, failures included. */
-export async function getWeather(location: string, unit: string): Promise<Weather> {
-  const key = `${location}|${unit}`;
-  if (cache && cache.key === key && Date.now() - cache.at < WEATHER_TTL_MS) return cache.value;
-  inflight ??= fetchWeather(location, unit).finally(() => (inflight = null));
-  const value = await inflight;
-  cache = { key, at: Date.now(), value };
-  return value;
-}
 
 function animationFrame(now = Date.now()): number {
   if (anim.at === 0) anim.at = now;
@@ -151,7 +105,7 @@ export interface ClockWeather {
 }
 
 /** Draw the page for given clock fields and weather (pure; used by tests). */
-export function drawClockWeather(p: ClockWeather, t: ClockParts, w: Weather, frame: number): Canvas {
+export function drawClockWeather(p: ClockWeather, t: ClockParts, w: Weather | null, frame: number): Canvas {
   const c = new Canvas();
   const clock = hexToRgb(p.clock_color);
   const date = hexToRgb(p.date_color);
@@ -165,12 +119,11 @@ export function drawClockWeather(p: ClockWeather, t: ClockParts, w: Weather, fra
   drawText(c, t.month, 0, 5, date, 0);
   drawText(c, t.day, t.month.length * 3, 5, date, 1);
 
-  const raw = w.temp.trim();
-  const temp = raw === "" || raw === "??" || raw === "--" ? "--" : raw;
-  const tempWidth = temp.length * 4 - 1;
-  drawText(c, temp, 0, 11, weather, 1);
+  if (!w) return c;
+  const tempWidth = w.temp.length * 4 - 1;
+  drawText(c, w.temp, 0, 11, weather, 1);
   drawText(c, "*", tempWidth + 1, 11, weather, 0);
-  if (w.code >= 0 && temp !== "--") drawWeatherIcon(c, w.code, tempWidth + 3, 11, frame);
+  if (w.code >= 0) drawWeatherIcon(c, w.code, tempWidth + 3, 11, frame);
   return c;
 }
 
