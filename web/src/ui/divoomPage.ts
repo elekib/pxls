@@ -30,7 +30,6 @@ export function isDivoomType(type: string): type is DivoomPageType {
 
 const DEFAULTS: Record<DivoomPageType, DivoomData> = {
   DivoomEnvironment: {
-    time_format: '24h',
     clock_design: 'digital',
     show_divoom: false,
     show_weather: false,

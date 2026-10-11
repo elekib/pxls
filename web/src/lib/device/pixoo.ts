@@ -2,14 +2,12 @@
 
 import {
   CMD_BRIGHTNESS,
-  CMD_TIME_FORMAT,
   frame,
   image,
   mode,
   tool,
   type LightMode,
   type RgbImage,
-  type TimeFormat,
   type ToolInfo,
 } from "@/lib/protocol";
 import type { Transport } from "./types";
@@ -48,15 +46,6 @@ export class Pixoo {
 
   setToolInfo(t: ToolInfo): Promise<void> {
     return this.send(...tool.encode(t));
-  }
-
-  /** No-op until CMD_TIME_FORMAT is verified on a device. */
-  async setTimeFormat(format: TimeFormat): Promise<void> {
-    if (CMD_TIME_FORMAT === null) {
-      this.log(`time format ${format} not sent: command unverified`);
-      return;
-    }
-    await this.send(CMD_TIME_FORMAT, [format === "24h" ? 1 : 0]);
   }
 
   disconnect(): Promise<void> {

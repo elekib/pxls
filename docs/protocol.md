@@ -47,7 +47,6 @@ Example, brightness 50%: `01 04 00 74 32 AA 00 02` (`0x04 + 0x74 + 0x32 = 0xAA`)
 | User mode | `0x45` | `05 00` | Inferred | needs device test |
 | Scoreboard mode | `0x45` | `06 00 red_lo red_hi blue_lo blue_hi` | Public | needs device test |
 | Image | `0x44` | see below | Public (Timebox family) | needs device test |
-| Time format | unknown | n/a | none | **not sent** |
 | Stopwatch tool | `0x72` | `00 action` (1 start, 0 stop) | Observed | needs device test |
 | Noise meter tool | `0x72` | `02 action` | Observed | needs device test |
 | Countdown tool | `0x72` | `03 action minutes seconds` | Observed | needs device test |
@@ -55,10 +54,9 @@ Example, brightness 50%: `01 04 00 74 32 AA 00 02` (`0x04 + 0x74 + 0x32 = 0xAA`)
 
 Notes:
 
-- **Clock `TT`:** 0 digital, 1 rainbow, 2 box, 3 analog 1, 4 inverted, 5 analog 2. Byte 3 of the clock args (`01`) is "fixed" in the write-up; it might be a 24h flag. The app's `show_divoom` flag has no known byte and is ignored.
+- **Clock `TT`:** 0 digital, 1 rainbow, 2 box, 3 analog 1, 4 inverted, 5 analog 2. Byte 3 of the clock args (`01`) is "fixed" in the write-up; it might be a 24h flag, which is untested (pxls has no 12/24h setting). The app's `show_divoom` flag has no known byte and is ignored.
 - **Light effect:** 0 normal, 1 rainbow ("love" in the write-up), 2 plants, 3 fly ("no mosquito"), 4 sleep.
 - **Music `TT`** (observed on a real Pixoo, not documented): 0 bottom bars, 1 face 3, 2 center bars, 3 face 1, 4 matrix, 5 frog face, 6 side bars, 7 face 2, 8 falling blocks, 9 dancing boy, 10 fireworks, 11 dancing girl.
-- **Time format:** no command is documented anywhere we looked. `Pixoo.setTimeFormat` sends nothing until `CMD_TIME_FORMAT` in `web/src/lib/protocol/index.ts` is set after a device test. The 12/24h setting therefore has no effect for now.
 - **Stopwatch pause/reset** are not documented and not implemented.
 - **Score range:** 0-999 (the driver clamps larger values), confirmed by the public write-up and a device observation that 99 was too low.
 - **Special mode:** observed on a real Pixoo: `45 03 TT` is ignored (the display stays on the previous screen) for all four app values, so channel `03` with these values is wrong for this device. Probe with the admin Diagnostics page (below): sweep `45 <channel> <value>` starting from solid red so an ignored command is obvious, try channels `02` and `03`, and record results here.
@@ -112,12 +110,11 @@ Run on the server with a real Pixoo and note the model and firmware. Tick each i
 1. **Connect and brightness.** Connect from the UI, set brightness 10, 50, 100. Display should change. If nothing happens, send `74 32` from the Diagnostics page. If the display ignores it, framing is wrong and everything else is moot.
 2. **Native modes.** Apply clock (each of 6 designs, with weather/temp/date on and off), light (color, brightness, 5 effects, on/off), special (4 modes), music (12 modes), user, score. Record which work. Watch for the clock, blank, clock flicker.
 3. **Tools on the open link.** Start a 1 minute countdown, sound detector and the scoreboard (Tools page) and check each runs with the status still "Connected". Check the display returns by itself when the countdown ends and on Stop, and how many seconds that takes. If a tool does not run or the display does not return, try `PXLS_TOOL_CLOSE_LINK=1`.
-4. **Time format.** Find the command (try the official app with a sniffer, or a Diagnostics sweep), then set `CMD_TIME_FORMAT`.
-5. **Escaping.** Set brightness to 1 (argument `0x01`). If the display ignores it or misbehaves, the device needs escaped packets.
-6. **Images.** Push each page type (text, image, scroll). Check colors, orientation and no garbage. If the image is shifted or the device ignores it, `LEN` semantics are the first suspect.
-7. **Clock byte 3.** Compare 12h vs 24h display with the app set to each; see if that byte is a 24h flag.
-8. **Responses.** Replies are read and discarded. Leave the server running for a few hours with the render loop active and confirm no stalls (unread device replies could otherwise fill the buffer).
-9. **Reconnect.** Power cycle the display; confirm the loop reconnects.
+4. **Escaping.** Set brightness to 1 (argument `0x01`). If the display ignores it or misbehaves, the device needs escaped packets.
+5. **Images.** Push each page type (text, image, scroll). Check colors, orientation and no garbage. If the image is shifted or the device ignores it, `LEN` semantics are the first suspect.
+6. **Clock byte 3.** Compare 12h vs 24h display with the app set to each; see if that byte is a 24h flag (a prerequisite for adding a 12/24h setting).
+7. **Responses.** Replies are read and discarded. Leave the server running for a few hours with the render loop active and confirm no stalls (unread device replies could otherwise fill the buffer).
+8. **Reconnect.** Power cycle the display; confirm the loop reconnects.
 
 ## Troubleshooting
 
