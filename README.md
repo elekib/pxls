@@ -25,6 +25,17 @@ pxls runs next to your Pixoo, talks to it over Bluetooth, and gives you a web UI
 - **Device control.** Connect and disconnect, live brightness, native mode settings.
 - **Diagnostics.** For admins, behind a flag: send raw commands, sweep values and run quick device tests.
 
+## On the device
+
+Photos from a real Pixoo running pxls: Beszel system stats, an animated GIF, and the clock and calendar page. These are a sample, not every page type. More in the [gallery](docs/gallery.md).
+
+<p>
+  <img src="docs/images/device-1.jpg" alt="Beszel system stats on the Pixoo" width="180">
+  <img src="docs/images/device-3.jpg" alt="Beszel system stats on the Pixoo" width="180">
+  <img src="docs/images/device-4.jpg" alt="Animated campfire GIF on the Pixoo" width="180">
+  <img src="docs/images/device-5.jpg" alt="Clock, date and weather on the Pixoo" width="180">
+</p>
+
 ## Requirements
 
 - A legacy Pixoo with Bluetooth (16x16) within range of the host
@@ -182,6 +193,7 @@ Early development. The API requires a signed-in user, but the Bluetooth device i
 ## Documentation
 
 - [Bluetooth protocol](docs/protocol.md) (pxls's own driver; per-command verification status and a device test checklist)
+- [On the device](docs/gallery.md) (photos of pages on a real Pixoo)
 - [How the app fits together](docs/architecture.md) and [versioning and releases](docs/versioning.md)
 - [Contributing](CONTRIBUTING.md) and [architecture notes](AGENTS.md)
 - [Changelog](CHANGELOG.md)
