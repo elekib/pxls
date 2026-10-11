@@ -4,3 +4,8 @@ Copyright 2026 Aakib and pxls contributors
 pxls is an unofficial community project. It is not affiliated with,
 endorsed by, or sponsored by Divoom. "Divoom" and "Pixoo" are trademarks
 of their respective owners and are used only to describe compatible hardware.
+
+The example in examples/weather-bridge/ connects to Open-Meteo
+(https://open-meteo.com/). pxls is not affiliated with, endorsed by, or
+sponsored by Open-Meteo. Their free API is for non-commercial use and its
+data is licensed CC BY 4.0; see https://open-meteo.com/en/terms.

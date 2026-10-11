@@ -152,6 +152,7 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 | `PXLS_ENABLE_DEBUG` | `0` | Set `1` to enable the admin Diagnostics page (raw device commands). Leave off unless you are testing hardware |
 | `PXLS_LOG_PACKETS` | `0` | Set `1` to log every packet sent to the device, in hex |
 | `PXLS_TOOL_CLOSE_LINK` | `0` | Set `1` to release the Bluetooth link after starting a tool, for devices that need it |
+| `PXLS_WEATHER_URL` | empty | URL that returns the current weather as JSON for the clock and weather page. Without it the page shows only the clock and date. See [Weather](#weather) |
 | `PXLS_TAG` | `latest` | Image tag for `docker compose`: `latest`, `dev` or a release version |
 
 Device settings, pages and the rest of the app configuration are edited in the web UI. Everything except uploads is stored in one SQLite database, `./data/pxls.db` (with `pxls.db-wal` and `pxls.db-shm` next to it while running), created on first run. Uploaded images live in `./data/uploads`. The `data/` directory and `.env` are git-ignored so they never get committed.
@@ -189,6 +190,19 @@ Define rules on the **Webhooks** page. Use the **Event Logs** page to inspect in
 ## Status and security
 
 Early development. The API requires a signed-in user, but the Bluetooth device is controlled by the host, so keep pxls on a trusted network and put TLS in front of it before exposing port 3030 beyond your LAN. See [SECURITY.md](SECURITY.md).
+
+## Weather
+
+pxls does not ship a weather service. Point `PXLS_WEATHER_URL` at any URL that answers a `GET` with the two values the clock and weather page draws:
+
+```json
+{ "temp": 21.6, "code": 3 }
+```
+
+- `temp`: the temperature as a number, in the unit pxls asks for. Required.
+- `code`: a WMO weather interpretation code for the icon (0 clear, 1-3 cloudy, 45/48 fog, 51-65 rain, 71-77 snow, 95-99 storm). Optional; without it there is no icon.
+
+`{location}` and `{unit}` in the URL are replaced with the page's location and `celsius` or `fahrenheit` (for example `http://bridge.lan/weather?q={location}&u={unit}`). pxls fetches only when the URL is set, caches the answer for 10 minutes, and draws the temperature row only when it gets a valid reply: on any error, nothing is drawn in its place. The URL is never logged, so it may carry a token. Most weather APIs return a different shape, so run a small bridge that converts one to this format; you are responsible for that service's terms. [examples/weather-bridge](examples/weather-bridge/) has a working example bridge.
 
 ## Documentation
 
