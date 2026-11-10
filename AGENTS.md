@@ -19,8 +19,8 @@ Guide for contributors and coding agents working on pxls.
 ## Architecture
 
 - `web/src/instrumentation.ts` starts the engine once when the server starts.
-- `web/src/lib/engine/engine.ts`: process-wide `Engine` (`getEngine()`). Owns the Bluetooth link, reconnects every 2 s, and serializes device work through `run()`. Never write to the device outside `run()`.
-- `web/src/lib/device/`: `Pixoo` device API and transports. `rfcomm.ts` binds `/dev/rfcommN` and writes in raw TTY mode (no native addons). `memory.ts` is for tests.
+- `web/src/lib/engine/engine.ts`: process-wide `Engine` (`getEngine()`). Owns the Bluetooth link, reconnects with backoff (2 s doubling to 60 s), and serializes device work through `run()`. Never write to the device outside `run()`.
+- `web/src/lib/device/`: `Pixoo` device API and transports. `bluez.ts` runs the host-side recovery commands (`rfcomm release`, adapter reset). `rfcomm.ts` binds `/dev/rfcommN` and writes in raw TTY mode (no native addons). `memory.ts` is for tests.
 - `web/src/lib/render/`: the render loop (`loop.ts`, page rotation and native keep-alive), the bitmap font and the page types. Tools pause it; webhook notifications draw over it.
 - `web/src/lib/auth/`: accounts and sessions on Better Auth (`auth.ts` config, `accounts.ts` user and session management, `api.ts` guard for route handlers, `session.ts` for server components). `/api/auth/*` is served by Better Auth through an allowlist in `app/api/auth/[...all]/route.ts`; sign-in must go through it so the rate limiter applies. Every other API route calls `requireApi()` itself.
 - `web/src/lib/webhooks/`: receiver, rules engine, actions, notifications and the SSRF guard for image downloads (`netGuard.ts`).

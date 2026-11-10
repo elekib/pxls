@@ -4,6 +4,16 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Fixed
+- A connect attempt that hung in the kernel (the host's Bluetooth controller never completing the link) left the engine stuck on "a previous connection attempt is still in progress" until the process exited, with nothing logged. A timed-out connect now runs `rfcomm release` to free the blocked `open()`, waits up to 5 s for it, and always lets the next attempt start. At most 3 blocked attempts are kept at once, so they cannot use up the worker threads.
+
+### Added
+- `PXLS_ADAPTER_RESET=1` (off by default) resets the Bluetooth adapter (`PXLS_ADAPTER_INDEX`, default 0) after 3 connect timeouts in a row, with `btmgmt` or `hciconfig`. It drops every Bluetooth device on the host.
+- `GET /api/health?device=1` for monitoring the device link: 200 when connected, 503 otherwise. It needs a session; plain `/api/health` is unchanged.
+
+### Changed
+- Reconnects back off from 2 s, doubling to 60 s, and start over after a connect. Connect failures are logged, at least once a minute while the device is down, with how long it has been down.
+
 ## [0.1.0] - 2026-10-11
 
 First release. pxls is a single Node.js app (Next.js) in one container, `pxls`.

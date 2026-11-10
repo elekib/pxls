@@ -121,6 +121,18 @@ Requests that use the browser cookie (not a bearer token) and change state need 
 
 Set `PXLS_BASE_URL` to the public address you reach pxls at (for example `https://pxls.example.com`). Better Auth then trusts that origin, and the session cookie gets the `Secure` flag when it is `https`. Behind a reverse proxy that rewrites the `Host` header, you can instead add the public origin to `PXLS_ALLOWED_ORIGINS`.
 
+### Device link monitoring
+
+`GET /api/health` always answers `{"status":"ok"}` while the app runs (the container healthcheck uses it), whether or not the display is connected.
+
+To alert on the Bluetooth link, call `GET /api/health?device=1` with a bearer token (a `viewer` account is enough). It answers 200 while the display is connected and 503 otherwise (including after a manual Disconnect), with the device state, the last error, when the failures started and how many attempts failed. Without a session it answers 401, like the rest of the API.
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" 'http://localhost:3030/api/health?device=1'
+```
+
+While the display is unreachable pxls retries with backoff (2 s, doubling to 60 s) and logs the failure at least once a minute, with how long it has been down. A connect that hangs in the kernel (the host's Bluetooth controller never completes the link) is freed after 20 s with `rfcomm release`. If the controller itself is stuck, reconnects keep timing out and the log says so after 3 in a row; run `hciconfig hci0 reset` on the host, or set `PXLS_ADAPTER_RESET=1` to let pxls do it.
+
 ### Lost the admin password
 
 Stop pxls and remove all accounts and sessions so first-run setup returns. This signs everyone out, and keeps your configuration, pages and webhooks. It needs the `sqlite3` command on the host (for example `sudo apt install sqlite3` on Debian-based systems):
@@ -142,6 +154,8 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 | `PIXOO_MAC` | empty | Bluetooth MAC of the display. Optional: the MAC saved with **Connect** on the Device page takes precedence |
 | `PIXOO_CHANNEL` | `1` | RFCOMM channel of the display's serial port |
 | `PIXOO_RFCOMM_DEV` | `0` | N in `/dev/rfcommN`; change it if another device uses rfcomm0 |
+| `PXLS_ADAPTER_RESET` | `0` | Set `1` to reset the host's Bluetooth adapter after 3 connect timeouts in a row (`btmgmt power off/on`, falling back to `hciconfig hciN reset`). This drops **every** Bluetooth device on the host, so it is off by default. See [Device link monitoring](#device-link-monitoring) |
+| `PXLS_ADAPTER_INDEX` | `0` | N in `hciN`, the adapter that `PXLS_ADAPTER_RESET` resets |
 | `PXLS_PORT` | `3030` | Port for the web UI, API and webhook receiver |
 | `PXLS_AUTH_SECRET` | generated | Optional signing secret for sessions, 32+ characters. By default one is generated on first start and stored in the database |
 | `PXLS_BASE_URL` | derived | Public URL of pxls (for example `https://pxls.example.com`). Set it behind a reverse proxy; `https` makes the session cookie `Secure` |

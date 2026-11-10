@@ -52,6 +52,7 @@ describe("API route guards", () => {
 
   it("keeps the public list short", () => {
     const open = files.map(urlOf).filter((u) => isPublicPath(u) && !guarded(files.find((f) => urlOf(f) === u)!));
-    expect(open.sort()).toEqual(["/api/auth/[...all]", "/api/auth/status", "/api/health", "/api/webhook/[name]"]);
+    // /api/health is public too, but its ?device=1 check calls requireApi, so it counts as guarded here.
+    expect(open.sort()).toEqual(["/api/auth/[...all]", "/api/auth/status", "/api/webhook/[name]"]);
   });
 });

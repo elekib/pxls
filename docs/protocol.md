@@ -73,7 +73,7 @@ Args: `00 0A 0A 04 | AA LEN_LO LEN_HI 00 00 00 NN PALETTE PIXELS`
 
 ## Connection lifecycle
 
-- The engine binds and opens `/dev/rfcommN`, and retries every 2 s after an error. Disconnecting closes the TTY and is idempotent; sends after a disconnect fail with "not connected".
+- The engine binds and opens `/dev/rfcommN`, and retries after an error, backing off from 2 s to 60 s. A connect that is still blocked after 20 s is freed with `rfcomm release <N>`. Disconnecting closes the TTY and is idempotent; sends after a disconnect fail with "not connected".
 - Whether the display keeps running a tool after the link closes is *unconfirmed* (device test step 3).
 - The render loop sends no heartbeat in native mode. Native modes are re-applied about every 10 s (User GIFs every 5 minutes, since re-sending restarts its slideshow).
 
