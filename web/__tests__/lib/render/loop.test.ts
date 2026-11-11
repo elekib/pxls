@@ -15,7 +15,7 @@ function setup(cfg: object, opts: { connected?: boolean; pause?: boolean } = {})
   const loop = new RenderLoop({
     engine: {
       run: (fn) => fn(pixoo),
-      getStatus: () => ({ device: opts.connected === false ? "error" : "connected", error: null, connectedAt: null, mac: null, manualDisconnect: false }),
+      getStatus: () => ({ device: opts.connected === false ? "error" : "connected", error: null, connectedAt: null, mac: null, manualDisconnect: false, failingSince: null, failedAttempts: 0 }),
       forceReconnect: () => void reconnects++,
     },
     config: () => config,
@@ -157,7 +157,7 @@ describe("RenderLoop with tools", () => {
     const loop = new RenderLoop({
       engine: {
         run: (fn) => fn(pixoo),
-        getStatus: () => ({ device: "connected", error: null, connectedAt: null, mac: null, manualDisconnect: false }),
+        getStatus: () => ({ device: "connected", error: null, connectedAt: null, mac: null, manualDisconnect: false, failingSince: null, failedAttempts: 0 }),
         forceReconnect: () => {},
       },
       config: () => config,

@@ -7,7 +7,7 @@ pxls is one Next.js app in `web/`: the UI, the API and the display engine run in
 | Path | What |
 |---|---|
 | `web/src/instrumentation.ts` | Starts the engine once when the server starts. |
-| `web/src/lib/engine/` | The engine: owns the Bluetooth link, reconnects every 2 s, queues device work. |
+| `web/src/lib/engine/` | The engine: owns the Bluetooth link, reconnects with backoff (2 s doubling to 60 s), frees a connect stuck in the kernel with `rfcomm release`, queues device work. |
 | `web/src/lib/device/` | `Pixoo` device API; `rfcomm.ts` talks to the display through a raw `/dev/rfcommN` TTY. |
 | `web/src/lib/protocol/` | Packet encoders, covered by golden-byte tests. |
 | `web/src/lib/render/` | The render loop: page rotation, native-mode keep-alive, bitmap font and page types. |
