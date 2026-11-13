@@ -12,6 +12,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `GET /api/health?device=1` for monitoring the device link: 200 when connected, 503 otherwise. It needs a session; plain `/api/health` is unchanged.
 
 ### Changed
+- The server runs as an unprivileged user instead of root. The container starts as root, makes the data directory belong to `PUID:PGID` (default `1000:1000`) and drops to that user, so `pxls.db` and uploads are no longer root-owned; an existing root-owned database is fixed on the first start. `rfcomm`, `btmgmt` and `hciconfig` carry `CAP_NET_ADMIN` as a file capability, which `no-new-privileges` would disable. `PXLS_TTY_GID` sets the group of `/dev/rfcommN` if it is not `dialout`.
 - Reconnects back off from 2 s, doubling to 60 s, and start over after a connect. Connect failures are logged, at least once a minute while the device is down, with how long it has been down.
 
 ## [0.1.0] - 2026-10-11

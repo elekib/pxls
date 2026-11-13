@@ -26,8 +26,17 @@ LABEL org.opencontainers.image.title="pxls" \
       org.opencontainers.image.revision="${GIT_SHA}"
 
 # bluez provides `rfcomm`, which binds the display to /dev/rfcommN.
-RUN apt-get update && apt-get install -y --no-install-recommends bluez curl \
-    && rm -rf /var/lib/apt/lists/*
+#
+# The server runs as an unprivileged user (see docker-entrypoint.sh). Binding
+# and releasing an RFCOMM device and resetting the adapter need CAP_NET_ADMIN,
+# so the three tools that do it carry the capability themselves. It only takes
+# effect when the container may use it (`privileged` or `cap_add: NET_ADMIN`)
+# and `no-new-privileges` is not set.
+RUN apt-get update && apt-get install -y --no-install-recommends bluez curl libcap2-bin \
+    && rm -rf /var/lib/apt/lists/* \
+    && for tool in rfcomm btmgmt hciconfig; do \
+         setcap cap_net_admin+ep "$(command -v "$tool")" || exit 1; \
+       done
 
 WORKDIR /app
 ENV NODE_ENV=production \
@@ -42,10 +51,12 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/peer.cjs ./peer.cjs
+COPY docker-entrypoint.sh /usr/local/bin/pxls-entrypoint
 
 EXPOSE 3030
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
     CMD curl -fsS "http://127.0.0.1:${PORT}/api/health" || exit 1
 # peer.cjs records the real client address for lockout. node:sqlite is stable
 # in practice on the pinned Node 22 image; hide its "experimental" notice.
+ENTRYPOINT ["pxls-entrypoint"]
 CMD ["node", "--require", "./peer.cjs", "--disable-warning=ExperimentalWarning", "server.js"]
