@@ -23,6 +23,26 @@ const write = promisify(fs.write);
 
 const MAC = /^[0-9A-F]{2}(:[0-9A-F]{2}){5}$/i;
 
+/** How long to wait for udev to hand a new /dev/rfcommN to its group. */
+const UDEV_WAIT_MS = 2_000;
+
+/**
+ * Open the TTY. A node that `rfcomm bind` just created is root-only until the
+ * host's udev gives it to the dialout group, so an unprivileged server retries
+ * a permission error for a moment instead of failing the connect.
+ */
+async function openTty(path: string): Promise<number> {
+  const deadline = Date.now() + UDEV_WAIT_MS;
+  for (;;) {
+    try {
+      return await open(path, constants.O_RDWR | constants.O_NOCTTY);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EACCES" || Date.now() >= deadline) throw e;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+}
+
 export interface RfcommOptions {
   mac: string;
   /** RFCOMM channel of the device's serial port service. */
@@ -62,7 +82,7 @@ export class RfcommTransport implements Transport {
     }
 
     // Opening a bound device establishes the Bluetooth connection.
-    const fd = await open(path, constants.O_RDWR | constants.O_NOCTTY);
+    const fd = await openTty(path);
     try {
       // Set raw mode while we hold the TTY open so the settings stick.
       await run("stty", ["-F", path, "raw", "-echo"]);

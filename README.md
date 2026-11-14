@@ -44,6 +44,17 @@ Photos from a real Pixoo running pxls: Beszel system stats, an animated GIF, and
 
 Bluetooth access from inside a container is the fiddly part. pxls runs `privileged` with the host's `/dev` mounted, and binds the display to `/dev/rfcommN` with BlueZ's `rfcomm` tool (included in the image). Narrowing this is on the roadmap.
 
+### Runs as an unprivileged user
+
+The server does not run as root. The container starts as root only to make `./data` belong to `PUID:PGID` (default `1000:1000`), then drops to that user, so the database and uploads are owned by it and a backup running as that user can read them. An install upgraded from 0.1.0 has a root-owned database; the first start fixes it, no manual step needed.
+
+Only one thing needs a privilege: binding and releasing the RFCOMM device (and the optional adapter reset) need `CAP_NET_ADMIN`. The three BlueZ tools that do it (`rfcomm`, `btmgmt`, `hciconfig`) carry that capability in the image; the server process has none. Two consequences:
+
+- Do not set `security_opt: no-new-privileges` on the container. It disables file capabilities and the display will not connect.
+- `/dev/rfcommN` is created by the host as `root:dialout`, mode 660. The server joins gid 20 (`dialout` on Debian, Ubuntu and Raspberry Pi OS). If your host uses another group, set `PXLS_TTY_GID` to its gid.
+
+To skip the root start entirely, set `user: "1000:1000"` and `group_add: ["20"]` in compose and make `./data` writable by that user yourself (`sudo chown -R 1000:1000 data`).
+
 The images are built for `linux/amd64` and `linux/arm64`, so a Raspberry Pi works.
 
 ## Quick start
@@ -154,6 +165,8 @@ Incoming webhooks use their own secret instead of a user account (see [Webhooks]
 | `PIXOO_MAC` | empty | Bluetooth MAC of the display. Optional: the MAC saved with **Connect** on the Device page takes precedence |
 | `PIXOO_CHANNEL` | `1` | RFCOMM channel of the display's serial port |
 | `PIXOO_RFCOMM_DEV` | `0` | N in `/dev/rfcommN`; change it if another device uses rfcomm0 |
+| `PUID`, `PGID` | `1000` | User and group the server runs as; they own everything in `./data`. See [Runs as an unprivileged user](#runs-as-an-unprivileged-user) |
+| `PXLS_TTY_GID` | gid of `dialout` | Group that owns `/dev/rfcommN` on the host |
 | `PXLS_ADAPTER_RESET` | `0` | Set `1` to reset the host's Bluetooth adapter after 3 connect timeouts in a row (`btmgmt power off/on`, falling back to `hciconfig hciN reset`). This drops **every** Bluetooth device on the host, so it is off by default. See [Device link monitoring](#device-link-monitoring) |
 | `PXLS_ADAPTER_INDEX` | `0` | N in `hciN`, the adapter that `PXLS_ADAPTER_RESET` resets |
 | `PXLS_PORT` | `3030` | Port for the web UI, API and webhook receiver |
