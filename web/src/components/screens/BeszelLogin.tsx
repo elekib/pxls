@@ -118,13 +118,13 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
     timestamp ? new Date(timestamp * 1000).toLocaleString() : 'unknown';
 
   const renderStatus = () => {
-    if (!status) return <span className="text-gray-500">Status unavailable</span>;
+    if (!status) return <span className="text-muted">Status unavailable</span>;
     if (status.mode === 'none') {
-      return <span className="text-yellow-400">Not configured. Beszel pages will show offline.</span>;
+      return <span className="text-warn">Not configured. Beszel pages will show offline.</span>;
     }
     if (status.mode === 'legacy_token') {
       return (
-        <span className="text-yellow-400">
+        <span className="text-warn">
           Using an old pasted token (expires {formatTime(status.token_expires)}). Add a login so this never needs
           updating.
         </span>
@@ -132,23 +132,23 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
     }
     if (status.logged_in) {
       return (
-        <span className="text-green-400">
+        <span className="text-good">
           Logged in. Renews itself automatically (current token valid until {formatTime(status.token_expires)}).
         </span>
       );
     }
     if (status.last_error) {
-      return <span className="text-red-400">Login failing: {status.last_error}</span>;
+      return <span className="text-bad">Login failing: {status.last_error}</span>;
     }
-    return <span className="text-gray-400">Will log in on the next Beszel page render.</span>;
+    return <span className="text-muted">Will log in on the next Beszel page render.</span>;
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+    <div className="bg-surface rounded-2xl border border-line shadow-card p-4 sm:p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Beszel Login</h3>
         <button
-          className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-all hover:bg-cyan-700"
+          className="px-4 py-2 bg-accent text-accent-ink rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110"
           onClick={() => (showForm ? setShowForm(false) : openForm())}
         >
           {showForm ? 'Cancel' : hasSavedLogin ? 'Edit Login' : '+ Add Login'}
@@ -156,43 +156,43 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
       </div>
 
       {showForm && (
-        <div className="bg-gray-900 p-4 rounded-lg mb-4">
-          <p className="text-xs text-gray-400 mb-4">
+        <div className="bg-page p-4 rounded-lg mb-4">
+          <p className="text-xs text-muted mb-4">
             Use a dedicated read-only Beszel user for pixoo. Pixoo logs in with it by itself, so there is no token to
             paste or renew.
           </p>
           <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-2">Beszel user email</label>
+            <label className="block text-muted text-sm mb-2">Beszel user email</label>
             <input
               type="email"
               autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="pixoo@example.com"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-cyan-400"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-sm hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-2">Password</label>
+            <label className="block text-muted text-sm mb-2">Password</label>
             <input
               type="password"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={saved?.password_set ? 'Saved (leave blank to keep)' : 'Password'}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-cyan-400"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-sm hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <button
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold cursor-pointer hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-info text-info-ink rounded-lg text-sm font-semibold cursor-pointer hover:brightness-110 disabled:opacity-50"
               onClick={handleTest}
               disabled={busy}
             >
               Test login
             </button>
             <button
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold cursor-pointer hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-good text-good-ink rounded-lg text-sm font-semibold cursor-pointer hover:brightness-110 disabled:opacity-50"
               onClick={handleSave}
               disabled={busy}
             >
@@ -202,14 +202,14 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
         </div>
       )}
 
-      <div className="bg-gray-900 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="bg-page p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex-1 text-sm">
-          {hasSavedLogin && <div className="text-white font-semibold mb-1">{saved?.email}</div>}
+          {hasSavedLogin && <div className="text-ink font-semibold mb-1">{saved?.email}</div>}
           <div className="text-xs">{renderStatus()}</div>
         </div>
         {hasSavedLogin && (
           <button
-            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+            className="px-3 py-1 bg-bad text-bad-ink rounded text-sm hover:brightness-110 disabled:opacity-50"
             onClick={handleClear}
             disabled={busy}
           >

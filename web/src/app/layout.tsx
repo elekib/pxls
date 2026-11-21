@@ -7,9 +7,15 @@ export const metadata: Metadata = {
   icons: { icon: [{ url: "/favicon.svg" }, { url: "/favicon-32.png", sizes: "32x32" }], apple: "/apple-touch-icon.png" },
 };
 
+// Runs before first paint so a saved Light or Dark choice never flashes the other theme.
+const themeScript = `try{var t=localStorage.getItem("pxls-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-screen">{children}</body>
     </html>
   );

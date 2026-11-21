@@ -34,33 +34,33 @@ export function DeviceTester() {
   }
 
   return (
-    <section className="bg-gray-800 rounded-lg p-4 space-y-3">
+    <section className="bg-surface rounded-2xl border border-line shadow-card p-4 space-y-3">
       <div>
         <h3 className="font-semibold">Quick tests</h3>
-        <p className="text-sm text-gray-400">Known-good commands for checking the device. Each one holds the display like a raw send; use Restore display above to go back.</p>
+        <p className="text-sm text-muted">Known-good commands for checking the device. Each one holds the display like a raw send; use Restore display above to go back.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span>Brightness</span>
-        <input className="min-w-32 flex-1 accent-cyan-500" type="range" min={0} max={100} value={brightness} onChange={(e) => setBrightness(+e.target.value)} />
-        <button className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "brightness", value: brightness })}>
+        <input className="min-w-32 flex-1 accent-accent" type="range" min={0} max={100} value={brightness} onChange={(e) => setBrightness(+e.target.value)} />
+        <button className="px-3 py-2 border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "brightness", value: brightness })}>
           Set {brightness}
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {COLORS.map(([name, rgb]) => (
-          <button className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm" key={name} disabled={busy} onClick={() => send({ action: "color", rgb })}>
+          <button className="px-3 py-2 border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink rounded-lg text-sm" key={name} disabled={busy} onClick={() => send({ action: "color", rgb })}>
             {name}
           </button>
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "clock", design: 0, rgb: [255, 255, 255] })}>
+        <button className="px-3 py-2 border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "clock", design: 0, rgb: [255, 255, 255] })}>
           Clock
         </button>
-        <button className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "score", red: 12, blue: 34 })}>
+        <button className="px-3 py-2 border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink rounded-lg text-sm" disabled={busy} onClick={() => send({ action: "score", red: 12, blue: 34 })}>
           Score 12:34
         </button>
-        <select className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" disabled={busy} defaultValue="" onChange={(e) => e.target.value && send({ action: "music", mode: +e.target.value })}>
+        <select className="px-3 py-2 bg-surface border border-line rounded-lg text-ink text-sm" disabled={busy} defaultValue="" onChange={(e) => e.target.value && send({ action: "music", mode: +e.target.value })}>
           <option value="" disabled>
             Music mode…
           </option>
@@ -72,7 +72,7 @@ export function DeviceTester() {
         </select>
       </div>
       {log.length > 0 && (
-        <pre className="whitespace-pre-wrap text-sm text-gray-400">
+        <pre className="whitespace-pre-wrap text-sm text-muted">
           {log.join("\n")}
         </pre>
       )}

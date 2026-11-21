@@ -47,7 +47,7 @@ export function WebhookToolbar({ store, onNotify }: { store: Store; onNotify: No
             if (p) store.addWebhook(p.path, { icon: p.icon, title_field: p.titleField, subtitle_field: p.subtitleField, display_mode: 'icon_with_text' });
           }
         }}
-        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-medium disabled:opacity-50"
+        className="rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink hover:border-axis disabled:opacity-50"
       >
         <option value="">+ Add webhook…</option>
         <option value="blank">Blank webhook</option>

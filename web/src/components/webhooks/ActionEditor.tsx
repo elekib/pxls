@@ -57,23 +57,23 @@ export function ActionEditor({ action, onChange, onRemove }: Props) {
   const fields = getActionParamFields(action.action_type).filter((f) => !f.visibleWhen || f.visibleWhen(action.parameters));
 
   return (
-    <div className="bg-gray-700 rounded p-3 mb-2">
+    <div className="bg-surface2 rounded p-3 mb-2">
       <div className="flex gap-2 mb-2">
         <select value={action.action_type} onChange={(e) => setType(e.target.value as ActionType)} className={compactInputClass}>
           {sortAlpha(ACTION_TYPES, (t) => t.label).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
-        <button type="button" onClick={onRemove} className="text-red-400 hover:text-red-300 text-xs px-2">Remove</button>
+        <button type="button" onClick={onRemove} className="text-bad hover:text-bad text-xs px-2">Remove</button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {fields.map((field) => (
           <label key={field.key} className="block">
-            <span className="block text-xs text-gray-400 mb-1">{field.label}</span>
+            <span className="block text-xs text-muted mb-1">{field.label}</span>
             <ParamInput field={field} value={action.parameters[field.key]} onChange={(v) => setParam(field.key, v)} />
           </label>
         ))}
       </div>
-      <p className="text-xs text-gray-500 mt-2">
-        Blank fields inherit the webhook's display defaults. Use <code className="text-cyan-400">{'{field.path}'}</code> to insert payload values.
+      <p className="text-xs text-muted mt-2">
+        Blank fields inherit the webhook's display defaults. Use <code className="text-accent">{'{field.path}'}</code> to insert payload values.
       </p>
     </div>
   );

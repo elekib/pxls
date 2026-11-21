@@ -3,6 +3,7 @@
 // The notification banner (top right, 3 s), as a context.
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { MdCheckCircle, MdError } from "react-icons/md";
 import { FORBIDDEN_EVENT } from "@/ui/api";
 
 type Notify = (message: string, type?: "success" | "error") => void;
@@ -31,10 +32,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={notify}>
       {notification && (
         <div
-          className={`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-[100] font-medium max-w-[90vw] md:max-w-[400px] ${
-            notification.type === "success" ? "bg-green-600" : "bg-red-600"
+          role="status"
+          className={`fixed right-4 top-4 z-[100] flex max-w-[90vw] items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg md:max-w-[400px] ${
+            notification.type === "success" ? "bg-good text-good-ink" : "bg-bad text-bad-ink"
           }`}
         >
+          {notification.type === "success" ? <MdCheckCircle className="h-5 w-5 shrink-0" aria-hidden /> : <MdError className="h-5 w-5 shrink-0" aria-hidden />}
           {notification.message}
         </div>
       )}

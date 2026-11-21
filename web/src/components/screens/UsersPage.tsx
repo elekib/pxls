@@ -9,8 +9,8 @@ import { createUser, deleteUser, resetPassword, revokeUserSessions, updateUser }
 import { useToast } from "@/components/Toast";
 import type { Role, User } from "@/lib/auth/accounts";
 
-const inputClass = "px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400";
-const btn = "px-2.5 py-1 text-xs rounded-lg border border-gray-600 bg-gray-700 hover:bg-gray-600";
+const inputClass = "px-3 py-2 bg-surface border border-line rounded-lg text-ink hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const btn = "px-2.5 py-1 text-xs rounded-lg border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink";
 
 export function UsersPage({ me, users }: { me: User; users: User[] }) {
   const onNotify = useToast();
@@ -54,7 +54,7 @@ export function UsersPage({ me, users }: { me: User; users: User[] }) {
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-3xl font-bold">Users</h1>
 
-      <form onSubmit={create} className="bg-gray-800 rounded-xl p-6 space-y-3">
+      <form onSubmit={create} className="bg-surface rounded-2xl border border-line shadow-card p-6 space-y-3">
         <h2 className="text-xl font-semibold">Add user</h2>
         <div className="flex flex-wrap gap-3">
           <input className={`${inputClass} flex-1 min-w-[10rem]`} placeholder="Username" autoComplete="off" autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -63,24 +63,24 @@ export function UsersPage({ me, users }: { me: User; users: User[] }) {
             <option value="admin">Admin</option>
             <option value="viewer">Viewer (read-only)</option>
           </select>
-          <button type="submit" disabled={!username.trim() || password.length < 12} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-lg font-medium">
+          <button type="submit" disabled={!username.trim() || password.length < 12} className="px-4 py-2 bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50 rounded-lg font-medium">
             Create
           </button>
         </div>
-        {password !== "" && password.length < 12 && <p className="text-sm text-amber-300">Password must be at least 12 characters ({password.length}/12).</p>}
-        <p className="text-xs text-gray-500">Share the password with the person over a private channel; they can change it on their Account page.</p>
+        {password !== "" && password.length < 12 && <p className="text-sm text-warn">Password must be at least 12 characters ({password.length}/12).</p>}
+        <p className="text-xs text-muted">Share the password with the person over a private channel; they can change it on their Account page.</p>
       </form>
 
-      <div className="bg-gray-800 rounded-xl p-6">
-        <ul className="divide-y divide-gray-700">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6">
+        <ul className="divide-y divide-line">
           {users.map((u) => (
             <li key={u.id} className="py-3 space-y-2">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <span className="font-medium">{u.username}</span>
-                  {u.id === me.id && <span className="ml-2 text-xs text-gray-400">(you)</span>}
-                  <span className={`ml-2 px-2 py-0.5 text-xs rounded ${u.role === "admin" ? "bg-cyan-700" : "bg-gray-600"}`}>{u.role}</span>
-                  {u.disabled && <span className="ml-2 px-2 py-0.5 text-xs rounded bg-red-800">disabled</span>}
+                  {u.id === me.id && <span className="ml-2 text-xs text-muted">(you)</span>}
+                  <span className={`ml-2 px-2 py-0.5 text-xs rounded ${u.role === "admin" ? "bg-accent text-accent-ink" : "bg-line"}`}>{u.role}</span>
+                  {u.disabled && <span className="ml-2 px-2 py-0.5 text-xs rounded bg-bad text-bad-ink">disabled</span>}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button className={btn} onClick={() => run(() => updateUser(u.id, { role: u.role === "admin" ? "viewer" : "admin" }))}>
@@ -96,7 +96,7 @@ export function UsersPage({ me, users }: { me: User; users: User[] }) {
                     Revoke sessions
                   </button>
                   {u.id !== me.id && (
-                    <button className={`${btn} !bg-red-800 hover:!bg-red-700`} onClick={() => remove(u)}>
+                    <button className={`${btn} !bg-bad text-bad-ink hover:brightness-110`} onClick={() => remove(u)}>
                       Delete
                     </button>
                   )}
@@ -105,7 +105,7 @@ export function UsersPage({ me, users }: { me: User; users: User[] }) {
               {resetFor === u.id && (
                 <div className="flex gap-2 flex-wrap">
                   <input className={`${inputClass} flex-1 min-w-[12rem]`} type="password" autoComplete="new-password" placeholder="New password (12+ characters)" value={resetPw} onChange={(e) => setResetPw(e.target.value)} />
-                  <button className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-lg text-sm" disabled={resetPw.length < 12} onClick={() => void submitReset(u)}>
+                  <button className="px-3 py-2 bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50 rounded-lg text-sm" disabled={resetPw.length < 12} onClick={() => void submitReset(u)}>
                     Set password
                   </button>
                 </div>

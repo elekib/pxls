@@ -7,6 +7,7 @@ import { errorMessage, eventApi, webhookApi } from '@/ui/webhooks/api';
 import { prettyJson, presetFor } from '@/ui/webhooks/schema';
 import type { DeliveryResult, Webhook, WebhookEvent } from '@/ui/webhooks/types';
 import { sortAlpha } from '@/ui/sort';
+import { MdChevronRight, MdExpandMore } from 'react-icons/md';
 
 interface WebhookEventsPageProps {
   onNotify: (message: string, type?: 'success' | 'error') => void;
@@ -155,15 +156,15 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Webhook Events</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-400">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="w-4 h-4 rounded" /> Auto-refresh
           </label>
           <button onClick={() => fetchEvents()} className={btn.primary}>Refresh</button>
-          <button onClick={clear} className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-medium transition-colors">Clear {selectedWebhook || 'all'}</button>
+          <button onClick={clear} className="px-4 py-2 bg-warn text-warn-ink hover:brightness-110 rounded-lg font-medium transition-colors">Clear {selectedWebhook || 'all'}</button>
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-4 sm:p-6 space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Field label="Webhook">
             <select value={selectedWebhook} onChange={(e) => setSelectedWebhook(e.target.value)} className={inputClass}>
@@ -179,20 +180,20 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           {statusTabs.map((t) => (
-            <button key={t.id} onClick={() => setStatus(t.id)} className={`px-3 py-1 rounded-full text-sm transition-colors ${status === t.id ? 'bg-cyan-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            <button key={t.id} onClick={() => setStatus(t.id)} className={`px-3 py-1 rounded-full text-sm transition-colors ${status === t.id ? 'bg-accent text-accent-ink' : 'border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink'}`}>
               {t.label}{t.id === 'all' ? ` (${events.length})` : counts[t.id] ? ` (${counts[t.id]})` : ''}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-xl p-4 sm:p-6">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-4 sm:p-6">
         <button onClick={() => setShowSender((v) => !v)} className="text-lg font-semibold flex items-center gap-2">
-          <span className="text-sm text-gray-400">{showSender ? '▾' : '▸'}</span> Send test webhook
+          {showSender ? <MdExpandMore className="h-5 w-5 text-muted" aria-hidden /> : <MdChevronRight className="h-5 w-5 text-muted" aria-hidden />} Send test webhook
         </button>
         {showSender && (
           <div className="mt-3 space-y-3">
-            <p className="text-xs text-gray-500">This is a real delivery: matching actions run and show on the device. For a dry run use “Test all rules” on the Webhooks tab.</p>
+            <p className="text-xs text-muted">This is a real delivery: matching actions run and show on the device. For a dry run use “Test all rules” on the Webhooks tab.</p>
             <div className="max-w-xs">
               <Field label="Target webhook">
                 <select value={testTarget} onChange={(e) => setTestTarget(e.target.value)} className={inputClass}>
@@ -201,22 +202,22 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
               </Field>
             </div>
             <PayloadEditor value={testPayload} onChange={setTestPayload} preset={targetPreset} />
-            <button onClick={sendTest} disabled={sending} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors disabled:opacity-50">{sending ? 'Sending…' : 'Send'}</button>
+            <button onClick={sendTest} disabled={sending} className="px-4 py-2 bg-info text-info-ink hover:brightness-110 rounded-lg font-medium transition-colors disabled:opacity-50">{sending ? 'Sending…' : 'Send'}</button>
             {testResponse && (
-              <div className="p-3 bg-gray-900 rounded border border-gray-700 text-xs">
-                <div className={`mb-2 font-medium ${testResponse.status < 300 ? 'text-green-400' : 'text-red-400'}`}>HTTP {testResponse.status}</div>
-                <pre className="overflow-x-auto text-gray-300">{prettyJson(testResponse.data)}</pre>
+              <div className="p-3 bg-page rounded border border-line text-xs">
+                <div className={`mb-2 font-medium ${testResponse.status < 300 ? 'text-good' : 'text-bad'}`}>HTTP {testResponse.status}</div>
+                <pre className="overflow-x-auto text-ink2">{prettyJson(testResponse.data)}</pre>
               </div>
             )}
           </div>
         )}
       </div>
 
-      <div className="bg-gray-800 rounded-xl p-4 sm:p-6">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-4 sm:p-6">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading events…</div>
+          <div className="text-center py-8 text-muted">Loading events…</div>
         ) : visible.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted">
             {events.length === 0 ? 'No events logged yet. Send a test above, or trigger one from the service.' : 'No events match this filter.'}
           </div>
         ) : (
@@ -225,24 +226,24 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
               const open = expanded.has(event.id);
               const payload = prettyJson(event.payload);
               return (
-                <li key={event.id} className="bg-gray-900 rounded-lg border border-gray-700">
+                <li key={event.id} className="bg-page rounded-lg border border-line">
                   <button onClick={() => toggle(event.id)} aria-expanded={open} className="w-full text-left px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="text-gray-500 text-xs w-3">{open ? '▾' : '▸'}</span>
+                    <span className="text-muted">{open ? <MdExpandMore className="h-5 w-5" aria-hidden /> : <MdChevronRight className="h-5 w-5" aria-hidden />}</span>
                     <StatusBadge event={event} />
-                    <span className="font-medium text-cyan-400">{event.webhook_name}</span>
-                    <span className="text-xs text-gray-400" title={new Date(event.timestamp).toLocaleString()}>{relativeTime(event.timestamp, now)}</span>
-                    {!open && event.actions_taken[0] && <span className="text-xs text-gray-500 truncate min-w-0 flex-1">{event.actions_taken[0]}{event.actions_taken.length > 1 && ` (+${event.actions_taken.length - 1})`}</span>}
+                    <span className="font-medium text-accent">{event.webhook_name}</span>
+                    <span className="text-xs text-muted" title={new Date(event.timestamp).toLocaleString()}>{relativeTime(event.timestamp, now)}</span>
+                    {!open && event.actions_taken[0] && <span className="text-xs text-muted truncate min-w-0 flex-1">{event.actions_taken[0]}{event.actions_taken.length > 1 && ` (+${event.actions_taken.length - 1})`}</span>}
                   </button>
                   {open && (
-                    <div className="px-4 pb-4 space-y-3 border-t border-gray-700 pt-3">
-                      <div className="text-xs text-gray-400">{new Date(event.timestamp).toLocaleString()} · <span className="font-mono">{event.id}</span></div>
-                      {event.error && <div className="text-sm text-red-400">{event.error}</div>}
+                    <div className="px-4 pb-4 space-y-3 border-t border-line pt-3">
+                      <div className="text-xs text-muted">{new Date(event.timestamp).toLocaleString()} · <span className="font-mono">{event.id}</span></div>
+                      {event.error && <div className="text-sm text-bad">{event.error}</div>}
                       {event.actions_taken.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {event.actions_taken.map((a, i) => <Badge key={i} tone="blue">{a}</Badge>)}
                         </div>
                       )}
-                      <pre className="bg-gray-800 p-3 rounded text-xs overflow-x-auto text-gray-300 max-h-80">{payload}</pre>
+                      <pre className="bg-surface p-3 rounded text-xs overflow-x-auto text-ink2 max-h-80">{payload}</pre>
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => replay(event)} disabled={replaying === event.id} className={btn.smallPrimary} title="Run this payload through the webhook again">{replaying === event.id ? 'Replaying…' : 'Replay'}</button>
                         <CopyButton text={payload} label="Copy payload" />

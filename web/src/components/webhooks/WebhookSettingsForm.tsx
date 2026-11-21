@@ -38,19 +38,19 @@ export function WebhookSettingsForm({ webhook, busy, onSave, onCancel }: Props) 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Field label="Name"><input value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass} /></Field>
         <Field label="URL path" hint={pathProblem ?? 'Changing this changes the URL your services post to'}>
-          <input value={form.path} onChange={(e) => set('path', e.target.value)} className={`${inputClass} ${pathProblem ? 'border-red-500' : ''}`} />
+          <input value={form.path} onChange={(e) => set('path', e.target.value)} className={`${inputClass} ${pathProblem ? 'border-bad' : ''}`} />
         </Field>
         <Field label="Events to keep"><input type="number" min={1} value={form.max_events} onChange={(e) => set('max_events', num(e.target.value, 100))} className={inputClass} /></Field>
       </div>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-300">
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink2">
         <label className="flex items-center gap-2"><Toggle checked={form.enabled} onChange={(v) => set('enabled', v)} label="Enabled" /> Enabled</label>
         <label className="flex items-center gap-2"><Toggle checked={form.log_events} onChange={(v) => set('log_events', v)} label="Log events" /> Log events</label>
         <label className="flex items-center gap-2"><Toggle checked={form.display_on_no_match} onChange={(v) => set('display_on_no_match', v)} label="Show default when no rule matches" /> Show default display when no rule matches</label>
       </div>
 
-      <div className="border-t border-gray-700 pt-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-3">Default display <span className="text-gray-500 font-normal">(used when no rule matches, and inherited by rule actions)</span></h4>
+      <div className="border-t border-line pt-4">
+        <h4 className="text-sm font-semibold text-ink2 mb-3">Default display <span className="text-muted font-normal">(used when no rule matches, and inherited by rule actions)</span></h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Field label="Display mode">
             <select value={form.display_mode} onChange={(e) => set('display_mode', e.target.value as DisplayMode)} className={inputClass}>
@@ -75,17 +75,17 @@ export function WebhookSettingsForm({ webhook, busy, onSave, onCancel }: Props) 
           </div>
         )}
         <div className="flex flex-wrap items-end gap-4 mt-4">
-          <label className="flex items-center gap-2 text-sm text-gray-300"><Toggle checked={form.flash} onChange={(v) => set('flash', v)} label="Flash" /> Flash</label>
+          <label className="flex items-center gap-2 text-sm text-ink2"><Toggle checked={form.flash} onChange={(v) => set('flash', v)} label="Flash" /> Flash</label>
           {form.flash && (
             <div className="w-40"><Field label="Flash speed (ms)"><input type="number" min={1} value={form.flash_speed_ms} onChange={(e) => set('flash_speed_ms', num(e.target.value, 500))} className={inputClass} /></Field></div>
           )}
         </div>
         <div className="mt-4">
-          <span className="block text-sm text-gray-400 mb-2">Icon</span>
+          <span className="block text-sm text-muted mb-2">Icon</span>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => set('icon', '')} className={`px-3 py-2 rounded-lg border text-sm text-gray-400 ${form.icon === '' ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-gray-800 border-gray-700 hover:bg-gray-700'}`}>None</button>
+            <button type="button" onClick={() => set('icon', '')} className={`px-3 py-2 rounded-lg border text-sm text-muted ${form.icon === '' ? 'bg-accent text-accent-ink border-accent' : 'bg-surface border-line hover:bg-surface2'}`}>None</button>
             {ICON_PRESETS.map((p) => (
-              <button key={p.emoji} type="button" title={p.label} onClick={() => set('icon', p.emoji)} className={`px-3 py-2 rounded-lg border text-xl ${form.icon === p.emoji ? 'bg-cyan-600 border-cyan-500' : 'bg-gray-800 border-gray-700 hover:bg-gray-700'}`}>{p.emoji}</button>
+              <button key={p.emoji} type="button" title={p.label} onClick={() => set('icon', p.emoji)} className={`px-3 py-2 rounded-lg border text-xl ${form.icon === p.emoji ? 'bg-accent text-accent-ink border-accent' : 'bg-surface border-line hover:bg-surface2'}`}>{p.emoji}</button>
             ))}
           </div>
         </div>
@@ -108,7 +108,7 @@ function ColorSelect({ value, onChange }: { value: string; onChange: (v: string)
   const known = PRESET_COLORS.some((c) => c.value === value);
   return (
     <div className="flex items-center gap-2">
-      <span className="w-5 h-5 rounded border border-gray-600 shrink-0" style={{ backgroundColor: `#${value}` }} />
+      <span className="w-5 h-5 rounded border border-line shrink-0" style={{ backgroundColor: `#${value}` }} />
       <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
         {!known && <option value={value}>#{value}</option>}
         {sortAlpha(PRESET_COLORS, (c) => c.label).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
