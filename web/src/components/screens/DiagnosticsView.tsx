@@ -11,7 +11,7 @@ export function DiagnosticsView({ enabled }: { enabled: boolean }) {
     <div className="space-y-6">
       <DiagnosticsPage onNotify={notify} />
       {enabled && (
-        <div className="max-w-3xl">
+        <div>
           <DeviceTester />
         </div>
       )}
