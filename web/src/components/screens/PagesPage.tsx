@@ -564,7 +564,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <h2 className="text-2xl sm:text-[30px] font-bold text-accent">Pages</h2>
-        <button className="w-full sm:w-auto px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={() => openEditor()}>+ Add Page</button>
+        <button className="w-full sm:w-auto px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={() => openEditor()}>+ Add Page</button>
       </div>
 
       <BeszelLogin config={config} onConfigUpdate={onConfigUpdate} onNotify={onNotify} />
@@ -1195,7 +1195,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
             </div>
             
             <div className="p-4 sm:p-6 border-t border-line flex flex-col sm:flex-row gap-3">
-              <button className="w-full sm:w-auto px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSavePage}>Save</button>
+              <button className="w-full sm:w-auto px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSavePage}>Save</button>
               {editingIndex >= 0 && <button className="w-full sm:w-auto px-6 py-3 bg-bad text-bad-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleDeletePage}>Delete</button>}
             </div>
           </div>

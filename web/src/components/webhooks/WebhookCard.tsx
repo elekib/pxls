@@ -130,8 +130,8 @@ export function WebhookCard({ webhook, summary, store, onNotify }: Props) {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setRulesOpen((v) => !v)} className={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${rulesOpen ? 'bg-violet text-violet-ink hover:brightness-110' : 'border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink'}`}>Rules {rulesOpen ? <MdExpandMore className="h-4 w-4" aria-hidden /> : <MdChevronRight className="h-4 w-4" aria-hidden />}</button>
-              <button onClick={sendTest} disabled={sending || !webhook.enabled} title={webhook.enabled ? 'Send a real test delivery' : 'Enable the webhook to test it'} className="px-3 py-1 bg-good text-good-ink hover:brightness-110 rounded text-sm transition-colors disabled:opacity-40">{sending ? 'Sending…' : 'Send test'}</button>
+              <button onClick={() => setRulesOpen((v) => !v)} className={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${rulesOpen ? 'bg-accent text-accent-ink hover:brightness-110' : 'border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink'}`}>Rules {rulesOpen ? <MdExpandMore className="h-4 w-4" aria-hidden /> : <MdChevronRight className="h-4 w-4" aria-hidden />}</button>
+              <button onClick={sendTest} disabled={sending || !webhook.enabled} title={webhook.enabled ? 'Send a real test delivery' : 'Enable the webhook to test it'} className="px-3 py-1 bg-accent text-accent-ink hover:brightness-110 rounded text-sm transition-colors disabled:opacity-40">{sending ? 'Sending…' : 'Send test'}</button>
               <button onClick={() => setEditing(true)} className={btn.small}>Edit</button>
               <button onClick={() => store.cloneWebhook(webhook)} disabled={store.busy} className={btn.small} title="Clone with all rules">Clone</button>
               <button onClick={remove} className={btn.smallDanger} aria-label="Delete webhook"><MdClose className="h-4 w-4" aria-hidden /></button>

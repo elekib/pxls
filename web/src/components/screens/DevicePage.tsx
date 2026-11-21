@@ -223,7 +223,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
               className="flex-1 px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base font-mono hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
             <div className="flex gap-3">
-              <button className="flex-1 sm:flex-none px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-wait" onClick={handleConnect} disabled={connecting}>{connecting ? 'Connecting...' : 'Connect'}</button>
+              <button className="flex-1 sm:flex-none px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-wait" onClick={handleConnect} disabled={connecting}>{connecting ? 'Connecting...' : 'Connect'}</button>
               {isConnected && (
                 <button className="flex-1 sm:flex-none px-6 py-3 bg-bad text-bad-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleDisconnect}>Disconnect</button>
               )}
@@ -268,7 +268,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
           />
           <p className="text-muted text-sm mt-2">e.g., America/New_York, Europe/London, Asia/Tokyo</p>
         </div>
-        <button className="px-6 py-3 bg-violet text-violet-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveTimezone}>Save Timezone</button>
+        <button className="px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveTimezone}>Save Timezone</button>
       </div>
       
       <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
@@ -572,7 +572,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
           </div>
         )}
 
-        <button className="px-6 py-3 bg-warn text-warn-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveDeviceConfig}>Save Device Config</button>
+        <button className="px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveDeviceConfig}>Save Device Config</button>
       </div>
     </div>
   );

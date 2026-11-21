@@ -160,7 +160,7 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
             <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="w-4 h-4 rounded" /> Auto-refresh
           </label>
           <button onClick={() => fetchEvents()} className={btn.primary}>Refresh</button>
-          <button onClick={clear} className="px-4 py-2 bg-warn text-warn-ink hover:brightness-110 rounded-lg font-medium transition-colors">Clear {selectedWebhook || 'all'}</button>
+          <button onClick={clear} className="px-4 py-2 bg-bad text-bad-ink hover:brightness-110 rounded-lg font-medium transition-colors">Clear {selectedWebhook || 'all'}</button>
         </div>
       </div>
 
@@ -202,7 +202,7 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
               </Field>
             </div>
             <PayloadEditor value={testPayload} onChange={setTestPayload} preset={targetPreset} />
-            <button onClick={sendTest} disabled={sending} className="px-4 py-2 bg-info text-info-ink hover:brightness-110 rounded-lg font-medium transition-colors disabled:opacity-50">{sending ? 'Sending…' : 'Send'}</button>
+            <button onClick={sendTest} disabled={sending} className="px-4 py-2 bg-accent text-accent-ink hover:brightness-110 rounded-lg font-medium transition-colors disabled:opacity-50">{sending ? 'Sending…' : 'Send'}</button>
             {testResponse && (
               <div className="p-3 bg-page rounded border border-line text-xs">
                 <div className={`mb-2 font-medium ${testResponse.status < 300 ? 'text-good' : 'text-bad'}`}>HTTP {testResponse.status}</div>
