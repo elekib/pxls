@@ -18,18 +18,18 @@ export function WebhooksPage({ onNotify }: WebhooksPageProps) {
         <WebhookToolbar store={store} onNotify={onNotify} />
       </div>
 
-      <div className="bg-gray-800 rounded-xl p-6">
-        <p className="text-gray-400 mb-4 text-sm">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6">
+        <p className="text-muted mb-4 text-sm">
           Each webhook is an endpoint that services like Radarr, Sonarr or Overseerr post to. Add rules to react to
-          specific events; use <code className="text-cyan-400">{'{field.path}'}</code> placeholders in action
+          specific events; use <code className="text-accent">{'{field.path}'}</code> placeholders in action
           fields to pull values from the payload. Pick a preset when adding a webhook to get the right fields and
           sample payloads. Past deliveries are on the Event Logs tab.
         </p>
 
         {store.loading ? (
-          <div className="text-center py-8 text-gray-500">Loading webhooks…</div>
+          <div className="text-center py-8 text-muted">Loading webhooks…</div>
         ) : store.webhooks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No webhooks yet. Use “Add webhook…” and pick a preset to get started.</div>
+          <div className="text-center py-8 text-muted">No webhooks yet. Use “Add webhook…” and pick a preset to get started.</div>
         ) : (
           <div className="space-y-4">
             {store.webhooks.map((w) => (

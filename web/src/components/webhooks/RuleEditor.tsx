@@ -69,7 +69,7 @@ export function RuleEditor({ webhookName, initial, isNew, preset, knownFields, o
       onClose={close}
       footer={
         <>
-          {problem && <span className="mr-auto self-center text-xs text-yellow-500">{problem}</span>}
+          {problem && <span className="mr-auto self-center text-xs text-warn">{problem}</span>}
           <button onClick={close} className={btn.secondary}>Cancel</button>
           <button onClick={save} disabled={!!problem || saving} className={btn.primary}>{saving ? 'Saving…' : 'Save Rule'}</button>
         </>
@@ -79,11 +79,11 @@ export function RuleEditor({ webhookName, initial, isNew, preset, knownFields, o
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <label className="sm:col-span-2 block">
-          <span className="block text-sm text-gray-400 mb-1">Rule Name</span>
+          <span className="block text-sm text-muted mb-1">Rule Name</span>
           <input type="text" value={rule.name} onChange={(e) => patch({ name: e.target.value })} className={compactInputClass} />
         </label>
         <label className="block">
-          <span className="block text-sm text-gray-400 mb-1">Match</span>
+          <span className="block text-sm text-muted mb-1">Match</span>
           <select value={rule.condition_logic} onChange={(e) => patch({ condition_logic: e.target.value as Rule['condition_logic'] })} className={compactInputClass}>
             <option value="All">All conditions (AND)</option>
             <option value="Any">Any condition (OR)</option>
@@ -93,7 +93,7 @@ export function RuleEditor({ webhookName, initial, isNew, preset, knownFields, o
 
       <section className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-gray-300">When…</h4>
+          <h4 className="text-sm font-semibold text-ink2">When…</h4>
           <button type="button" onClick={() => patch({ conditions: [...rule.conditions, emptyCondition()] })} className={btn.smallPrimary}>+ Condition</button>
         </div>
         {rule.conditions.map((c, i) => (
@@ -109,7 +109,7 @@ export function RuleEditor({ webhookName, initial, isNew, preset, knownFields, o
 
       <section className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-gray-300">Then…</h4>
+          <h4 className="text-sm font-semibold text-ink2">Then…</h4>
           <button type="button" onClick={() => patch({ actions: [...rule.actions, emptyAction()] })} className={btn.smallPrimary}>+ Action</button>
         </div>
         {rule.actions.map((a, i) => (
@@ -122,11 +122,11 @@ export function RuleEditor({ webhookName, initial, isNew, preset, knownFields, o
         ))}
       </section>
 
-      <section className="p-3 bg-gray-900 rounded border border-gray-700">
-        <h5 className="text-sm font-semibold text-gray-300 mb-2">Test this rule <span className="text-gray-500 font-normal">(dry run — nothing is shown on the device)</span></h5>
+      <section className="p-3 bg-page rounded border border-line">
+        <h5 className="text-sm font-semibold text-ink2 mb-2">Test this rule <span className="text-muted font-normal">(dry run — nothing is shown on the device)</span></h5>
         <PayloadEditor value={payloadText} onChange={setPayloadText} preset={preset} rows={5} />
         <button onClick={runTest} disabled={testing} className={`mt-2 ${btn.smallPrimary}`}>{testing ? 'Testing…' : 'Run test'}</button>
-        {testError && <p className="text-xs text-red-400 mt-2">{testError}</p>}
+        {testError && <p className="text-xs text-bad mt-2">{testError}</p>}
         {result && (
           <div className="mt-3">
             <div className="mb-2 flex gap-2">

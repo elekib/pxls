@@ -18,7 +18,7 @@ export function ConditionEditor({ condition, onChange, onRemove, fieldListId }: 
   const value = typeof condition.value === 'string' ? condition.value : condition.value == null ? '' : JSON.stringify(condition.value);
 
   return (
-    <div className="bg-gray-700 rounded p-3 mb-2">
+    <div className="bg-surface2 rounded p-3 mb-2">
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2">
         <input
           type="text"
@@ -48,11 +48,11 @@ export function ConditionEditor({ condition, onChange, onRemove, fieldListId }: 
         )}
       </div>
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="flex items-center gap-2 text-xs text-ink2">
           <input type="checkbox" checked={condition.case_insensitive} onChange={(e) => onChange({ ...condition, case_insensitive: e.target.checked })} className="w-3 h-3 rounded" />
           Case-insensitive
         </label>
-        <button type="button" onClick={onRemove} className="text-red-400 hover:text-red-300 text-xs">Remove</button>
+        <button type="button" onClick={onRemove} className="text-bad hover:text-bad text-xs">Remove</button>
       </div>
     </div>
   );

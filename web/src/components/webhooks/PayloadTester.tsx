@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { prettyJson, type ServicePreset } from '@/ui/webhooks/schema';
 import type { RuleEvaluation } from '@/ui/webhooks/types';
 import { Badge } from './ui';
+import { MdArrowForward, MdCheck, MdClose } from 'react-icons/md';
 
 /** Returns the parsed payload, or an error message when the text isn't valid JSON. */
 export function parsePayload(text: string): { value: unknown; error: null } | { value: null; error: string } {
@@ -28,13 +29,13 @@ export function PayloadEditor({ value, onChange, preset, rows = 6 }: PayloadEdit
     <div>
       {preset && (
         <div className="flex flex-wrap items-center gap-1 mb-2">
-          <span className="text-xs text-gray-500 mr-1">{preset.label} samples:</span>
+          <span className="text-xs text-muted mr-1">{preset.label} samples:</span>
           {preset.samples.map((s) => (
             <button
               key={s.label}
               type="button"
               onClick={() => onChange(prettyJson(s.payload))}
-              className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+              className="px-2 py-0.5 border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink rounded text-xs transition-colors"
             >
               {s.label}
             </button>
@@ -46,11 +47,11 @@ export function PayloadEditor({ value, onChange, preset, rows = 6 }: PayloadEdit
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
         spellCheck={false}
-        className={`w-full px-2 py-1 bg-gray-800 border rounded text-white text-xs font-mono ${
-          parsed.error ? 'border-red-500' : 'border-gray-600'
+        className={`w-full px-2 py-1 bg-surface border rounded text-white text-xs font-mono ${
+          parsed.error ? 'border-bad' : 'border-line'
         }`}
       />
-      {parsed.error && <p className="text-xs text-red-400 mt-1">Invalid JSON: {parsed.error}</p>}
+      {parsed.error && <p className="text-xs text-bad mt-1">Invalid JSON: {parsed.error}</p>}
     </div>
   );
 }
@@ -59,14 +60,14 @@ export function EvaluationView({ evaluations }: { evaluations: RuleEvaluation[] 
   return (
     <div className="space-y-2">
       {evaluations.map((ev, i) => (
-        <div key={i} className="p-2 bg-gray-800 rounded text-xs">
+        <div key={i} className="p-2 bg-surface rounded text-xs">
           <div className="flex items-center gap-2 font-medium">
             {ev.rule_name}
             {ev.skipped ? <Badge>disabled</Badge> : <Badge tone={ev.matched ? 'green' : 'gray'}>{ev.matched ? 'match' : 'no match'}</Badge>}
           </div>
           {!ev.skipped && ev.conditions.map((c, j) => (
-            <div key={j} className={`mt-1 font-mono ${c.passed ? 'text-green-400' : 'text-red-400'}`}>
-              {c.passed ? '✓' : '✗'} {c.field_path} {c.operator} {JSON.stringify(c.expected)} → {c.actual === null || c.actual === undefined ? 'null' : JSON.stringify(c.actual)}
+            <div key={j} className={`mt-1 font-mono ${c.passed ? 'text-good' : 'text-bad'}`}>
+              {c.passed ? <MdCheck className="inline h-4 w-4" aria-label="passed" /> : <MdClose className="inline h-4 w-4" aria-label="failed" />} {c.field_path} {c.operator} {JSON.stringify(c.expected)} <MdArrowForward className="inline h-3.5 w-3.5" aria-label="gives" /> {c.actual === null || c.actual === undefined ? 'null' : JSON.stringify(c.actual)}
             </div>
           ))}
         </div>

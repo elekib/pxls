@@ -7,6 +7,7 @@ import type { Webhook, WebhookSummary } from '@/ui/webhooks/types';
 import type { useWebhooks } from '@/ui/webhooks/useWebhooks';
 import { RulesPanel } from './RulesPanel';
 import { WebhookSettingsForm } from './WebhookSettingsForm';
+import { MdChevronRight, MdClose, MdExpandMore } from 'react-icons/md';
 import { Badge, btn, CopyButton, relativeTime, Toggle, webhookUrl, webhookUrlWithSecret } from './ui';
 
 type Store = ReturnType<typeof useWebhooks>;
@@ -80,7 +81,7 @@ export function WebhookCard({ webhook, summary, store, onNotify }: Props) {
   };
 
   return (
-    <div className={`bg-gray-900 rounded-lg p-4 border border-gray-700 ${webhook.enabled ? '' : 'opacity-75'}`}>
+    <div className={`bg-page rounded-lg p-4 border border-line ${webhook.enabled ? '' : 'opacity-75'}`}>
       {editing ? (
         <WebhookSettingsForm
           webhook={webhook}
@@ -98,21 +99,21 @@ export function WebhookCard({ webhook, summary, store, onNotify }: Props) {
                 {!webhook.enabled && <Badge>disabled</Badge>}
                 <Badge tone="purple">{webhook.rules.length} rule{webhook.rules.length === 1 ? '' : 's'}</Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-400">
-                <code className="text-gray-300 break-all">POST {url}</code>
+              <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted">
+                <code className="text-ink2 break-all">POST {url}</code>
                 <CopyButton text={url} label="Copy URL" />
               </div>
               {webhook.secret && (
-                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
+                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted">
                   <span>Senders must authenticate with this webhook's secret:</span>
                   <CopyButton text={webhook.secret} label="Copy secret" />
                   <CopyButton text={webhookUrlWithSecret(webhook.path, webhook.secret)} label="Copy URL with secret" />
-                  <span className="text-gray-500">
+                  <span className="text-muted">
                     (header <code>X-Webhook-Secret</code>, Basic auth password, or <code>?secret=</code>)
                   </span>
                 </div>
               )}
-              <div className="mt-2 text-xs text-gray-400 flex flex-wrap gap-x-3 gap-y-1 items-center">
+              <div className="mt-2 text-xs text-muted flex flex-wrap gap-x-3 gap-y-1 items-center">
                 {summary?.last_timestamp ? (
                   <>
                     <span>Last event {relativeTime(summary.last_timestamp)}</span>
@@ -129,15 +130,15 @@ export function WebhookCard({ webhook, summary, store, onNotify }: Props) {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setRulesOpen((v) => !v)} className={`px-3 py-1 rounded text-sm transition-colors ${rulesOpen ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-700 hover:bg-gray-600'}`}>Rules {rulesOpen ? '▾' : '▸'}</button>
-              <button onClick={sendTest} disabled={sending || !webhook.enabled} title={webhook.enabled ? 'Send a real test delivery' : 'Enable the webhook to test it'} className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm transition-colors disabled:opacity-40">{sending ? 'Sending…' : 'Send test'}</button>
+              <button onClick={() => setRulesOpen((v) => !v)} className={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${rulesOpen ? 'bg-violet text-violet-ink hover:brightness-110' : 'border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink'}`}>Rules {rulesOpen ? <MdExpandMore className="h-4 w-4" aria-hidden /> : <MdChevronRight className="h-4 w-4" aria-hidden />}</button>
+              <button onClick={sendTest} disabled={sending || !webhook.enabled} title={webhook.enabled ? 'Send a real test delivery' : 'Enable the webhook to test it'} className="px-3 py-1 bg-good text-good-ink hover:brightness-110 rounded text-sm transition-colors disabled:opacity-40">{sending ? 'Sending…' : 'Send test'}</button>
               <button onClick={() => setEditing(true)} className={btn.small}>Edit</button>
               <button onClick={() => store.cloneWebhook(webhook)} disabled={store.busy} className={btn.small} title="Clone with all rules">Clone</button>
-              <button onClick={remove} className={btn.smallDanger} aria-label="Delete webhook">×</button>
+              <button onClick={remove} className={btn.smallDanger} aria-label="Delete webhook"><MdClose className="h-4 w-4" aria-hidden /></button>
             </div>
           </div>
           {!webhook.display_on_no_match && webhook.rules.length > 0 && (
-            <p className="mt-2 text-xs text-gray-500">Events that match no rule are ignored.</p>
+            <p className="mt-2 text-xs text-muted">Events that match no rule are ignored.</p>
           )}
         </>
       )}

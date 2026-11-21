@@ -14,8 +14,8 @@ interface Entry {
   note: string;
 }
 
-const inputClass = 'px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400';
-const btn = 'px-3 py-2 text-sm rounded-lg border border-gray-600 bg-gray-700 hover:bg-gray-600 disabled:opacity-50';
+const inputClass = 'px-3 py-2 bg-surface border border-line rounded-lg text-ink hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const btn = 'px-3 py-2 text-sm rounded-lg border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink disabled:opacity-50';
 
 const hexByte = (n: number) => n.toString(16).toUpperCase().padStart(2, '0');
 
@@ -78,13 +78,13 @@ export function DiagnosticsPage({ onNotify }: Props) {
     .map((e) => `${e.cmd} ${e.args} (${e.hex}): ${e.note || '-'}`)
     .join('\n');
 
-  if (enabled === null) return <div className="text-gray-400">Loading...</div>;
+  if (enabled === null) return <div className="text-muted">Loading...</div>;
   if (!enabled) {
     return (
       <div className="max-w-2xl space-y-3">
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
-        <p className="text-gray-300">
-          Diagnostics are off. Add <code className="bg-gray-700 px-1 rounded">PXLS_ENABLE_DEBUG=1</code> to <code className="bg-gray-700 px-1 rounded">.env</code> and restart pxls.
+        <p className="text-ink2">
+          Diagnostics are off. Add <code className="bg-surface2 px-1 rounded">PXLS_ENABLE_DEBUG=1</code> to <code className="bg-surface2 px-1 rounded">.env</code> and restart pxls.
         </p>
       </div>
     );
@@ -94,34 +94,34 @@ export function DiagnosticsPage({ onNotify }: Props) {
     <div className="max-w-3xl space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-muted mt-1">
           Sends raw commands to the connected device (framing and checksum are added for you). Unknown commands may do
           unexpected things. While you probe, the display loop is paused for two minutes after each send.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 bg-gray-800 rounded-lg p-4">
+      <div className="flex flex-wrap items-center gap-3 bg-surface rounded-2xl border border-line shadow-card p-4">
         <button className={btn} disabled={busy} onClick={() => void restore()}>
           Restore display
         </button>
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-muted">
           Ends the pause and puts the display back to your configured mode, for when a probe leaves it stuck.
         </span>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-gray-300">
+      <label className="flex items-center gap-2 text-sm text-ink2">
         <input type="checkbox" checked={resetFirst} onChange={(e) => setResetFirst(e.target.checked)} />
         Show solid red first, so an ignored command leaves the screen red
       </label>
 
-      <section className="bg-gray-800 rounded-lg p-4 space-y-3">
+      <section className="bg-surface rounded-2xl border border-line shadow-card p-4 space-y-3">
         <h3 className="font-medium">Raw command</h3>
         <div className="flex flex-wrap gap-2 items-end">
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-muted">
             Command (hex)
             <input className={`${inputClass} block w-20`} value={cmd} onChange={(e) => setCmd(e.target.value)} />
           </label>
-          <label className="text-xs text-gray-400 flex-1 min-w-40">
+          <label className="text-xs text-muted flex-1 min-w-40">
             Arguments (hex)
             <input className={`${inputClass} block w-full`} value={args} onChange={(e) => setArgs(e.target.value)} />
           </label>
@@ -131,21 +131,21 @@ export function DiagnosticsPage({ onNotify }: Props) {
         </div>
       </section>
 
-      <section className="bg-gray-800 rounded-lg p-4 space-y-3">
+      <section className="bg-surface rounded-2xl border border-line shadow-card p-4 space-y-3">
         <h3 className="font-medium">Value sweep</h3>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted">
           Sends <code>{cmd} {channel} VV</code> for each value, one step at a time. Write down what the display shows below.
         </p>
         <div className="flex flex-wrap gap-2 items-end">
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-muted">
             Channel (hex)
             <input className={`${inputClass} block w-20`} value={channel} onChange={(e) => setChannel(e.target.value)} />
           </label>
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-muted">
             From
             <input type="number" min={0} max={255} className={`${inputClass} block w-20`} value={from} onChange={(e) => setFrom(Number(e.target.value))} />
           </label>
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-muted">
             To
             <input type="number" min={0} max={255} className={`${inputClass} block w-20`} value={to} onChange={(e) => setTo(Number(e.target.value))} />
           </label>
@@ -155,11 +155,11 @@ export function DiagnosticsPage({ onNotify }: Props) {
           <button className={btn} disabled={busy || (value !== null && value >= to)} onClick={() => void step(value === null ? from : value + 1)}>
             {value === null ? 'Start' : `Next (${value + 1})`}
           </button>
-          <span className="text-sm text-gray-400">Current: {value === null ? '-' : `${value} (0x${hexByte(value)})`}</span>
+          <span className="text-sm text-muted">Current: {value === null ? '-' : `${value} (0x${hexByte(value)})`}</span>
         </div>
       </section>
 
-      <section className="bg-gray-800 rounded-lg p-4 space-y-3">
+      <section className="bg-surface rounded-2xl border border-line shadow-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-medium">Log</h3>
           <div className="flex gap-2">
@@ -177,11 +177,11 @@ export function DiagnosticsPage({ onNotify }: Props) {
             </button>
           </div>
         </div>
-        {log.length === 0 && <p className="text-sm text-gray-500">Nothing sent yet.</p>}
+        {log.length === 0 && <p className="text-sm text-muted">Nothing sent yet.</p>}
         {log.map((e, i) => (
           <div key={i} className="flex flex-wrap gap-2 items-center text-sm">
-            <code className="text-cyan-300">{e.cmd} {e.args}</code>
-            <span className="text-xs text-gray-500 break-all">{e.hex}</span>
+            <code className="text-accent">{e.cmd} {e.args}</code>
+            <span className="text-xs text-muted break-all">{e.hex}</span>
             <input
               className={`${inputClass} flex-1 min-w-48 py-1`}
               placeholder="What did the display show?"

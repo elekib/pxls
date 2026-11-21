@@ -5,6 +5,8 @@ import { AuthImage } from './AuthImage';
 import { useState, useEffect, type ChangeEvent, type FocusEvent } from 'react';
 import type { Config, CustomPage, ScriptInput, Pixel } from '@/ui/types';
 import { API_URL, typeLabels } from '@/ui/types';
+import { typeIcons } from '@/ui/typeIcons';
+import { MdClose } from 'react-icons/md';
 import { BeszelLogin } from './BeszelLogin';
 import { DivoomPageFields } from './DivoomPageFields';
 import {
@@ -561,17 +563,17 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   return (
     <div className="max-w-[900px]">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h2 className="text-2xl sm:text-[30px] font-bold text-cyan-400">Pages</h2>
-        <button className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-green-700" onClick={() => openEditor()}>+ Add Page</button>
+        <h2 className="text-2xl sm:text-[30px] font-bold text-accent">Pages</h2>
+        <button className="w-full sm:w-auto px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={() => openEditor()}>+ Add Page</button>
       </div>
 
       <BeszelLogin config={config} onConfigUpdate={onConfigUpdate} onNotify={onNotify} />
 
-      <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-4 sm:p-6 mb-6">
         <h3 className="text-xl font-semibold mb-4">Global Settings</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-2">Refresh Interval (ms)</label>
+            <label className="block text-muted text-sm mb-2">Refresh Interval (ms)</label>
             <input
               type="text"
               inputMode="numeric"
@@ -591,11 +593,11 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                 setGlobalRefresh(clamped);
                 setGlobalRefreshStr(String(clamped));
               }}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+              className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-2">Rotation Time (seconds per page)</label>
+            <label className="block text-muted text-sm mb-2">Rotation Time (seconds per page)</label>
             <input
               type="text"
               inputMode="numeric"
@@ -615,14 +617,14 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                 setGlobalRotation(clamped);
                 setGlobalRotationStr(String(clamped));
               }}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+              className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </div>
         </div>
         <div className="mt-4 flex justify-end">
           <button
             onClick={handleSaveGlobalSettings}
-            className="px-6 py-2 bg-cyan-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-cyan-700"
+            className="px-6 py-2 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110"
           >
             Save Settings
           </button>
@@ -631,7 +633,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
 
       <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
         {config?.custom_pages?.length === 0 ? (
-          <div className="col-span-full text-center text-gray-500 py-12">No pages yet. Click "Add Page" to create one.</div>
+          <div className="col-span-full text-center text-muted py-12">No pages yet. Click "Add Page" to create one.</div>
         ) : (
           config?.custom_pages?.map((page, idx) => (
             <div
@@ -643,19 +645,19 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               onDrop={(e) => handleDrop(e, idx)}
               onDragEnd={handleDragEnd}
               className={`
-                ${page.enabled ? 'bg-gray-800 rounded-lg p-4 border-2 transition-all border-cyan-600' : 'bg-gray-800 rounded-lg p-4 border-2 transition-all border-gray-600 opacity-50'}
+                ${page.enabled ? 'bg-surface rounded-2xl border border-line shadow-card p-4 border-2 transition-all border-accent' : 'bg-surface rounded-2xl border border-line shadow-card p-4 border-2 transition-all opacity-50'}
                 ${draggingIndex === idx ? 'opacity-30 cursor-grabbing' : 'cursor-grab'}
-                ${dragOverIndex === idx && draggingIndex !== idx ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-gray-900 scale-105' : 'hover:-translate-y-0.5 hover:shadow-lg'}
+                ${dragOverIndex === idx && draggingIndex !== idx ? 'ring-2 ring-accent ring-offset-2 ring-offset-page scale-105' : 'hover:-translate-y-0.5 hover:shadow-lg'}
               `}
             >
               <div className="flex justify-between items-start mb-3 gap-2">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                   </svg>
                   <h4 className="font-semibold text-base truncate">{page.name}</h4>
                 </div>
-                <span className="text-xs px-2 py-1 bg-gray-700 rounded flex-shrink-0">{typeLabels[page.page_type.type] || page.page_type.type}</span>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-surface2 rounded flex-shrink-0">{(() => { const Icon = typeIcons[page.page_type.type]; return Icon ? <Icon className="h-4 w-4" aria-hidden /> : null; })()}{typeLabels[page.page_type.type] || page.page_type.type}</span>
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <input
@@ -665,11 +667,11 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   onChange={() => handleTogglePageEnabled(idx)}
                   className="w-4 h-4"
                 />
-                <label htmlFor={`enabled-${idx}`} className="text-gray-400 text-sm cursor-pointer">
+                <label htmlFor={`enabled-${idx}`} className="text-muted text-sm cursor-pointer">
                   {page.enabled ? 'Enabled' : 'Disabled'}
                 </label>
               </div>
-              <button className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-cyan-700 w-full" onClick={() => openEditor(idx)}>Edit</button>
+              <button className="px-4 py-2 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110 w-full" onClick={() => openEditor(idx)}>Edit</button>
             </div>
           ))
         )}
@@ -678,24 +680,24 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
       {/* Page Editor Modal */}
       {showEditor && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowEditor(false); }}>
-          <div className="bg-gray-800 rounded-none sm:rounded-xl w-full max-w-[700px] max-h-[100vh] sm:max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 sm:p-6 border-b border-gray-700 flex justify-between items-center">
-              <h3 className="text-xl sm:text-2xl font-bold text-cyan-400">{editingIndex >= 0 ? 'Edit Page' : 'New Page'}</h3>
-              <button className="bg-none border-none text-gray-400 text-2xl cursor-pointer hover:text-white" onClick={() => setShowEditor(false)}>&times;</button>
+          <div className="bg-surface rounded-none sm:rounded-xl w-full max-w-[700px] max-h-[100vh] sm:max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 sm:p-6 border-b border-line flex justify-between items-center">
+              <h3 className="text-xl sm:text-2xl font-bold text-accent">{editingIndex >= 0 ? 'Edit Page' : 'New Page'}</h3>
+              <button className="bg-none border-none text-muted text-2xl cursor-pointer hover:text-ink" onClick={() => setShowEditor(false)}>&times;</button>
             </div>
             
             <div className="p-4 sm:p-6">
               <div className="mb-4">
-                <label className="block text-gray-400 text-sm mb-2">Page Name</label>
-                <input type="text" value={pageName} onChange={(e) => setPageName(e.target.value)} className="w-full px-3 sm:px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400" />
+                <label className="block text-muted text-sm mb-2">Page Name</label>
+                <input type="text" value={pageName} onChange={(e) => setPageName(e.target.value)} className="w-full px-3 sm:px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" />
               </div>
               
               <div className="mb-4">
-                <label className="block text-gray-400 text-sm mb-2">Page Type</label>
+                <label className="block text-muted text-sm mb-2">Page Type</label>
                 <select value={pageType} onChange={(e) => {
                   setPageType(e.target.value);
                   if (isDivoomType(e.target.value)) setDivoomData(defaultDivoomData(e.target.value));
-                }} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                }} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                   <option value="ClockWeather">Clock & Weather</option>
                   <option value="CustomScript">Custom Script</option>
                   <option value="CustomText">Custom Text</option>
@@ -711,16 +713,16 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               </div>
 
               <div className="mb-4">
-                <label className="block text-gray-400 text-sm mb-2">Display time (seconds)</label>
+                <label className="block text-muted text-sm mb-2">Display time (seconds)</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={pageDurationStr}
                   onChange={(e) => setPageDurationStr(e.target.value.replace(/\D/g, ''))}
                   placeholder={`Default (${globalRotation}s)`}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+                  className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
-                <p className="text-gray-500 text-xs mt-1">
+                <p className="text-muted text-xs mt-1">
                   Leave empty to use the global rotation time. Set a longer time for pages the device animates itself, such as User GIFs with many GIFs.
                 </p>
               </div>
@@ -734,26 +736,26 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                 <div className="mt-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Clock Color</label>
+                      <label className="block text-muted text-sm mb-2">Clock Color</label>
                       <input type="color" value={clockColor} onChange={(e) => setClockColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                     </div>
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Date Color</label>
+                      <label className="block text-muted text-sm mb-2">Date Color</label>
                       <input type="color" value={dateColor} onChange={(e) => setDateColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                     </div>
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Weather Color</label>
+                      <label className="block text-muted text-sm mb-2">Weather Color</label>
                       <input type="color" value={weatherColor} onChange={(e) => setWeatherColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Weather Location</label>
-                    <input type="text" value={weatherLocation} onChange={(e) => setWeatherLocation(e.target.value)} placeholder="New York,NY" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400" />
-                    <p className="text-gray-500 text-sm mt-2">Sent to your weather URL as {"{location}"} and {"{unit}"} (PXLS_WEATHER_URL). Without that URL no weather is shown.</p>
+                    <label className="block text-muted text-sm mb-2">Weather Location</label>
+                    <input type="text" value={weatherLocation} onChange={(e) => setWeatherLocation(e.target.value)} placeholder="New York,NY" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" />
+                    <p className="text-muted text-sm mt-2">Sent to your weather URL as {"{location}"} and {"{unit}"} (PXLS_WEATHER_URL). Without that URL no weather is shown.</p>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Temperature Unit</label>
-                    <select value={temperatureUnit} onChange={(e) => setTemperatureUnit(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                    <label className="block text-muted text-sm mb-2">Temperature Unit</label>
+                    <select value={temperatureUnit} onChange={(e) => setTemperatureUnit(e.target.value)} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                       <option value="celsius">Celsius (°C)</option>
                       <option value="fahrenheit">Fahrenheit (°F)</option>
                     </select>
@@ -765,8 +767,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               {pageType === 'SystemStats' && (
                 <div className="mt-4">
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Source</label>
-                    <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                    <label className="block text-muted text-sm mb-2">Source</label>
+                    <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                       <option value="beszel">Beszel</option>
                       <option value="dashdot">Dashdot</option>
                     </select>
@@ -774,43 +776,43 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   
                   {statsSource === 'dashdot' && (
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Dashdot URL</label>
-                      <input type="text" value={dashdotUrl} onChange={(e) => setDashdotUrl(e.target.value)} placeholder="http://dashdot.local:3001" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
-                      <p className="text-gray-500 text-xs mt-1">Local: http://localhost:3001 | Remote: http://ip:3001</p>
+                      <label className="block text-muted text-sm mb-2">Dashdot URL</label>
+                      <input type="text" value={dashdotUrl} onChange={(e) => setDashdotUrl(e.target.value)} placeholder="http://dashdot.local:3001" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
+                      <p className="text-muted text-xs mt-1">Local: http://localhost:3001 | Remote: http://ip:3001</p>
                     </div>
                   )}
                   
                   {statsSource === 'beszel' && (
                     <>
                       <div className="mb-4">
-                        <label className="block text-gray-400 text-sm mb-2">Beszel Hub URL</label>
-                        <input type="text" value={beszelHubUrl} onChange={(e) => setBeszelHubUrl(e.target.value)} placeholder="http://localhost:8090" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                        <label className="block text-muted text-sm mb-2">Beszel Hub URL</label>
+                        <input type="text" value={beszelHubUrl} onChange={(e) => setBeszelHubUrl(e.target.value)} placeholder="http://localhost:8090" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                       </div>
                       <div className="mb-4">
-                        <label className="block text-gray-400 text-sm mb-2">System ID (optional)</label>
-                        <input type="text" value={beszelSystemId} onChange={(e) => setBeszelSystemId(e.target.value)} placeholder="Leave empty for auto-select" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                        <label className="block text-muted text-sm mb-2">System ID (optional)</label>
+                        <input type="text" value={beszelSystemId} onChange={(e) => setBeszelSystemId(e.target.value)} placeholder="Leave empty for auto-select" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                       </div>
                       <div className="mb-4">
-                        <p className="text-gray-400 text-sm">Uses global authentication token configured above.</p>
+                        <p className="text-muted text-sm">Uses global authentication token configured above.</p>
                       </div>
                     </>
                   )}
-                  <div className="mb-4 bg-gray-900 p-3 rounded-lg">
-                    <label className="block text-gray-400 text-sm mb-2">Color Thresholds</label>
+                  <div className="mb-4 bg-page p-3 rounded-lg">
+                    <label className="block text-muted text-sm mb-2">Color Thresholds</label>
                     <div className="flex gap-2 text-xs">
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#00ff00'}}></span>0-50% Good</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ffff00'}}></span>50-75% Okay</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ffa500'}}></span>75-90% Concern</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ff0000'}}></span>90%+ Critical</span>
                     </div>
-                    <p className="text-gray-500 text-xs mt-2">Offline/unreachable shows "--" in gray</p>
+                    <p className="text-muted text-xs mt-2">Offline/unreachable shows "--" in gray</p>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Brand Text</label>
-                    <input type="text" value={brandText} onChange={(e) => setBrandText(e.target.value.toUpperCase())} maxLength={5} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 uppercase" />
+                    <label className="block text-muted text-sm mb-2">Brand Text</label>
+                    <input type="text" value={brandText} onChange={(e) => setBrandText(e.target.value.toUpperCase())} maxLength={5} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent uppercase" />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Brand Color</label>
+                    <label className="block text-muted text-sm mb-2">Brand Color</label>
                     <input type="color" value={brandColor} onChange={(e) => setBrandColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                   </div>
                 </div>
@@ -820,8 +822,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               {pageType === 'GpuStats' && (
                 <div className="mt-4">
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Source</label>
-                    <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                    <label className="block text-muted text-sm mb-2">Source</label>
+                    <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                       <option value="beszel">Beszel</option>
                       <option value="dashdot">Dashdot</option>
                     </select>
@@ -829,43 +831,43 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   
                   {statsSource === 'dashdot' && (
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Dashdot URL</label>
-                      <input type="text" value={dashdotUrl} onChange={(e) => setDashdotUrl(e.target.value)} placeholder="http://localhost:3001" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
-                      <p className="text-gray-500 text-xs mt-1">Local: http://localhost:3001 | Remote: http://ip:3001</p>
+                      <label className="block text-muted text-sm mb-2">Dashdot URL</label>
+                      <input type="text" value={dashdotUrl} onChange={(e) => setDashdotUrl(e.target.value)} placeholder="http://localhost:3001" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
+                      <p className="text-muted text-xs mt-1">Local: http://localhost:3001 | Remote: http://ip:3001</p>
                     </div>
                   )}
                   
                   {statsSource === 'beszel' && (
                     <>
                       <div className="mb-4">
-                        <label className="block text-gray-400 text-sm mb-2">Beszel Hub URL</label>
-                        <input type="text" value={beszelHubUrl} onChange={(e) => setBeszelHubUrl(e.target.value)} placeholder="http://localhost:8090" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                        <label className="block text-muted text-sm mb-2">Beszel Hub URL</label>
+                        <input type="text" value={beszelHubUrl} onChange={(e) => setBeszelHubUrl(e.target.value)} placeholder="http://localhost:8090" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                       </div>
                       <div className="mb-4">
-                        <label className="block text-gray-400 text-sm mb-2">System ID (optional)</label>
-                        <input type="text" value={beszelSystemId} onChange={(e) => setBeszelSystemId(e.target.value)} placeholder="Leave empty for auto-select" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                        <label className="block text-muted text-sm mb-2">System ID (optional)</label>
+                        <input type="text" value={beszelSystemId} onChange={(e) => setBeszelSystemId(e.target.value)} placeholder="Leave empty for auto-select" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                       </div>
                       <div className="mb-4">
-                        <p className="text-gray-400 text-sm">Uses global authentication token configured above.</p>
+                        <p className="text-muted text-sm">Uses global authentication token configured above.</p>
                       </div>
                     </>
                   )}
-                  <div className="mb-4 bg-gray-900 p-3 rounded-lg">
-                    <label className="block text-gray-400 text-sm mb-2">Color Thresholds</label>
+                  <div className="mb-4 bg-page p-3 rounded-lg">
+                    <label className="block text-muted text-sm mb-2">Color Thresholds</label>
                     <div className="flex gap-2 text-xs">
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#00ff00'}}></span>0-50% Good</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ffff00'}}></span>50-75% Okay</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ffa500'}}></span>75-90% Concern</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ff0000'}}></span>90%+ Critical</span>
                     </div>
-                    <p className="text-gray-500 text-xs mt-2">Displays: L=Load%, M=Memory%</p>
+                    <p className="text-muted text-xs mt-2">Displays: L=Load%, M=Memory%</p>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Brand Text</label>
-                    <input type="text" value={brandText} onChange={(e) => setBrandText(e.target.value.toUpperCase())} maxLength={5} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 uppercase" />
+                    <label className="block text-muted text-sm mb-2">Brand Text</label>
+                    <input type="text" value={brandText} onChange={(e) => setBrandText(e.target.value.toUpperCase())} maxLength={5} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent uppercase" />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Brand Color</label>
+                    <label className="block text-muted text-sm mb-2">Brand Color</label>
                     <input type="color" value={brandColor} onChange={(e) => setBrandColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                   </div>
                 </div>
@@ -875,8 +877,8 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               {pageType === 'Temps' && (
                 <div className="mt-4">
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Source</label>
-                    <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                    <label className="block text-muted text-sm mb-2">Source</label>
+                    <select value={statsSource} onChange={(e) => setStatsSource(e.target.value)} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                       <option value="beszel">Beszel</option>
                       <option value="dashdot">Dashdot</option>
                     </select>
@@ -884,62 +886,62 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   
                   {statsSource === 'dashdot' && (
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Dashdot URL</label>
-                      <input type="text" value={dashdotUrl} onChange={(e) => setDashdotUrl(e.target.value)} placeholder="http://localhost:3001" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
-                      <p className="text-gray-500 text-xs mt-1">Local: http://localhost:3001 | Remote: http://ip:3001</p>
+                      <label className="block text-muted text-sm mb-2">Dashdot URL</label>
+                      <input type="text" value={dashdotUrl} onChange={(e) => setDashdotUrl(e.target.value)} placeholder="http://localhost:3001" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
+                      <p className="text-muted text-xs mt-1">Local: http://localhost:3001 | Remote: http://ip:3001</p>
                     </div>
                   )}
                   
                   {statsSource === 'beszel' && (
                     <>
                       <div className="mb-4">
-                        <label className="block text-gray-400 text-sm mb-2">Beszel Hub URL</label>
-                        <input type="text" value={beszelHubUrl} onChange={(e) => setBeszelHubUrl(e.target.value)} placeholder="http://localhost:8090" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                        <label className="block text-muted text-sm mb-2">Beszel Hub URL</label>
+                        <input type="text" value={beszelHubUrl} onChange={(e) => setBeszelHubUrl(e.target.value)} placeholder="http://localhost:8090" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                       </div>
                       <div className="mb-4">
-                        <label className="block text-gray-400 text-sm mb-2">System ID (optional)</label>
-                        <input type="text" value={beszelSystemId} onChange={(e) => setBeszelSystemId(e.target.value)} placeholder="Leave empty for auto-select" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                        <label className="block text-muted text-sm mb-2">System ID (optional)</label>
+                        <input type="text" value={beszelSystemId} onChange={(e) => setBeszelSystemId(e.target.value)} placeholder="Leave empty for auto-select" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                       </div>
                       <div className="mb-4">
-                        <p className="text-gray-400 text-sm">Uses global authentication token configured above.</p>
+                        <p className="text-muted text-sm">Uses global authentication token configured above.</p>
                       </div>
                     </>
                   )}
-                  <div className="mb-4 bg-gray-800 p-3 rounded-lg">
-                    <label className="block text-gray-400 text-sm mb-3">Display Options (Max 2)</label>
+                  <div className="mb-4 bg-surface p-3 rounded-lg">
+                    <label className="block text-muted text-sm mb-3">Display Options (Max 2)</label>
                     <div className="flex flex-col gap-2">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={showCpuTemp} onChange={(e) => setShowCpuTemp(e.target.checked)} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500" />
-                        <span className="text-white text-sm">CPU Temperature</span>
+                        <input type="checkbox" checked={showCpuTemp} onChange={(e) => setShowCpuTemp(e.target.checked)} className="w-4 h-4 rounded border-line bg-surface2 text-accent focus:ring-accent" />
+                        <span className="text-ink text-sm">CPU Temperature</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={showGpuTemp} onChange={(e) => setShowGpuTemp(e.target.checked)} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500" />
-                        <span className="text-white text-sm">GPU Temperature (Beszel only)</span>
+                        <input type="checkbox" checked={showGpuTemp} onChange={(e) => setShowGpuTemp(e.target.checked)} className="w-4 h-4 rounded border-line bg-surface2 text-accent focus:ring-accent" />
+                        <span className="text-ink text-sm">GPU Temperature (Beszel only)</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={showStorageTemp} onChange={(e) => setShowStorageTemp(e.target.checked)} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500" />
-                        <span className="text-white text-sm">Storage Temperature (Beszel only)</span>
+                        <input type="checkbox" checked={showStorageTemp} onChange={(e) => setShowStorageTemp(e.target.checked)} className="w-4 h-4 rounded border-line bg-surface2 text-accent focus:ring-accent" />
+                        <span className="text-ink text-sm">Storage Temperature (Beszel only)</span>
                       </label>
                     </div>
-                    <p className="text-gray-500 text-xs mt-2">Select up to 2 temperatures to display (16x16 pixel limit)</p>
+                    <p className="text-muted text-xs mt-2">Select up to 2 temperatures to display (16x16 pixel limit)</p>
                   </div>
                   
-                  <div className="mb-4 bg-gray-900 p-3 rounded-lg">
-                    <label className="block text-gray-400 text-sm mb-2">Temp Color Thresholds</label>
+                  <div className="mb-4 bg-page p-3 rounded-lg">
+                    <label className="block text-muted text-sm mb-2">Temp Color Thresholds</label>
                     <div className="flex gap-2 text-xs">
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#00ff00'}}></span>0-50°C Good</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ffff00'}}></span>50-70°C Warm</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ffa500'}}></span>70-85°C Hot</span>
                       <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{backgroundColor: '#ff0000'}}></span>85°C+ Critical</span>
                     </div>
-                    <p className="text-gray-500 text-xs mt-2">Displays: CPU temperature (integrated GPU shares same thermals)</p>
+                    <p className="text-muted text-xs mt-2">Displays: CPU temperature (integrated GPU shares same thermals)</p>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Brand Text</label>
-                    <input type="text" value={brandText} onChange={(e) => setBrandText(e.target.value.toUpperCase())} maxLength={5} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 uppercase" />
+                    <label className="block text-muted text-sm mb-2">Brand Text</label>
+                    <input type="text" value={brandText} onChange={(e) => setBrandText(e.target.value.toUpperCase())} maxLength={5} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent uppercase" />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Brand Color</label>
+                    <label className="block text-muted text-sm mb-2">Brand Color</label>
                     <input type="color" value={brandColor} onChange={(e) => setBrandColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                   </div>
                 </div>
@@ -949,11 +951,11 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               {pageType === 'CustomScript' && (
                 <div className="mt-4">
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Script Path</label>
-                    <input type="text" value={scriptPath} onChange={(e) => setScriptPath(e.target.value)} placeholder="/path/to/script.sh" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 font-mono" />
+                    <label className="block text-muted text-sm mb-2">Script Path</label>
+                    <input type="text" value={scriptPath} onChange={(e) => setScriptPath(e.target.value)} placeholder="/path/to/script.sh" className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent font-mono" />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Execution Interval (ms)</label>
+                    <label className="block text-muted text-sm mb-2">Execution Interval (ms)</label>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -973,28 +975,28 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                         setScriptInterval(clamped);
                         setScriptIntervalStr(String(clamped));
                       }}
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+                      className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Script Inputs</label>
+                    <label className="block text-muted text-sm mb-2">Script Inputs</label>
                     <div className="flex flex-col gap-2 mb-3">
                       {scriptInputs.map((input, idx) => (
-                        <div key={idx} className="flex gap-2 items-center bg-gray-900 p-2 rounded">
-                          <input type="text" placeholder="Name" value={input.name} onChange={(e) => updateScriptInput(idx, 'name', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm flex-1" />
-                          <input type="text" placeholder="Label" value={input.label} onChange={(e) => updateScriptInput(idx, 'label', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm flex-1" />
-                          <select value={input.input_type} onChange={(e) => updateScriptInput(idx, 'input_type', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        <div key={idx} className="flex gap-2 items-center bg-page p-2 rounded">
+                          <input type="text" placeholder="Name" value={input.name} onChange={(e) => updateScriptInput(idx, 'name', e.target.value)} className="px-2.5 py-1.5 bg-surface border border-line rounded-lg text-ink text-sm flex-1" />
+                          <input type="text" placeholder="Label" value={input.label} onChange={(e) => updateScriptInput(idx, 'label', e.target.value)} className="px-2.5 py-1.5 bg-surface border border-line rounded-lg text-ink text-sm flex-1" />
+                          <select value={input.input_type} onChange={(e) => updateScriptInput(idx, 'input_type', e.target.value)} className="px-2.5 py-1.5 bg-surface border border-line rounded-lg text-ink text-sm">
                             <option value="boolean">boolean</option>
                             <option value="color">color</option>
                             <option value="number">number</option>
                             <option value="text">text</option>
                           </select>
-                          <input type="text" placeholder="Default" value={input.default_value} onChange={(e) => updateScriptInput(idx, 'default_value', e.target.value)} className="px-2.5 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm w-20 flex-none" />
-                          <button className="bg-none border-none text-red-400 text-xl cursor-pointer px-2 hover:text-red-500" onClick={() => removeScriptInput(idx)}>×</button>
+                          <input type="text" placeholder="Default" value={input.default_value} onChange={(e) => updateScriptInput(idx, 'default_value', e.target.value)} className="px-2.5 py-1.5 bg-surface border border-line rounded-lg text-ink text-sm w-20 flex-none" />
+                          <button className="text-bad px-2 hover:brightness-110" aria-label="Remove input" onClick={() => removeScriptInput(idx)}><MdClose className="h-5 w-5" aria-hidden /></button>
                         </div>
                       ))}
                     </div>
-                    <button className="px-3 py-1.5 bg-cyan-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-all hover:bg-cyan-700" onClick={addScriptInput}>+ Add Input</button>
+                    <button className="px-3 py-1.5 bg-accent text-accent-ink rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110" onClick={addScriptInput}>+ Add Input</button>
                   </div>
                 </div>
               )}
@@ -1004,17 +1006,17 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                 <div className="mt-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Display Mode</label>
+                      <label className="block text-muted text-sm mb-2">Display Mode</label>
                       <div className="h-4"></div>
-                      <select value={imageMode} onChange={(e) => setImageMode(e.target.value)} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400">
+                      <select value={imageMode} onChange={(e) => setImageMode(e.target.value)} className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                         <option value="animated">Animated (GIF)</option>
                         <option value="scroll">Scroll</option>
                         <option value="static">Static</option>
                       </select>
                     </div>
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Frame Duration (ms)</label>
-                      <p className="text-xs text-gray-500 mb-1">Set to 0 for native GIF timing</p>
+                      <label className="block text-muted text-sm mb-2">Frame Duration (ms)</label>
+                      <p className="text-xs text-muted mb-1">Set to 0 for native GIF timing</p>
                       <input
                       type="text"
                       inputMode="numeric"
@@ -1034,21 +1036,21 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                         setFrameDuration(clamped);
                         setFrameDurationStr(String(clamped));
                       }}
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+                      className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     />
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Upload Image/GIF</label>
+                    <label className="block text-muted text-sm mb-2">Upload Image/GIF</label>
                     <div className="flex flex-col gap-3">
                       {imageFilePath ? (
-                        <div className="bg-gray-900 p-3 rounded-lg">
+                        <div className="bg-page p-3 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-green-400">Uploaded: {imageFileName}</span>
+                            <span className="text-sm text-good">Uploaded: {imageFileName}</span>
                             <button
                               onClick={handleRemoveImage}
-                              className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                              className="px-3 py-1 bg-bad text-bad-ink rounded text-sm hover:brightness-110"
                             >
                               Remove
                             </button>
@@ -1056,7 +1058,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                           <AuthImage
                             src={`${API_URL}/api/uploads/${imageFilePath}`}
                             alt="Preview"
-                            className="w-16 h-16 object-cover rounded border border-gray-600"
+                            className="w-16 h-16 object-cover rounded border border-line"
                           />
                         </div>
                       ) : (
@@ -1066,14 +1068,14 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                             accept="image/png,image/jpeg,image/jpg,image/gif,image/bmp,image/webp"
                             onChange={handleFileUpload}
                             disabled={isUploading}
-                            className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-700 file:cursor-pointer disabled:opacity-50"
+                            className="block w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-ink hover:file:brightness-110 file:cursor-pointer disabled:opacity-50"
                           />
                           {isUploading && (
-                            <span className="text-sm text-cyan-400 mt-2 block">Uploading...</span>
+                            <span className="text-sm text-accent mt-2 block">Uploading...</span>
                           )}
                         </div>
                       )}
-                      <p className="text-gray-500 text-xs">Supported: PNG, JPG, JPEG, GIF, BMP, WEBP (max 5MB)</p>
+                      <p className="text-muted text-xs">Supported: PNG, JPG, JPEG, GIF, BMP, WEBP (max 5MB)</p>
                     </div>
                   </div>
                 </div>
@@ -1082,17 +1084,17 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               {/* Pixel Drawing Options */}
               {pageType === 'CustomPixels' && (
                 <div className="mt-4">
-                  <label className="block text-gray-400 text-sm mb-2">16x16 Pixel Grid</label>
+                  <label className="block text-muted text-sm mb-2">16x16 Pixel Grid</label>
                   <div className="flex gap-3 mb-3 items-center">
                     <input type="color" value={pixelDrawColor} onChange={(e: ChangeEvent<HTMLInputElement>) => setPixelDrawColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
-                    <button className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-all hover:bg-red-700" onClick={clearPixelGrid}>Clear</button>
+                    <button className="px-3 py-1.5 bg-bad text-bad-ink rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110" onClick={clearPixelGrid}>Clear</button>
                   </div>
                   <div className="flex justify-center">
-                    <div className="grid grid-cols-16 gap-px bg-gray-700 p-1 rounded w-64 h-64">
+                    <div className="grid grid-cols-16 gap-px bg-surface2 p-1 rounded w-64 h-64">
                       {pixelGrid.map((color: string | null, i: number) => (
                         <div
                           key={i}
-                          className={`bg-gray-900 rounded-sm cursor-pointer ${color ? 'shadow-[0_0_2px_currentColor]' : ''}`}
+                          className={`bg-page rounded-sm cursor-pointer ${color ? 'shadow-[0_0_2px_currentColor]' : ''}`}
                           style={{ backgroundColor: color ? '#' + color : undefined }}
                           onClick={() => handlePixelClick(i)}
                           onContextMenu={(e) => handlePixelRightClick(e, i)}
@@ -1107,18 +1109,18 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               {pageType === 'CustomText' && (
                 <div className="mt-4">
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Text (supports multi-line)</label>
+                    <label className="block text-muted text-sm mb-2">Text (supports multi-line)</label>
                     <textarea 
                       value={customText} 
                       onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setCustomText(e.target.value)} 
                       placeholder="Enter your text...\nNew line = new line" 
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400 resize-none h-24" 
+                      className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-none h-24" 
                       rows={3}
                     />
-                    <small className="text-gray-500 text-xs">Multi-line text supported. First line will scroll if longer than 5 characters.</small>
+                    <small className="text-muted text-xs">Multi-line text supported. First line will scroll if longer than 5 characters.</small>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-400 text-sm mb-2">Y Position (0-15)</label>
+                    <label className="block text-muted text-sm mb-2">Y Position (0-15)</label>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -1138,21 +1140,21 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                         setTextYPosition(clamped);
                         setTextYPositionStr(String(clamped));
                       }}
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+                      className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Text Color</label>
+                      <label className="block text-muted text-sm mb-2">Text Color</label>
                       <input type="color" value={textColor} onChange={(e: ChangeEvent<HTMLInputElement>) => setTextColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                     </div>
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Background Color</label>
+                      <label className="block text-muted text-sm mb-2">Background Color</label>
                       <input type="color" value={textBackgroundColor} onChange={(e: ChangeEvent<HTMLInputElement>) => setTextBackgroundColor(e.target.value)} className="w-full h-11 border-none rounded-lg cursor-pointer bg-none" />
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="flex items-center gap-2 text-gray-400 text-sm">
+                    <label className="flex items-center gap-2 text-muted text-sm">
                       <input 
                         type="checkbox" 
                         checked={textScrollEnabled} 
@@ -1164,7 +1166,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                   </div>
                   {textScrollEnabled && (
                     <div className="mb-4">
-                      <label className="block text-gray-400 text-sm mb-2">Scroll Speed (ms per character)</label>
+                      <label className="block text-muted text-sm mb-2">Scroll Speed (ms per character)</label>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -1184,7 +1186,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                           setTextScrollSpeed(clamped);
                           setTextScrollSpeedStr(String(clamped));
                         }}
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+                        className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       />
                     </div>
                   )}
@@ -1192,9 +1194,9 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
               )}
             </div>
             
-            <div className="p-4 sm:p-6 border-t border-gray-700 flex flex-col sm:flex-row gap-3">
-              <button className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-green-700" onClick={handleSavePage}>Save</button>
-              {editingIndex >= 0 && <button className="w-full sm:w-auto px-6 py-3 bg-red-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-red-700" onClick={handleDeletePage}>Delete</button>}
+            <div className="p-4 sm:p-6 border-t border-line flex flex-col sm:flex-row gap-3">
+              <button className="w-full sm:w-auto px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSavePage}>Save</button>
+              {editingIndex >= 0 && <button className="w-full sm:w-auto px-6 py-3 bg-bad text-bad-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleDeletePage}>Delete</button>}
             </div>
           </div>
         </div>

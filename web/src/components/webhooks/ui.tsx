@@ -1,26 +1,26 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { MdCheck, MdClose } from 'react-icons/md';
 import { API_URL } from '@/ui/types';
+import { btn as uiBtn, btnDanger, btnGhost, btnQuiet, input } from '@/components/ui';
 
-export const inputClass =
-  'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500';
-export const compactInputClass =
-  'w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:border-cyan-500';
+export const inputClass = `${input} text-sm`;
+export const compactInputClass = `${input} !px-2 !py-1 text-sm`;
 export const btn = {
-  primary: 'px-4 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-medium transition-colors disabled:opacity-50',
-  secondary: 'px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors disabled:opacity-50',
-  small: 'px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors disabled:opacity-40',
-  smallPrimary: 'px-3 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-sm transition-colors disabled:opacity-40',
-  smallDanger: 'px-3 py-1 bg-red-600/80 hover:bg-red-600 rounded text-sm transition-colors disabled:opacity-40',
+  primary: `${uiBtn} text-sm`,
+  secondary: `${btnGhost} !text-ink2`,
+  small: btnQuiet,
+  smallPrimary: `${uiBtn} !px-2.5 !py-1 text-xs`,
+  smallDanger: btnDanger,
 };
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-sm text-gray-400 mb-1">{label}</span>
+      <span className="block text-sm text-muted mb-1">{label}</span>
       {children}
-      {hint && <span className="block text-xs text-gray-500 mt-1">{hint}</span>}
+      {hint && <span className="block text-xs text-muted mt-1">{hint}</span>}
     </label>
   );
 }
@@ -38,7 +38,7 @@ export function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-        checked ? 'bg-green-600' : 'bg-gray-600'
+        checked ? 'bg-good text-good-ink' : 'bg-line'
       }`}
     >
       <span
@@ -54,12 +54,12 @@ export function Badge({
   tone = 'gray', children, title,
 }: { tone?: 'gray' | 'green' | 'red' | 'blue' | 'purple' | 'yellow'; children: ReactNode; title?: string }) {
   const tones = {
-    gray: 'bg-gray-700 text-gray-300',
-    green: 'bg-green-600/20 text-green-400',
-    red: 'bg-red-600/20 text-red-400',
-    blue: 'bg-blue-600/20 text-blue-400',
-    purple: 'bg-purple-600/20 text-purple-300',
-    yellow: 'bg-yellow-600/20 text-yellow-400',
+    gray: 'bg-surface2 text-ink2',
+    green: 'bg-good-soft text-good',
+    red: 'bg-bad-soft text-bad',
+    blue: 'bg-info-soft text-info',
+    purple: 'bg-violet-soft text-violet',
+    yellow: 'bg-warn-soft text-warn',
   };
   return (
     <span title={title} className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${tones[tone]}`}>
@@ -113,9 +113,9 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
     <button
       type="button"
       onClick={async () => setState((await copyText(text)) ? 'copied' : 'failed')}
-      className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+      className="px-2 py-0.5 border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink rounded text-xs transition-colors"
     >
-      {state === 'copied' ? 'Copied ✓' : state === 'failed' ? 'Copy failed' : label}
+      {state === 'copied' ? <><MdCheck className="h-3.5 w-3.5" aria-hidden /> Copied</> : state === 'failed' ? 'Copy failed' : label}
     </button>
   );
 }
@@ -147,13 +147,13 @@ export function Modal({
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-2 sm:p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div role="dialog" aria-label={title} className="bg-gray-800 rounded-lg max-w-3xl w-full max-h-[92vh] flex flex-col">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-white">{title}</h3>
-          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-white text-xl leading-none">×</button>
+      <div role="dialog" aria-label={title} className="bg-surface rounded-2xl border border-line shadow-card max-w-3xl w-full max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-6 py-4 border-b border-line flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-ink">{title}</h3>
+          <button onClick={onClose} aria-label="Close" className="text-muted hover:text-ink"><MdClose className="h-6 w-6" aria-hidden /></button>
         </div>
         <div className="px-4 sm:px-6 py-4 overflow-y-auto flex-1">{children}</div>
-        {footer && <div className="px-4 sm:px-6 py-4 border-t border-gray-700 flex justify-end gap-2">{footer}</div>}
+        {footer && <div className="px-4 sm:px-6 py-4 border-t border-line flex justify-end gap-2">{footer}</div>}
       </div>
     </div>
   );

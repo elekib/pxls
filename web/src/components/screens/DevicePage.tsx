@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { connect, disconnect, saveDevice, setBrightness, setScores, setTimezone as saveTimezone } from "@/app/actions/device";
 import { useToast } from "@/components/Toast";
 import type { DeviceConfig } from "@/lib/config/model";
+import { MdCircle } from 'react-icons/md';
 
 export interface DeviceView {
   pixoo_mac: string;
@@ -191,94 +192,94 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
 
   return (
     <div className="max-w-[900px]">
-      <h2 className="text-[30px] font-bold text-cyan-400 mb-6">Device</h2>
+      <h2 className="text-[30px] font-bold text-accent mb-6">Device</h2>
       
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-cyan-600">
-        <h3 className="text-xl font-semibold mb-4 text-cyan-300">Connection</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-accent">
+        <h3 className="text-xl font-semibold mb-4 text-accent">Connection</h3>
         
         <div className="mb-4">
-          <label className="block text-gray-400 text-sm mb-2">Status</label>
+          <label className="block text-muted text-sm mb-2">Status</label>
           <div className="flex items-center gap-3">
-            <span className={`inline-block w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : isManualDisconnect ? 'bg-yellow-500' : 'bg-red-500'}`}></span>
-            <span className="text-white font-medium">
+            <span className={`inline-block w-3 h-3 rounded-full ${isConnected ? 'bg-good text-good-ink animate-pulse' : isManualDisconnect ? 'bg-warn text-warn-ink' : 'bg-bad text-bad-ink'}`}></span>
+            <span className="text-ink font-medium">
               {isConnected ? 'Connected' : isManualDisconnect ? 'Disconnected (Manual)' : 'Disconnected'}
             </span>
           </div>
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-400 text-sm mb-2">Current MAC</label>
-          <code className="block bg-gray-900 px-4 py-3 rounded-lg font-mono text-cyan-400 text-lg">{mac || 'Not configured'}</code>
+          <label className="block text-muted text-sm mb-2">Current MAC</label>
+          <code className="block bg-page px-4 py-3 rounded-lg font-mono text-accent text-lg">{mac || 'Not configured'}</code>
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-400 text-sm mb-2">Set MAC Address</label>
+          <label className="block text-muted text-sm mb-2">Set MAC Address</label>
           <div className="flex flex-col sm:flex-row gap-3">
             <input 
               type="text" 
               value={newMac}
               onChange={(e) => setNewMac(e.target.value)}
               placeholder="AA:BB:CC:DD:EE:FF"
-              className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base font-mono focus:outline-none focus:border-cyan-400"
+              className="flex-1 px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base font-mono hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
             <div className="flex gap-3">
-              <button className="flex-1 sm:flex-none px-6 py-3 bg-green-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-green-700 disabled:opacity-50 disabled:cursor-wait" onClick={handleConnect} disabled={connecting}>{connecting ? 'Connecting...' : 'Connect'}</button>
+              <button className="flex-1 sm:flex-none px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-wait" onClick={handleConnect} disabled={connecting}>{connecting ? 'Connecting...' : 'Connect'}</button>
               {isConnected && (
-                <button className="flex-1 sm:flex-none px-6 py-3 bg-red-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-red-700" onClick={handleDisconnect}>Disconnect</button>
+                <button className="flex-1 sm:flex-none px-6 py-3 bg-bad text-bad-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleDisconnect}>Disconnect</button>
               )}
             </div>
           </div>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-muted text-sm mt-2">
             {isManualDisconnect 
               ? "Disconnected - you can now use the Divoom app. Click Connect to reconnect."
-              : "Find in Divoom app → Device Settings"}
+              : "Find in the Divoom app under Device Settings"}
           </p>
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-yellow-500">
-        <h3 className="text-xl font-semibold mb-4 text-yellow-300">Brightness</h3>
-        <label className="block text-gray-400 text-sm mb-2">Brightness ({deviceConfig.brightness}%)</label>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
+        <h3 className="text-xl font-semibold mb-4 text-warn">Brightness</h3>
+        <label className="block text-muted text-sm mb-2">Brightness ({deviceConfig.brightness}%)</label>
         <input
           type="range"
           min="0"
           max="100"
           value={deviceConfig.brightness}
           onChange={(e) => handleBrightness(parseInt(e.target.value))}
-          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+          className="w-full h-2 bg-surface2 rounded-lg appearance-none cursor-pointer slider"
         />
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <div className="flex justify-between text-xs text-muted mt-1">
           <span>0%</span>
           <span>50%</span>
           <span>100%</span>
         </div>
-        <p className="text-gray-500 text-sm mt-2">Applies to the device as you drag and is saved automatically. In Light mode it also sets the light&apos;s brightness.</p>
+        <p className="text-muted text-sm mt-2">Applies to the device as you drag and is saved automatically. In Light mode it also sets the light&apos;s brightness.</p>
       </div>
 
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-purple-600">
-        <h3 className="text-xl font-semibold mb-4 text-purple-300">Timezone</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-violet">
+        <h3 className="text-xl font-semibold mb-4 text-violet">Timezone</h3>
         <div className="mb-4">
           <input 
             type="text" 
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
             placeholder="America/New_York"
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+            className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           />
-          <p className="text-gray-500 text-sm mt-2">e.g., America/New_York, Europe/London, Asia/Tokyo</p>
+          <p className="text-muted text-sm mt-2">e.g., America/New_York, Europe/London, Asia/Tokyo</p>
         </div>
-        <button className="px-6 py-3 bg-purple-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-purple-700" onClick={handleSaveTimezone}>Save Timezone</button>
+        <button className="px-6 py-3 bg-violet text-violet-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveTimezone}>Save Timezone</button>
       </div>
       
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-orange-600">
-        <h3 className="text-xl font-semibold mb-4 text-orange-300">Device Configuration</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
+        <h3 className="text-xl font-semibold mb-4 text-warn">Device Configuration</h3>
         
         <div className="mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Display Mode</label>
+          <label className="block text-muted text-sm mb-2">Display Mode</label>
           <select 
             value={deviceConfig.light_mode}
             onChange={(e) => setDeviceConfig(prev => ({ ...prev, light_mode: e.target.value }))}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-cyan-400"
+            className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="custom">Custom Pages</option>
             <option value="env">Environment Mode</option>
@@ -287,25 +288,25 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
             <option value="score">Score Mode</option>
             <option value="user">User Mode</option>
           </select>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-muted text-sm mt-2">
             {deviceConfig.light_mode === 'custom' 
               ? "Use your custom pages and designs" 
               : "Use Divoom's built-in display modes"}
           </p>
         </div>
         {deviceConfig.light_mode === 'env' && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-green-600">
-            <h3 className="text-xl font-semibold mb-4 text-green-300">Environment Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-good">
+            <h3 className="text-xl font-semibold mb-4 text-good">Environment Mode Configuration</h3>
             
             <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Clock Design</label>
+              <label className="block text-muted text-sm mb-2">Clock Design</label>
               <select 
                 value={deviceConfig.environment_config.clock_design}
                 onChange={(e) => setDeviceConfig(prev => ({
                   ...prev,
                   environment_config: { ...prev.environment_config, clock_design: e.target.value }
                 }))}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-green-400"
+                className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <option value="analog1">Analog 1</option>
                 <option value="analog2">Analog 2</option>
@@ -317,7 +318,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Display Options</label>
+              <label className="block text-muted text-sm mb-2">Display Options</label>
               <div className="space-y-2">
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -329,7 +330,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     }))}
                     className="mr-2"
                   />
-                  <span className="text-white">Show Cloud Channel</span>
+                  <span className="text-ink">Show Cloud Channel</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -341,7 +342,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     }))}
                     className="mr-2"
                   />
-                  <span className="text-white">Show Weather</span>
+                  <span className="text-ink">Show Weather</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -353,7 +354,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     }))}
                     className="mr-2"
                   />
-                  <span className="text-white">Show Temperature</span>
+                  <span className="text-ink">Show Temperature</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -365,13 +366,13 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     }))}
                     className="mr-2"
                   />
-                  <span className="text-white">Show Date</span>
+                  <span className="text-ink">Show Date</span>
                 </label>
               </div>
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Accent Color</label>
+              <label className="block text-muted text-sm mb-2">Accent Color</label>
               <input 
                 type="color" 
                 value={`#${deviceConfig.environment_config.color.map(c => c.toString(16).padStart(2, '0')).join('')}`}
@@ -387,18 +388,18 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     environment_config: { ...prev.environment_config, color: color as [number, number, number] }
                   }));
                 }}
-                className="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                className="w-full h-10 bg-surface border border-line rounded-lg cursor-pointer"
               />
             </div>
           </div>
         )}
 
         {deviceConfig.light_mode === 'light' && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-yellow-600">
-            <h3 className="text-xl font-semibold mb-4 text-yellow-300">Light Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
+            <h3 className="text-xl font-semibold mb-4 text-warn">Light Mode Configuration</h3>
             
             <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Light Color</label>
+              <label className="block text-muted text-sm mb-2">Light Color</label>
               <input 
                 type="color" 
                 value={`#${deviceConfig.light_config.color.map(c => c.toString(16).padStart(2, '0')).join('')}`}
@@ -414,19 +415,19 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     light_config: { ...prev.light_config, color: color as [number, number, number] }
                   }));
                 }}
-                className="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                className="w-full h-10 bg-surface border border-line rounded-lg cursor-pointer"
               />
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Effect Mode</label>
+              <label className="block text-muted text-sm mb-2">Effect Mode</label>
               <select 
                 value={deviceConfig.light_config.effect_mode}
                 onChange={(e) => setDeviceConfig(prev => ({
                   ...prev,
                   light_config: { ...prev.light_config, effect_mode: parseInt(e.target.value) }
                 }))}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-yellow-400"
+                className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <option value="3">Fly</option>
                 <option value="0">Normal</option>
@@ -447,25 +448,25 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                   }))}
                   className="mr-2"
                 />
-                <span className="text-white">Light On</span>
+                <span className="text-ink">Light On</span>
               </label>
             </div>
           </div>
         )}
 
         {deviceConfig.light_mode === 'music' && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-indigo-600">
-            <h3 className="text-xl font-semibold mb-4 text-indigo-300">Music Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-violet">
+            <h3 className="text-xl font-semibold mb-4 text-violet">Music Mode Configuration</h3>
             
             <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">Visualization Style</label>
+              <label className="block text-muted text-sm mb-2">Visualization Style</label>
               <select 
                 value={deviceConfig.music_config.mode}
                 onChange={(e) => setDeviceConfig(prev => ({
                   ...prev,
                   music_config: { ...prev.music_config, mode: e.target.value }
                 }))}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:outline-none focus:border-indigo-400"
+                className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink text-base hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <option value="bottom_bars">Bottom Bars</option>
                 <option value="center_bars">Center Bars</option>
@@ -481,23 +482,23 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                 <option value="side_bars">Side Bars</option>
               </select>
             </div>
-            <p className="text-gray-400 text-sm">Music visualization reacts to ambient sound</p>
+            <p className="text-muted text-sm">Music visualization reacts to ambient sound</p>
           </div>
         )}
 
         {deviceConfig.light_mode === 'score' && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-blue-600">
-            <h3 className="text-xl font-semibold mb-4 text-blue-300">Score Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-info">
+            <h3 className="text-xl font-semibold mb-4 text-info">Score Mode Configuration</h3>
             
             {/* Same controls as the Tools page scoreboard. */}
             <div className="grid grid-cols-2 gap-6 mb-4">
               {/* Red Team */}
-              <div className="bg-gray-900 rounded-lg p-4">
-                <label className="block text-red-400 text-sm mb-2 font-semibold">🔴 Red Team</label>
+              <div className="bg-page rounded-lg p-4">
+                <label className="block text-bad text-sm mb-2 font-semibold"><MdCircle className="inline h-3 w-3 mr-1 align-baseline" aria-hidden />Red Team</label>
                 <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => updateScore('red', -1)}
-                    className="w-12 h-12 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-12 h-12 rounded-lg border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink text-ink text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     -
                   </button>
@@ -510,11 +511,11 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     onChange={(e) => typeScore('red', e.target.value)}
                     onFocus={(e) => e.target.select()}
                     onBlur={() => setScoreText(prev => ({ ...prev, red: null }))}
-                    className="w-20 h-16 text-center bg-gray-800 rounded-lg text-3xl font-bold text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-20 h-16 text-center bg-surface rounded-2xl border border-line shadow-card text-3xl font-bold text-bad focus:outline-none focus:ring-2 focus:ring-bad"
                   />
                   <button
                     onClick={() => updateScore('red', 1)}
-                    className="w-12 h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-12 h-12 rounded-lg bg-bad text-bad-ink hover:brightness-110 text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
@@ -522,12 +523,12 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
               </div>
 
               {/* Blue Team */}
-              <div className="bg-gray-900 rounded-lg p-4">
-                <label className="block text-blue-400 text-sm mb-2 font-semibold">🔵 Blue Team</label>
+              <div className="bg-page rounded-lg p-4">
+                <label className="block text-info text-sm mb-2 font-semibold"><MdCircle className="inline h-3 w-3 mr-1 align-baseline" aria-hidden />Blue Team</label>
                 <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => updateScore('blue', -1)}
-                    className="w-12 h-12 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-12 h-12 rounded-lg border border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink text-ink text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     -
                   </button>
@@ -540,11 +541,11 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
                     onChange={(e) => typeScore('blue', e.target.value)}
                     onFocus={(e) => e.target.select()}
                     onBlur={() => setScoreText(prev => ({ ...prev, blue: null }))}
-                    className="w-20 h-16 text-center bg-gray-800 rounded-lg text-3xl font-bold text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-20 h-16 text-center bg-surface rounded-2xl border border-line shadow-card text-3xl font-bold text-info focus:outline-none focus:ring-2 focus:ring-info"
                   />
                   <button
                     onClick={() => updateScore('blue', 1)}
-                    className="w-12 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-12 h-12 rounded-lg bg-info text-info-ink hover:brightness-110 text-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
@@ -554,24 +555,24 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
             <div className="flex gap-3 mb-4">
               <button
                 onClick={() => updateScore('reset', 0)}
-                className="px-4 py-3 rounded-lg font-semibold transition-all bg-gray-600 hover:bg-gray-700 text-white"
+                className="px-4 py-3 rounded-lg font-semibold transition-all bg-line hover:bg-surface2 text-ink"
               >
                 Reset
               </button>
             </div>
-            <p className="text-gray-400 text-sm">Keep track of game scores. Click +/- or type a score (0-999); changes save automatically and show right away while Score mode is on.</p>
+            <p className="text-muted text-sm">Keep track of game scores. Click +/- or type a score (0-999); changes save automatically and show right away while Score mode is on.</p>
           </div>
         )}
 
         {deviceConfig.light_mode === 'user' && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-purple-600">
-            <h3 className="text-xl font-semibold mb-4 text-purple-300">User Mode Configuration</h3>
-            <p className="text-gray-400">User mode uses custom GIFs uploaded to device through Divoom app.</p>
-            <p className="text-gray-400 text-sm mt-2">Note: Configure GIFs through Divoom mobile app, then select User mode here.</p>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-violet">
+            <h3 className="text-xl font-semibold mb-4 text-violet">User Mode Configuration</h3>
+            <p className="text-muted">User mode uses custom GIFs uploaded to device through Divoom app.</p>
+            <p className="text-muted text-sm mt-2">Note: Configure GIFs through Divoom mobile app, then select User mode here.</p>
           </div>
         )}
 
-        <button className="px-6 py-3 bg-orange-600 text-white rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-orange-700" onClick={handleSaveDeviceConfig}>Save Device Config</button>
+        <button className="px-6 py-3 bg-warn text-warn-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveDeviceConfig}>Save Device Config</button>
       </div>
     </div>
   );

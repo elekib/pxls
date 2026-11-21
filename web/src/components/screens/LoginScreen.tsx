@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const inputClass =
-  "w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400";
+  "w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export function LoginScreen({ notice }: { notice?: string | null }) {
   const [username, setUsername] = useState("");
@@ -35,11 +35,11 @@ export function LoginScreen({ notice }: { notice?: string | null }) {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      <form onSubmit={submit} className="w-full max-w-sm bg-gray-800 border border-gray-700 rounded-xl p-6 space-y-4">
+    <div className="flex items-center justify-center min-h-screen bg-page text-ink p-4">
+      <form onSubmit={submit} className="w-full max-w-sm bg-surface border border-line rounded-xl p-6 space-y-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/pxls-logo.svg" alt="pxls" className="h-10 w-auto mx-auto" />
-        {notice && <p className="text-sm text-amber-300 text-center">{notice}</p>}
+        {notice && <p className="text-sm text-warn text-center">{notice}</p>}
         <input
           type="text"
           autoFocus
@@ -59,15 +59,15 @@ export function LoginScreen({ notice }: { notice?: string | null }) {
           placeholder="Password"
           className={inputClass}
         />
-        {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+        {error && <p className="text-sm text-bad" role="alert">{error}</p>}
         <button
           type="submit"
           disabled={busy || !username.trim() || !password}
-          className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-lg font-medium"
+          className="w-full py-3 bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50 rounded-lg font-medium"
         >
           {busy ? "Signing in..." : "Sign in"}
         </button>
-        <p className="text-xs text-gray-500 text-center">Accounts are created by an administrator.</p>
+        <p className="text-xs text-muted text-center">Accounts are created by an administrator.</p>
       </form>
     </div>
   );

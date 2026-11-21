@@ -173,19 +173,19 @@ export interface WebhookConfig {
 }
 
 export const typeLabels: Record<string, string> = {
-  'ClockWeather': '🕐 Clock',
-  'SystemStats': '💻 System Stats',
-  'GpuStats': '🎮 GPU Stats',
-  'Temps': '🌡️ Temps',
-  'CustomScript': '📜 Script',
-  'ImageUpload': '🖼️ Image',
-  'CustomPixels': '🎨 Pixels',
-  'CustomText': '📝 Text',
-  'DivoomEnvironment': '⌚ Divoom Clock',
-  'DivoomLight': '💡 Divoom Light',
-  'DivoomMusic': '🎵 Divoom Music',
-  'DivoomUser': '🖼️ Divoom GIFs',
-  'DivoomScore': '🏆 Divoom Score'
+  'ClockWeather': 'Clock',
+  'SystemStats': 'System Stats',
+  'GpuStats': 'GPU Stats',
+  'Temps': 'Temps',
+  'CustomScript': 'Script',
+  'ImageUpload': 'Image',
+  'CustomPixels': 'Pixels',
+  'CustomText': 'Text',
+  'DivoomEnvironment': 'Divoom Clock',
+  'DivoomLight': 'Divoom Light',
+  'DivoomMusic': 'Divoom Music',
+  'DivoomUser': 'Divoom GIFs',
+  'DivoomScore': 'Divoom Score'
 };
 
 // Same-origin: the UI and the API are served by the same Next.js app.

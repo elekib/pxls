@@ -2,17 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark theme configuration */
-@layer base {
-  html {
-    color-scheme: dark;
-  }
+/* ---------- tokens ----------
+   Layout and token structure follow Barkat; the colours are pxls's own blues. Light is the default. Dark follows the system
+   unless the viewer picked Light or Dark, which sets data-theme on <html>.
+   Utilities (bg-surface, text-ink, ...) read these, so no `dark:` variants. */
+:root {
+  color-scheme: light;
+  --page: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #eef0f3;
+  --ink: #111827;
+  --ink-2: #374151;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --axis: #d1d5db;
+  --ring: rgba(17, 24, 39, 0.1);
+  --shadow: 0 1px 2px rgba(17, 24, 39, 0.05), 0 6px 18px rgba(17, 24, 39, 0.05);
 
-  body {
-    background-color: #111827;
-    color: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --accent: #0e7490;
+  --accent-ink: #ffffff;
+  --good: #15803d;
+  --good-ink: #ffffff;
+  --good-soft: #dcfce7;
+  --bad: #dc2626;
+  --bad-ink: #ffffff;
+  --bad-soft: #fee2e2;
+  --warn: #b45309;
+  --warn-ink: #ffffff;
+  --warn-soft: #fef3c7;
+  --info: #2563eb;
+  --info-ink: #ffffff;
+  --info-soft: #dbeafe;
+  --violet: #7c3aed;
+  --violet-ink: #ffffff;
+  --violet-soft: #ede9fe;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #111827;
+    --surface: #1f2937;
+    --surface-2: #374151;
+    --ink: #f9fafb;
+    --ink-2: #d1d5db;
+    --muted: #9ca3af;
+    --line: #374151;
+    --axis: #4b5563;
+    --ring: rgba(255, 255, 255, 0.1);
+    --shadow: none;
+
+    --accent: #22d3ee;
+    --accent-ink: #083344;
+    --good: #4ade80;
+    --good-ink: #052e16;
+    --good-soft: #14301f;
+    --bad: #f87171;
+    --bad-ink: #450a0a;
+    --bad-soft: #3b1a1d;
+    --warn: #fbbf24;
+    --warn-ink: #451a03;
+    --warn-soft: #3a2f12;
+    --info: #60a5fa;
+    --info-ink: #172554;
+    --info-soft: #172a4a;
+    --violet: #c084fc;
+    --violet-ink: #2e1065;
+    --violet-soft: #2e1f4a;
   }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #111827;
+  --surface: #1f2937;
+  --surface-2: #374151;
+  --ink: #f9fafb;
+  --ink-2: #d1d5db;
+  --muted: #9ca3af;
+  --line: #374151;
+  --axis: #4b5563;
+  --ring: rgba(255, 255, 255, 0.1);
+  --shadow: none;
+
+  --accent: #22d3ee;
+  --accent-ink: #083344;
+  --good: #4ade80;
+  --good-ink: #052e16;
+  --good-soft: #14301f;
+  --bad: #f87171;
+  --bad-ink: #450a0a;
+  --bad-soft: #3b1a1d;
+  --warn: #fbbf24;
+  --warn-ink: #451a03;
+  --warn-soft: #3a2f12;
+  --info: #60a5fa;
+  --info-ink: #172554;
+  --info-soft: #172a4a;
+  --violet: #c084fc;
+  --violet-ink: #2e1065;
+  --violet-soft: #2e1f4a;
+}
+
+@layer base {
+  html { background: var(--page); }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* One chevron for every <select>: the native arrow is cramped against the border. */
+  select {
+    appearance: none;
+    padding-right: 2.25rem;
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    background-size: 1.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238b93a1'%3E%3Cpath d='M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z'/%3E%3C/svg%3E");
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 
 /* Custom utility classes for grid-cols-16 */

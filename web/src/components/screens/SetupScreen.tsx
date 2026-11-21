@@ -4,7 +4,7 @@ import { useState } from "react";
 import { setup } from "@/app/actions/auth";
 
 const inputClass =
-  "w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400";
+  "w-full px-4 py-3 bg-surface border border-line rounded-lg text-ink hover:border-axis focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /** First run: create the admin account with the one-time code printed in the server log. */
 export function SetupScreen() {
@@ -33,15 +33,15 @@ export function SetupScreen() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      <form onSubmit={submit} className="w-full max-w-md bg-gray-800 border border-gray-700 rounded-xl p-6 space-y-4">
+    <div className="flex items-center justify-center min-h-screen bg-page text-ink p-4">
+      <form onSubmit={submit} className="w-full max-w-md bg-surface border border-line rounded-xl p-6 space-y-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/pxls-logo.svg" alt="pxls" className="h-10 w-auto mx-auto" />
         <h1 className="text-xl font-semibold text-center">Create the admin account</h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-muted">
           pxls has no accounts yet. To prove you control this server, enter the one-time setup code from its log:
         </p>
-        <pre className="bg-gray-900 rounded-lg p-3 text-xs text-cyan-300 overflow-x-auto">docker logs pxls 2&gt;&amp;1 | grep -i &quot;setup code&quot;</pre>
+        <pre className="bg-page rounded-lg p-3 text-xs text-accent overflow-x-auto">docker logs pxls 2&gt;&amp;1 | grep -i &quot;setup code&quot;</pre>
         <input
           type="text"
           autoFocus
@@ -79,13 +79,13 @@ export function SetupScreen() {
           placeholder="Repeat password"
           className={inputClass}
         />
-        {tooShort && <p className="text-sm text-amber-300">Password must be at least 12 characters ({password.length}/12).</p>}
-        {mismatch && <p className="text-sm text-amber-300">Passwords do not match.</p>}
-        {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+        {tooShort && <p className="text-sm text-warn">Password must be at least 12 characters ({password.length}/12).</p>}
+        {mismatch && <p className="text-sm text-warn">Passwords do not match.</p>}
+        {error && <p className="text-sm text-bad" role="alert">{error}</p>}
         <button
           type="submit"
           disabled={busy || !code.trim() || !username.trim() || password.length < 12 || mismatch || !confirm}
-          className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-lg font-medium"
+          className="w-full py-3 bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50 rounded-lg font-medium"
         >
           {busy ? "Creating..." : "Create admin and sign in"}
         </button>
