@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { accountRequest } from '@/ui/api';
+import { MdMonitorHeart } from 'react-icons/md';
 
 interface Props {
   onNotify: (message: string, type?: 'success' | 'error') => void;
@@ -81,11 +82,24 @@ export function DiagnosticsPage({ onNotify }: Props) {
   if (enabled === null) return <div className="text-muted">Loading...</div>;
   if (!enabled) {
     return (
-      <div className="max-w-2xl space-y-3">
+      <div className="space-y-6">
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
-        <p className="text-ink2">
-          Diagnostics are off. Add <code className="bg-surface2 px-1 rounded">PXLS_ENABLE_DEBUG=1</code> to <code className="bg-surface2 px-1 rounded">.env</code> and restart pxls.
-        </p>
+        <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-line bg-surface px-6 py-12 text-center shadow-card">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-surface2 text-muted" aria-hidden>
+            <MdMonitorHeart className="h-7 w-7" />
+          </span>
+          <h3 className="mt-4 text-lg font-semibold">Diagnostics are off</h3>
+          <p className="mt-1 text-sm text-ink2">
+            Raw device commands are disabled by default. Turn them on to probe the display.
+          </p>
+          <ol className="mt-5 space-y-2 text-left text-sm text-ink2">
+            <li>
+              1. Add <code className="rounded bg-surface2 px-1.5 py-0.5 font-mono text-xs text-ink">PXLS_ENABLE_DEBUG=1</code> to{' '}
+              <code className="rounded bg-surface2 px-1.5 py-0.5 font-mono text-xs text-ink">.env</code>
+            </li>
+            <li>2. Restart pxls</li>
+          </ol>
+        </div>
       </div>
     );
   }
