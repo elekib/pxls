@@ -84,12 +84,12 @@ export function DiagnosticsPage({ onNotify }: Props) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
-        <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-line bg-surface px-6 py-12 text-center shadow-card">
+        <div className="flex w-full flex-col items-center rounded-2xl border border-line bg-surface px-6 py-16 text-center shadow-card">
           <span className="grid h-14 w-14 place-items-center rounded-full bg-surface2 text-muted" aria-hidden>
             <MdMonitorHeart className="h-7 w-7" />
           </span>
           <h3 className="mt-4 text-lg font-semibold">Diagnostics are off</h3>
-          <p className="mt-1 text-sm text-ink2">
+          <p className="mt-1 max-w-md text-sm text-ink2">
             Raw device commands are disabled by default. Turn them on to probe the display.
           </p>
           <ol className="mt-5 space-y-2 text-left text-sm text-ink2">
