@@ -81,7 +81,7 @@ export function DiagnosticsPage({ onNotify }: Props) {
   if (enabled === null) return <div className="text-muted">Loading...</div>;
   if (!enabled) {
     return (
-      <div className="max-w-2xl space-y-3">
+      <div className="space-y-3">
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
         <p className="text-ink2">
           Diagnostics are off. Add <code className="bg-surface2 px-1 rounded">PXLS_ENABLE_DEBUG=1</code> to <code className="bg-surface2 px-1 rounded">.env</code> and restart pxls.
@@ -91,7 +91,7 @@ export function DiagnosticsPage({ onNotify }: Props) {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
         <p className="text-sm text-muted mt-1">
