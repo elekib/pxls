@@ -561,7 +561,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   };
 
   return (
-    <div className="max-w-[900px]">
+    <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <h2 className="text-2xl sm:text-[30px] font-bold text-accent">Pages</h2>
         <button className="w-full sm:w-auto px-6 py-3 bg-good text-good-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={() => openEditor()}>+ Add Page</button>

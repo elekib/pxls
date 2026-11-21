@@ -105,7 +105,7 @@ export function DiagnosticsPage({ onNotify }: Props) {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">Diagnostics</h2>
         <p className="text-sm text-muted mt-1">

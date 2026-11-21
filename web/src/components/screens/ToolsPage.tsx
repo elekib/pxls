@@ -282,10 +282,10 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
     );
   const canStart = isConnected && !toolStatus.active;
   const startButton = (enabled: boolean, color: string) =>
-    enabled ? `${color} text-ink` : 'bg-surface2 text-muted cursor-not-allowed';
+    enabled ? color : 'bg-surface2 text-muted cursor-not-allowed';
 
   return (
-    <div className="max-w-[900px]">
+    <div>
       <h2 className="text-[30px] font-bold text-accent mb-6">Tools</h2>
 
       {/* Countdown Section */}

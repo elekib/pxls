@@ -191,7 +191,7 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
   const mac = config.pixoo_mac || '';
 
   return (
-    <div className="max-w-[900px]">
+    <div>
       <h2 className="text-[30px] font-bold text-accent mb-6">Device</h2>
       
       <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-accent">
