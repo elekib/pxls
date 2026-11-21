@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { accountRequest } from '@/ui/api';
 import { MdMonitorHeart } from 'react-icons/md';
+import { Loading } from '@/components/Loading';
 
 interface Props {
   onNotify: (message: string, type?: 'success' | 'error') => void;
@@ -79,11 +80,11 @@ export function DiagnosticsPage({ onNotify }: Props) {
     .map((e) => `${e.cmd} ${e.args} (${e.hex}): ${e.note || '-'}`)
     .join('\n');
 
-  if (enabled === null) return <div className="text-muted">Loading...</div>;
+  if (enabled === null) return <Loading label="Loading diagnostics…" />;
   if (!enabled) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold">Diagnostics</h2>
+        <h1 className="text-3xl font-bold">Diagnostics</h1>
         <div className="flex w-full flex-col items-center rounded-2xl border border-line bg-surface px-6 py-16 text-center shadow-card">
           <span className="grid h-14 w-14 place-items-center rounded-full bg-surface2 text-muted" aria-hidden>
             <MdMonitorHeart className="h-7 w-7" />
@@ -107,7 +108,7 @@ export function DiagnosticsPage({ onNotify }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold">Diagnostics</h2>
+        <h1 className="text-3xl font-bold">Diagnostics</h1>
         <p className="text-sm text-muted mt-1">
           Sends raw commands to the connected device (framing and checksum are added for you). Unknown commands may do
           unexpected things. While you probe, the display loop is paused for two minutes after each send.

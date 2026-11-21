@@ -87,7 +87,7 @@ export function SetupScreen() {
           disabled={busy || !code.trim() || !username.trim() || password.length < 12 || mismatch || !confirm}
           className="w-full py-3 bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50 rounded-lg font-medium"
         >
-          {busy ? "Creating..." : "Create admin and sign in"}
+          {busy ? "Creating…" : "Create admin and sign in"}
         </button>
       </form>
     </div>

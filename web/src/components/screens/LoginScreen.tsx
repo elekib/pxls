@@ -65,7 +65,7 @@ export function LoginScreen({ notice }: { notice?: string | null }) {
           disabled={busy || !username.trim() || !password}
           className="w-full py-3 bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50 rounded-lg font-medium"
         >
-          {busy ? "Signing in..." : "Sign in"}
+          {busy ? "Signing in…" : "Sign in"}
         </button>
         <p className="text-xs text-muted text-center">Accounts are created by an administrator.</p>
       </form>
