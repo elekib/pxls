@@ -192,10 +192,10 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
 
   return (
     <div>
-      <h2 className="text-[30px] font-bold text-accent mb-6">Device</h2>
+      <h1 className="text-3xl font-bold mb-6">Device</h1>
       
-      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-accent">
-        <h3 className="text-xl font-semibold mb-4 text-accent">Connection</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-4">Connection</h3>
         
         <div className="mb-4">
           <label className="block text-muted text-sm mb-2">Status</label>
@@ -237,8 +237,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         </div>
       </div>
 
-      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
-        <h3 className="text-xl font-semibold mb-4 text-warn">Brightness</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-4">Brightness</h3>
         <label className="block text-muted text-sm mb-2">Brightness ({deviceConfig.brightness}%)</label>
         <input
           type="range"
@@ -256,8 +256,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         <p className="text-muted text-sm mt-2">Applies to the device as you drag and is saved automatically. In Light mode it also sets the light&apos;s brightness.</p>
       </div>
 
-      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-violet">
-        <h3 className="text-xl font-semibold mb-4 text-violet">Timezone</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-4">Timezone</h3>
         <div className="mb-4">
           <input 
             type="text" 
@@ -271,8 +271,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         <button className="px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={handleSaveTimezone}>Save Timezone</button>
       </div>
       
-      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
-        <h3 className="text-xl font-semibold mb-4 text-warn">Device Configuration</h3>
+      <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-4">Device Configuration</h3>
         
         <div className="mb-6">
           <label className="block text-muted text-sm mb-2">Display Mode</label>
@@ -295,8 +295,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
           </p>
         </div>
         {deviceConfig.light_mode === 'env' && (
-          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-good">
-            <h3 className="text-xl font-semibold mb-4 text-good">Environment Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+            <h3 className="text-xl font-semibold mb-4">Environment Mode Configuration</h3>
             
             <div className="mb-4">
               <label className="block text-muted text-sm mb-2">Clock Design</label>
@@ -395,8 +395,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         )}
 
         {deviceConfig.light_mode === 'light' && (
-          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-warn">
-            <h3 className="text-xl font-semibold mb-4 text-warn">Light Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+            <h3 className="text-xl font-semibold mb-4">Light Mode Configuration</h3>
             
             <div className="mb-4">
               <label className="block text-muted text-sm mb-2">Light Color</label>
@@ -455,8 +455,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         )}
 
         {deviceConfig.light_mode === 'music' && (
-          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-violet">
-            <h3 className="text-xl font-semibold mb-4 text-violet">Music Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+            <h3 className="text-xl font-semibold mb-4">Music Mode Configuration</h3>
             
             <div className="mb-4">
               <label className="block text-muted text-sm mb-2">Visualization Style</label>
@@ -487,8 +487,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         )}
 
         {deviceConfig.light_mode === 'score' && (
-          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-info">
-            <h3 className="text-xl font-semibold mb-4 text-info">Score Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+            <h3 className="text-xl font-semibold mb-4">Score Mode Configuration</h3>
             
             {/* Same controls as the Tools page scoreboard. */}
             <div className="grid grid-cols-2 gap-6 mb-4">
@@ -565,8 +565,8 @@ export function DevicePage({ config, connected, manualDisconnect }: { config: De
         )}
 
         {deviceConfig.light_mode === 'user' && (
-          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 border-violet">
-            <h3 className="text-xl font-semibold mb-4 text-violet">User Mode Configuration</h3>
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-6 mb-6">
+            <h3 className="text-xl font-semibold mb-4">User Mode Configuration</h3>
             <p className="text-muted">User mode uses custom GIFs uploaded to device through Divoom app.</p>
             <p className="text-muted text-sm mt-2">Note: Configure GIFs through Divoom mobile app, then select User mode here.</p>
           </div>

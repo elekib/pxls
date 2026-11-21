@@ -258,8 +258,8 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
   };
 
   const isRunning = (kind: ToolKind) => toolStatus.kind === kind;
-  const cardClass = (kind: ToolKind, border: string) =>
-    `bg-surface rounded-2xl border border-line shadow-card p-6 mb-6 border-l-4 ${isRunning(kind) ? 'border-warn ring-1 ring-warn' : border}`;
+  const cardClass = (kind: ToolKind) =>
+    `bg-surface rounded-2xl border shadow-card p-6 mb-6 ${isRunning(kind) ? 'border-warn ring-1 ring-warn' : 'border-line'}`;
   // Shown at the top of the running tool's card, so Stop sits next to its timer.
   const runningBanner = (kind: ToolKind) =>
     isRunning(kind) && (
@@ -286,11 +286,11 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
 
   return (
     <div>
-      <h2 className="text-[30px] font-bold text-accent mb-6">Tools</h2>
+      <h1 className="text-3xl font-bold mb-6">Tools</h1>
 
       {/* Countdown Section */}
-      <div className={cardClass('countdown', 'border-info')}>
-        <h3 className="text-xl font-semibold mb-4 text-info">Countdown Timer</h3>
+      <div className={cardClass('countdown')}>
+        <h3 className="text-xl font-semibold mb-4">Countdown Timer</h3>
         {runningBanner('countdown')}
 
         {/* Presets: start, edit and save in one place */}
@@ -399,8 +399,8 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
       </div>
 
       {/* Scoreboard */}
-      <div className={cardClass('scoreboard', 'border-bad')}>
-        <h3 className="text-xl font-semibold mb-4 text-bad">Scoreboard</h3>
+      <div className={cardClass('scoreboard')}>
+        <h3 className="text-xl font-semibold mb-4">Scoreboard</h3>
         {runningBanner('scoreboard')}
         <p className="text-muted text-sm mb-4">
           Display a scoreboard with Red vs Blue scores. Click "Start Scoreboard" to activate, then use +/- or type a score to update it. Use Stop above to end it.
@@ -498,8 +498,8 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
       </div>
 
       {/* Sound Detector */}
-      <div className={cardClass('sound_detector', 'border-good')}>
-        <h3 className="text-xl font-semibold mb-4 text-good">Sound Detector</h3>
+      <div className={cardClass('sound_detector')}>
+        <h3 className="text-xl font-semibold mb-4">Sound Detector</h3>
         {runningBanner('sound_detector')}
         <p className="text-muted text-sm mb-4">
           Display a real-time noise meter on the Pixoo. Runs for 5 minutes or until stopped.

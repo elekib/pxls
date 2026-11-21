@@ -3,6 +3,7 @@
 import { WebhookCard } from '@/components/webhooks/WebhookCard';
 import { WebhookToolbar } from '@/components/webhooks/WebhookToolbar';
 import { useWebhooks } from '@/ui/webhooks/useWebhooks';
+import { Loading } from '@/components/Loading';
 
 interface WebhooksPageProps {
   onNotify: (message: string, type?: 'success' | 'error') => void;
@@ -27,7 +28,7 @@ export function WebhooksPage({ onNotify }: WebhooksPageProps) {
         </p>
 
         {store.loading ? (
-          <div className="text-center py-8 text-muted">Loading webhooks…</div>
+          <Loading label="Loading webhooks…" />
         ) : store.webhooks.length === 0 ? (
           <div className="text-center py-8 text-muted">No webhooks yet. Use “Add webhook…” and pick a preset to get started.</div>
         ) : (

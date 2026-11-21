@@ -8,6 +8,7 @@ import { prettyJson, presetFor } from '@/ui/webhooks/schema';
 import type { DeliveryResult, Webhook, WebhookEvent } from '@/ui/webhooks/types';
 import { sortAlpha } from '@/ui/sort';
 import { MdChevronRight, MdExpandMore } from 'react-icons/md';
+import { Loading } from '@/components/Loading';
 
 interface WebhookEventsPageProps {
   onNotify: (message: string, type?: 'success' | 'error') => void;
@@ -215,7 +216,7 @@ export function WebhookEventsPage({ onNotify }: WebhookEventsPageProps) {
 
       <div className="bg-surface rounded-2xl border border-line shadow-card p-4 sm:p-6">
         {loading ? (
-          <div className="text-center py-8 text-muted">Loading events…</div>
+          <Loading label="Loading events…" />
         ) : visible.length === 0 ? (
           <div className="text-center py-8 text-muted">
             {events.length === 0 ? 'No events logged yet. Send a test above, or trigger one from the service.' : 'No events match this filter.'}

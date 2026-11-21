@@ -9,6 +9,7 @@ import { typeIcons } from '@/ui/typeIcons';
 import { MdClose } from 'react-icons/md';
 import { BeszelLogin } from './BeszelLogin';
 import { DivoomPageFields } from './DivoomPageFields';
+import { Loading } from '@/components/Loading';
 import {
   parseDuration,
   buildDivoomPayload,
@@ -563,7 +564,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h2 className="text-2xl sm:text-[30px] font-bold text-accent">Pages</h2>
+        <h1 className="text-3xl font-bold">Pages</h1>
         <button className="w-full sm:w-auto px-6 py-3 bg-accent text-accent-ink rounded-lg text-base font-semibold cursor-pointer transition-all hover:brightness-110" onClick={() => openEditor()}>+ Add Page</button>
       </div>
 
@@ -682,7 +683,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
         <div className="fixed inset-0 bg-black/50 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowEditor(false); }}>
           <div className="bg-surface rounded-none sm:rounded-xl w-full max-w-[700px] max-h-[100vh] sm:max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-4 sm:p-6 border-b border-line flex justify-between items-center">
-              <h3 className="text-xl sm:text-2xl font-bold text-accent">{editingIndex >= 0 ? 'Edit Page' : 'New Page'}</h3>
+              <h3 className="text-xl sm:text-2xl font-bold">{editingIndex >= 0 ? 'Edit Page' : 'New Page'}</h3>
               <button className="bg-none border-none text-muted text-2xl cursor-pointer hover:text-ink" onClick={() => setShowEditor(false)}>&times;</button>
             </div>
             
@@ -1071,7 +1072,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                             className="block w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-ink hover:file:brightness-110 file:cursor-pointer disabled:opacity-50"
                           />
                           {isUploading && (
-                            <span className="text-sm text-accent mt-2 block">Uploading...</span>
+                            <Loading label="Uploading…" className="mt-2 justify-start" />
                           )}
                         </div>
                       )}
