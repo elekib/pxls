@@ -1072,7 +1072,7 @@ export function PagesPage({ config, onConfigUpdate, onNotify }: PagesPageProps) 
                             className="block w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-ink hover:file:brightness-110 file:cursor-pointer disabled:opacity-50"
                           />
                           {isUploading && (
-                            <Loading label="Uploading…" className="mt-2 justify-start" />
+                            <Loading label="Uploading…" inline className="mt-2" />
                           )}
                         </div>
                       )}
