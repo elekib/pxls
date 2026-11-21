@@ -329,7 +329,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
                 <button
                   onClick={() => handleStartCountdown(preset.minutes, preset.seconds)}
                   disabled={!canStart}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${startButton(canStart, 'bg-info text-info-ink hover:brightness-110')}`}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${startButton(canStart, 'bg-accent text-accent-ink hover:brightness-110')}`}
                 >
                   Start
                 </button>
@@ -348,13 +348,13 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
           <div className="flex gap-3">
             <button
               onClick={addPreset}
-              className="px-4 py-2 bg-violet text-violet-ink hover:brightness-110 rounded-lg font-semibold transition-all"
+              className="px-4 py-2 bg-accent text-accent-ink hover:brightness-110 rounded-lg font-semibold transition-all"
             >
               + Add Preset
             </button>
             <button
               onClick={handleSavePresets}
-              className="px-4 py-2 bg-good text-good-ink hover:brightness-110 rounded-lg font-semibold transition-all"
+              className="px-4 py-2 bg-accent text-accent-ink hover:brightness-110 rounded-lg font-semibold transition-all"
             >
               Save Presets
             </button>
@@ -391,7 +391,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
           <button
             onClick={() => handleStartCountdown(customMinutes, customSeconds)}
             disabled={!canStart || (customMinutes === 0 && customSeconds === 0)}
-            className={`w-full py-3 rounded-lg font-semibold transition-all ${startButton(canStart && (customMinutes > 0 || customSeconds > 0), 'bg-info text-info-ink hover:brightness-110')}`}
+            className={`w-full py-3 rounded-lg font-semibold transition-all ${startButton(canStart && (customMinutes > 0 || customSeconds > 0), 'bg-accent text-accent-ink hover:brightness-110')}`}
           >
             Start {customMinutes}m {customSeconds}s Countdown
           </button>
@@ -507,7 +507,7 @@ export function ToolsPage({ config, onConfigUpdate, onNotify }: ToolsPageProps) 
         <button
           onClick={handleSoundDetector}
           disabled={!canStart}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all ${startButton(canStart, 'bg-good text-good-ink hover:brightness-110')}`}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all ${startButton(canStart, 'bg-accent text-accent-ink hover:brightness-110')}`}
         >
           <MdMic className="inline h-5 w-5 mr-1 align-text-bottom" aria-hidden />Start Sound Detector (5 min)
         </button>

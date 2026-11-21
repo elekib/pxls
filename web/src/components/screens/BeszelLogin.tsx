@@ -185,14 +185,14 @@ export function BeszelLogin({ config, onConfigUpdate, onNotify }: BeszelLoginPro
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <button
-              className="flex-1 px-4 py-2 bg-info text-info-ink rounded-lg text-sm font-semibold cursor-pointer hover:brightness-110 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-accent text-accent-ink rounded-lg text-sm font-semibold cursor-pointer hover:brightness-110 disabled:opacity-50"
               onClick={handleTest}
               disabled={busy}
             >
               Test login
             </button>
             <button
-              className="flex-1 px-4 py-2 bg-good text-good-ink rounded-lg text-sm font-semibold cursor-pointer hover:brightness-110 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-accent text-accent-ink rounded-lg text-sm font-semibold cursor-pointer hover:brightness-110 disabled:opacity-50"
               onClick={handleSave}
               disabled={busy}
             >
