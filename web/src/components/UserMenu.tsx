@@ -28,7 +28,7 @@ export function UserMenu({ username, role, version }: { username: string; role: 
     };
   }, [open]);
 
-  const item = "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface2";
+  const item = "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface2";
   const links = TABS.filter((t) => t.menu && (!t.admin || role === "admin"));
 
   return (
@@ -55,7 +55,7 @@ export function UserMenu({ username, role, version }: { username: string; role: 
           </div>
           <div className="my-1 border-t border-line" />
           {links.map((t) => (
-            <Link key={t.href} href={t.href} role="menuitem" className={item} onClick={() => setOpen(false)}>
+            <Link key={t.href} href={t.href} role="menuitem" className={`${item} text-ink`} onClick={() => setOpen(false)}>
               <t.icon className="h-5 w-5 text-muted" aria-hidden />
               {t.label}
             </Link>
