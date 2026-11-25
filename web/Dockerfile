@@ -1,19 +1,19 @@
 # syntax=docker/dockerfile:1
 # pxls: single Next.js app (UI, API and display engine in one process).
 
-FROM node:22-bookworm-slim AS deps
+FROM node:25-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-FROM node:22-bookworm-slim AS build
+FROM node:25-bookworm-slim AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules node_modules
 COPY . .
 RUN npm run build
 
-FROM node:22-bookworm-slim
+FROM node:25-bookworm-slim
 
 ARG VERSION=dev
 ARG GIT_SHA=unknown
