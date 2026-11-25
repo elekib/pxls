@@ -18,13 +18,13 @@
     "@node-rs/argon2": "^2.2.2",
     "better-auth": "^1.7.7",
     "jose": "^6.2.12",
-    "next": "^16.4.0",
+    "next": "^16.4.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-icons": "^5.7.0",
     "server-only": "^0.0.1",
     "sharp": "^0.35.5",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
